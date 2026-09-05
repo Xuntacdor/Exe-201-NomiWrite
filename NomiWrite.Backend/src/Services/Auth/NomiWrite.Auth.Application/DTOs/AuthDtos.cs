@@ -1,3 +1,5 @@
+using NomiWrite.Auth.Domain.Enums;
+
 namespace NomiWrite.Auth.Application.DTOs;
 
 public class RegisterRequestDto
@@ -25,4 +27,6 @@ public class AuthResponseDto
     public DateTime ExpiresAt { get; set; }
     public Guid UserId { get; set; }
     public string Email { get; set; } = string.Empty;
+    public string FullName { get; set; } = string.Empty;
+    public UserRole Role { get; set; }
 }
