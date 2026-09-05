@@ -7,6 +7,7 @@ using NomiWrite.Payment.Application.DTOs;
 using NomiWrite.Payment.Application.Interfaces;
 using NomiWrite.Payment.Application.Services;
 using NomiWrite.Payment.Application.Validation;
+using NomiWrite.Payment.Infrastructure.Options;
 using NomiWrite.Payment.Infrastructure.Persistence;
 using NomiWrite.Payment.Infrastructure.Services;
 
@@ -26,8 +27,13 @@ public static class DependencyInjection
 
         services.AddScoped<IPaymentDbContext>(sp => sp.GetRequiredService<PaymentDbContext>());
 
+        services.Configure<VnPaySettings>(configuration.GetSection(VnPaySettings.SectionName));
+        services.Configure<MomoSettings>(configuration.GetSection(MomoSettings.SectionName));
+
         services.AddScoped<IValidator<CreatePaymentRequestDto>, CreatePaymentRequestValidator>();
         services.AddScoped<IPaymentGatewayService, MockedPaymentGatewayService>();
+        services.AddScoped<VnPayGatewayService>();
+        services.AddHttpClient<MomoGatewayService>();
         services.AddScoped<IPaymentService, PaymentService>();
 
         services.AddMassTransit(x =>
