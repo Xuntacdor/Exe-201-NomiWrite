@@ -75,7 +75,12 @@ builder.Services.AddAuthorization();
 
 builder.Services.AddHealthChecks()
     .AddDbContextCheck<PaymentDbContext>("payment_db");
-
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(
+            new System.Text.Json.Serialization.JsonStringEnumConverter());
+    });
 var app = builder.Build();
 
 app.UseMiddleware<ExceptionHandlingMiddleware>();
