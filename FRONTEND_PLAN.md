@@ -479,17 +479,17 @@ Backend must only return `grammar_category` values from this list, or `Khác`.
 
 ### Phase 1 - Shared Data And API Boundary
 
-- [ ] Create `lib/types.ts`.
-- [ ] Create `lib/constants/grammar-categories.ts`.
-- [ ] Inventory every hard-coded sample array/object in `app/**` and decide whether it is static content, API data, or temporary fixture.
+- [x] Create `lib/types.ts`.
+- [x] Create `lib/constants/grammar-categories.ts`.
+- [x] Inventory every hard-coded sample array/object in `app/**` and decide whether it is static content, API data, or temporary fixture.
 - [ ] Move writing types, topics, prompts, and guide content out of `app/write/page.tsx`.
 - [ ] Move guide data out of `app/guide/page.tsx` and `app/components/GuideModal.tsx`.
 - [ ] Move quiz questions out of `app/quiz/page.tsx`.
 - [ ] Move vocabulary data out of `app/vocabulary/page.tsx`.
 - [ ] Move dashboard/history/profile/result sample records out of page files.
-- [ ] Create `lib/api/client.ts`, `mock-client.ts`, `real-client.ts`, and `routes.ts`.
-- [ ] Implement typed real API functions against gateway routes.
-- [ ] Keep typed mock responses only as fallback when real backend endpoints are not ready.
+- [x] Create `lib/api/client.ts`, `mock-client.ts`, `real-client.ts`, and `routes.ts`.
+- [x] Implement typed real API functions against gateway routes.
+- [x] Keep typed mock responses only as fallback when real backend endpoints are not ready.
 - [ ] Add a cleanup check that blocks feature completion if page-level hard-coded data remains.
 
 ### Phase 2 - Auth And Layout
@@ -648,19 +648,26 @@ Backend must only return `grammar_category` values from this list, or `Khác`.
 - [x] Updated frontend `.gitignore` so `.env.example` and `next-env.d.ts` are kept as source files while `node_modules` and build output stay ignored.
 - [x] Updated frontend plan to be backend-first: mock data is temporary fallback only, page-level hard-coded API data must be removed, and real API/database integration is the priority when endpoints are ready.
 - [x] Added Phase 10 for mock data removal and real backend cutover.
+- [x] Committed Phase 0 as `481d10d Add frontend MVP foundation`.
+- [x] Created Phase 1 branch `PhmHai0702/fe/api-boundary-real-first` from the Phase 0 commit.
+- [x] Added frontend domain/API types in `NomiWrite.Frontend/lib/types.ts`.
+- [x] Added API route map plus real/mock API clients in `NomiWrite.Frontend/lib/api/`.
+- [x] Added mock fixtures under `NomiWrite.Frontend/lib/mock-data/` with a README policy and hard-coded data inventory.
+- [x] Converted login/register from static navigation to controlled forms that call `apiClient`, save auth session data, and redirect after success.
+- [x] Moved register level/goal options into `NomiWrite.Frontend/lib/constants/profile-options.ts`.
+- [x] Confirmed Phase 1 slice passes `npm run lint` and `npm run build`.
 - [ ] Review npm audit output separately: current install reports 8 vulnerabilities from dependency tree.
 
 ## Current Status For Next Session
 
-Next recommended task: start Phase 1 on a new branch from `develop` or the latest frontend integration branch, for example `PhmHai0702/fe/api-boundary-real-first`.
+Next recommended task: continue Phase 1 on `PhmHai0702/fe/api-boundary-real-first`.
 
 Concrete first commands/files to work on:
 
-1. Create `NomiWrite.Frontend/lib/types.ts`.
-2. Create `NomiWrite.Frontend/lib/api/routes.ts`, `client.ts`, `real-client.ts`, and `mock-client.ts`.
-3. Wire real Auth endpoints first because backend already exposes `/api/auth/register`, `/api/auth/login`, `/api/auth/refresh`, and `/api/auth/logout/{userId}`.
-4. Inventory hard-coded data in `NomiWrite.Frontend/app/**`.
-5. Move temporary fixtures into `lib/mock-data/` only when the equivalent backend endpoint is not ready.
-6. Remove page-level hard-coded API records feature by feature as real endpoints become available.
-7. Run frontend `npm run lint` and `npm run build`.
-8. Update this Progress Log after finishing each backend integration slice.
+1. Move writing types/topics/prompts and coach data out of `app/write/page.tsx`.
+2. Move duplicated guide data out of `app/guide/page.tsx` and `app/components/GuideModal.tsx`.
+3. Move result/dashboard/history/vocabulary/quiz/profile sample records out of page files.
+4. Add a cleanup check for page-level hard-coded API records.
+5. Keep wiring pages to `apiClient` feature by feature, using real backend routes first when available.
+6. Run frontend `npm run lint` and `npm run build`.
+7. Update this Progress Log after finishing each backend integration slice.

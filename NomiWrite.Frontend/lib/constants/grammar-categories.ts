@@ -1,0 +1,25 @@
+export const grammarCategories = [
+  "Mao tu",
+  "Hoa hop chu ngu - dong tu",
+  "Chia thi dong tu",
+  "So it / so nhieu cua danh tu",
+  "Gioi tu",
+  "Cau dieu kien",
+  "Menh de quan he",
+  "Cau bi dong",
+  "Trat tu tu trong cau",
+  "Lien tu va tu noi",
+  "Dai tu",
+  "So sanh hon / so sanh nhat",
+  "Dong tu khuyet thieu",
+  "Danh dong tu va dong tu nguyen mau",
+  "Cau truc cau",
+  "Dung tu sai loai",
+  "Collocation",
+  "Dau cau",
+  "Lap tu / dien dat dai dong",
+  "Thieu/thua thanh phan cau",
+  "Khac",
+] as const;
+
+export type GrammarCategory = (typeof grammarCategories)[number];
