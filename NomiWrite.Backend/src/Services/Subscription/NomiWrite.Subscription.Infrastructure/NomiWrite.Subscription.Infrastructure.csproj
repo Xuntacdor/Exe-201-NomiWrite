@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\NomiWrite.Subscription.Application\NomiWrite.Subscription.Application.csproj" />
+    <ProjectReference Include="..\NomiWrite.Subscription.Domain\NomiWrite.Subscription.Domain.csproj" />
+    <ProjectReference Include="..\..\..\Shared\NomiWrite.Shared.Contracts\NomiWrite.Shared.Contracts.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MassTransit.RabbitMQ" Version="8.*" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.*" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.*" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="8.0.*" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.*" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>
