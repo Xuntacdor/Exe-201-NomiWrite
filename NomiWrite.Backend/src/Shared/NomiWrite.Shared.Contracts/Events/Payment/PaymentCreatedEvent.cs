@@ -11,4 +11,5 @@ public record PaymentCreatedEvent
     public string Currency { get; init; } = "VND";
     public string Provider { get; init; } = string.Empty;
     public DateTime CreatedAt { get; init; } = DateTime.UtcNow;
+    public Guid? PlanId { get; init; }
 }

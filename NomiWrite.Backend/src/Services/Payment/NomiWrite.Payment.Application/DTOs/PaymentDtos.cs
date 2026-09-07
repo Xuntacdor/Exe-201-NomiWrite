@@ -7,6 +7,7 @@ public class CreatePaymentRequestDto
     public decimal Amount { get; set; }
     public string Currency { get; set; } = "VND";
     public PaymentProvider Provider { get; set; }
+    public Guid? PlanId { get; set; }
 }
 
 public class CreatePaymentResponseDto
