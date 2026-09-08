@@ -107,7 +107,7 @@ export default function Hero() {
             ))}
           </div>
 
-          {/* Mock UI preview */}
+          {/* Product UI preview */}
           <div className="mt-16 w-full max-w-4xl animate-float">
             <div className="bg-white rounded-3xl shadow-2xl shadow-blue-200/60 border border-slate-200 overflow-hidden glow-blue">
               {/* Window chrome */}

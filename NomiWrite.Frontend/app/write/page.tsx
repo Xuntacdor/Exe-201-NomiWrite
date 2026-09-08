@@ -6,7 +6,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import AppShell from "../components/AppShell";
 import GuideModal from "../components/GuideModal";
 import {
-  AlertCircle,
   AlignLeft,
   BookOpen,
   ChevronDown,
@@ -16,7 +15,7 @@ import {
   Send,
   Sparkles,
 } from "lucide-react";
-import { apiClient, apiMode } from "@/lib/api/client";
+import { apiClient } from "@/lib/api/client";
 import { getSession } from "@/lib/auth/session";
 import type { WritingPrompt, WritingType } from "@/lib/types";
 
@@ -49,7 +48,7 @@ function WriteContent() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (apiMode === "real" && !getSession()?.accessToken) {
+    if (!getSession()?.accessToken) {
       router.replace("/login");
       return;
     }
@@ -140,7 +139,7 @@ function WriteContent() {
   async function handleSubmit() {
     if (!currentPrompt || !content.trim()) return;
 
-    if (apiMode === "real" && !getSession()?.accessToken) {
+    if (!getSession()?.accessToken) {
       router.push("/login");
       return;
     }
@@ -326,18 +325,6 @@ function WriteContent() {
               <p className="rounded-xl bg-slate-50 p-3">3. Submit the draft so AI grading can process it.</p>
             </div>
           </div>
-
-          {apiMode === "mock" && (
-            <div className="rounded-2xl border border-amber-100 bg-amber-50 p-4">
-              <div className="mb-1 flex items-center gap-2">
-                <AlertCircle className="h-4 w-4 text-amber-600" />
-                <p className="text-xs font-extrabold text-amber-900">Mock mode</p>
-              </div>
-              <p className="text-xs leading-relaxed text-amber-800">
-                Set NEXT_PUBLIC_API_MODE=real to use the backend writing API.
-              </p>
-            </div>
-          )}
         </div>
       </div>
 

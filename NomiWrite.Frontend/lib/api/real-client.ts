@@ -4,17 +4,14 @@ import type {
   CheckoutRequest,
   CheckoutResponse,
   DashboardSummary,
-  GenerateQuizRequest,
   LoginRequest,
   Quiz,
   QuizAttempt,
   RegisterRequest,
-  SubmitQuizAttemptRequest,
   Submission,
   SubscriptionPlan,
   SubscriptionStatus,
   SubmitSubmissionRequest,
-  UpdateVocabularyMasteredRequest,
   User,
   VocabSuggestion,
   WritingFeedback,
@@ -25,6 +22,10 @@ import { getSession } from "../auth/session";
 import { apiRoutes } from "./routes";
 
 const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:5097";
+
+function unavailable<T>(feature: string): Promise<T> {
+  return Promise.reject(new Error(`${feature} API is not available from the backend yet.`));
+}
 
 interface ApiErrorBody {
   message?: string;
@@ -388,36 +389,27 @@ export const realClient: ApiClient = {
   },
 
   getDashboardSummary() {
-    return request<DashboardSummary>(apiRoutes.dashboard.summary, { method: "GET" });
+    return unavailable<DashboardSummary>("Dashboard summary");
   },
 
   listVocabulary() {
-    return request<VocabSuggestion[]>(apiRoutes.vocabulary.list, { method: "GET" });
+    return unavailable<VocabSuggestion[]>("Vocabulary");
   },
 
-  updateVocabularyMastered(id: string, requestBody: UpdateVocabularyMasteredRequest) {
-    return request<VocabSuggestion>(apiRoutes.vocabulary.mastered(id), {
-      method: "PATCH",
-      body: JSON.stringify(requestBody),
-    });
+  updateVocabularyMastered() {
+    return unavailable<VocabSuggestion>("Vocabulary mastered state");
   },
 
-  generateQuiz(requestBody: GenerateQuizRequest) {
-    return request<Quiz>(apiRoutes.quizzes.generate, {
-      method: "POST",
-      body: JSON.stringify(requestBody),
-    });
+  generateQuiz() {
+    return unavailable<Quiz>("Quiz generation");
   },
 
-  getQuiz(id: string) {
-    return request<Quiz>(apiRoutes.quizzes.detail(id), { method: "GET" });
+  getQuiz() {
+    return unavailable<Quiz>("Quiz detail");
   },
 
-  submitQuizAttempt(requestBody: SubmitQuizAttemptRequest) {
-    return request<QuizAttempt>(apiRoutes.quizAttempts.create, {
-      method: "POST",
-      body: JSON.stringify(requestBody),
-    });
+  submitQuizAttempt() {
+    return unavailable<QuizAttempt>("Quiz attempt");
   },
 
   createCheckout(requestBody: CheckoutRequest) {
