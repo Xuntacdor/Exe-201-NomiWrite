@@ -20,11 +20,15 @@ export const mockWritingTypes: WritingType[] = [
 
 export const mockWritingPrompts: WritingPrompt[] = [
   {
+    id: "prompt_mock_ielts2",
+    writingTypeId: "ielts2",
     writingType: "ielts2",
     topic: "Technology & Society",
     prompt: "Some people believe technology makes life more complicated, while others think it makes life easier. Discuss both views and give your opinion.",
   },
   {
+    id: "prompt_mock_email",
+    writingTypeId: "email",
     writingType: "email",
     topic: "Project Proposal",
     prompt: "Write an email to your manager proposing a project to improve employee onboarding.",

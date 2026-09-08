@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import AppShell from "../components/AppShell";
 import {
   BookOpen, Briefcase, GraduationCap, FileText, Mail, Star,
@@ -552,11 +553,11 @@ export default function GuidePage() {
             {/* Modal footer */}
             <div className="shrink-0 px-5 py-4 border-t border-slate-100 flex items-center justify-between bg-white">
               <button onClick={close} className="text-xs text-slate-400 hover:text-slate-600 font-semibold transition-colors">← Quay lại</button>
-              <a href={`/write?type=${openType.id}`}
+              <Link href={`/write?type=${openType.id}`}
                 className={`flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r ${openType.gradient} text-white text-xs font-bold hover:opacity-90 transition-opacity shadow-sm`}
               >
                 Bắt đầu viết loại này <ArrowRight className="w-3.5 h-3.5" />
-              </a>
+              </Link>
             </div>
           </div>
         </div>

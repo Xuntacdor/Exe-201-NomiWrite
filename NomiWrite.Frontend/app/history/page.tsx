@@ -1,132 +1,178 @@
+"use client";
+
+import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import AppShell from "../components/AppShell";
-import { Clock, ArrowRight, Filter, ChevronRight, PenLine, Check, AlertCircle } from "lucide-react";
+import { AlertCircle, Check, ChevronRight, Clock, Filter, Loader2, PenLine } from "lucide-react";
+import { apiClient, apiMode } from "@/lib/api/client";
+import { getSession } from "@/lib/auth/session";
+import type { Submission } from "@/lib/types";
 
-const submissions = [
-  { id: 1, topic: "Technology & Society",       type: "IELTS Task 2", band: 6.5, errors: 8,  date: "Hôm nay",        status: "graded" },
-  { id: 2, topic: "Environment & Climate",       type: "IELTS Task 2", band: 6.0, errors: 12, date: "2 ngày trước",   status: "graded" },
-  { id: 3, topic: "Email xin việc",             type: "Email",        band: 7.0, errors: 4,  date: "5 ngày trước",   status: "graded" },
-  { id: 4, topic: "Education System",            type: "IELTS Task 2", band: 5.5, errors: 15, date: "1 tuần trước",   status: "graded" },
-  { id: 5, topic: "Urbanisation & City Living",  type: "IELTS Task 2", band: 6.5, errors: 9,  date: "10 ngày trước",  status: "graded" },
-  { id: 6, topic: "Health & Lifestyle",          type: "VSTEP",        band: 7.0, errors: 6,  date: "2 tuần trước",   status: "graded" },
-  { id: 7, topic: "Work & Economy",             type: "IELTS Task 2", band: 6.0, errors: 11, date: "3 tuần trước",   status: "graded" },
-  { id: 8, topic: "Globalisation",              type: "Học thuật",    band: 6.5, errors: 7,  date: "1 tháng trước",  status: "graded" },
-];
-
-function bandColor(band: number) {
+function bandColor(band?: number) {
+  if (!band) return "text-slate-500";
   if (band >= 7.0) return "text-emerald-600";
   if (band >= 6.0) return "text-blue-600";
   return "text-orange-500";
 }
 
-function bandBg(band: number) {
+function bandBg(band?: number) {
+  if (!band) return "bg-slate-50 border-slate-200";
   if (band >= 7.0) return "bg-emerald-50 border-emerald-200";
   if (band >= 6.0) return "bg-blue-50 border-blue-200";
   return "bg-orange-50 border-orange-200";
 }
 
+function formatDate(value: string) {
+  return new Intl.DateTimeFormat("en", { dateStyle: "medium" }).format(new Date(value));
+}
+
 export default function HistoryPage() {
-  const avg = (submissions.reduce((sum, s) => sum + s.band, 0) / submissions.length).toFixed(1);
-  const best = Math.max(...submissions.map(s => s.band));
+  const router = useRouter();
+  const [submissions, setSubmissions] = useState<Submission[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (apiMode === "real" && !getSession()?.accessToken) {
+      router.replace("/login");
+      return;
+    }
+
+    let ignore = false;
+    const loadTimer = setTimeout(() => {
+      setLoading(true);
+      apiClient.listSubmissions()
+        .then(items => {
+          if (!ignore) setSubmissions(items);
+        })
+        .catch(err => {
+          if (!ignore) setError(err instanceof Error ? err.message : "Could not load writing history.");
+        })
+        .finally(() => {
+          if (!ignore) setLoading(false);
+        });
+    }, 0);
+
+    return () => {
+      ignore = true;
+      clearTimeout(loadTimer);
+    };
+  }, [router]);
+
+  const gradedScores = submissions.map(item => item.overallScore).filter((score): score is number => typeof score === "number");
+  const avg = gradedScores.length
+    ? (gradedScores.reduce((sum, score) => sum + score, 0) / gradedScores.length).toFixed(1)
+    : "--";
+  const best = gradedScores.length ? Math.max(...gradedScores).toFixed(1) : "--";
+  const sorted = useMemo(
+    () => [...submissions].sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime()),
+    [submissions],
+  );
 
   return (
     <AppShell activePath="/history">
-      {/* Top bar */}
-      <div className="sticky top-0 z-10 bg-white/90 backdrop-blur border-b border-slate-100 px-6 h-14 flex items-center justify-between">
+      <div className="sticky top-0 z-10 flex h-14 items-center justify-between border-b border-slate-100 bg-white/90 px-6 backdrop-blur">
         <div className="flex items-center gap-2">
-          <Clock className="w-4 h-4 text-slate-500" />
-          <h1 className="text-sm font-extrabold text-slate-900">Lịch sử bài viết</h1>
+          <Clock className="h-4 w-4 text-slate-500" />
+          <h1 className="text-sm font-extrabold text-slate-900">Writing history</h1>
         </div>
         <div className="flex items-center gap-2">
-          <button className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-600 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors">
-            <Filter className="w-3.5 h-3.5" />
-            Lọc
+          <button className="flex items-center gap-1.5 rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-200">
+            <Filter className="h-3.5 w-3.5" />
+            Filter
           </button>
-          <a href="/write" className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors">
-            <PenLine className="w-3.5 h-3.5" />
-            Viết bài mới
-          </a>
+          <Link href="/write" className="flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-bold text-white transition-colors hover:bg-blue-700">
+            <PenLine className="h-3.5 w-3.5" />
+            New writing
+          </Link>
         </div>
       </div>
 
-      <div className="p-6 w-full space-y-5">
-        {/* Stats */}
+      <div className="w-full space-y-5 p-6">
         <div className="grid grid-cols-3 gap-4">
           {[
-            { label: "Tổng bài",        value: submissions.length, unit: "bài",  color: "text-slate-900" },
-            { label: "Band trung bình", value: avg,                unit: "",     color: "text-blue-600"  },
-            { label: "Band cao nhất",   value: best,               unit: "",     color: "text-emerald-600" },
+            { label: "Total", value: submissions.length, unit: " essays", color: "text-slate-900" },
+            { label: "Average band", value: avg, unit: "", color: "text-blue-600" },
+            { label: "Best band", value: best, unit: "", color: "text-emerald-600" },
           ].map(({ label, value, unit, color }) => (
-            <div key={label} className="bg-white rounded-2xl border border-slate-100 p-4 text-center shadow-sm">
-              <p className={`text-2xl font-extrabold ${color}`}>{value}<span className="text-base font-semibold ml-0.5">{unit}</span></p>
-              <p className="text-xs text-slate-500 mt-0.5">{label}</p>
+            <div key={label} className="rounded-2xl border border-slate-100 bg-white p-4 text-center shadow-sm">
+              <p className={`text-2xl font-extrabold ${color}`}>{value}<span className="ml-0.5 text-base font-semibold">{unit}</span></p>
+              <p className="mt-0.5 text-xs text-slate-500">{label}</p>
             </div>
           ))}
         </div>
 
-        {/* Submission list */}
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-          <div className="grid grid-cols-12 gap-4 px-5 py-3 text-xs font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100">
-            <span className="col-span-5">Bài viết</span>
-            <span className="col-span-2">Loại</span>
+        <div className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
+          <div className="grid grid-cols-12 gap-4 border-b border-slate-100 px-5 py-3 text-xs font-bold uppercase tracking-widest text-slate-400">
+            <span className="col-span-5">Writing</span>
+            <span className="col-span-2">Status</span>
             <span className="col-span-2 text-center">Band</span>
-            <span className="col-span-2 text-center">Lỗi</span>
+            <span className="col-span-2 text-center">Words</span>
             <span className="col-span-1" />
           </div>
 
-          <div className="divide-y divide-slate-50">
-            {submissions.map((s) => (
-              <a
-                key={s.id}
-                href="/result"
-                className="grid grid-cols-12 gap-4 items-center px-5 py-4 hover:bg-slate-50 transition-colors group"
-              >
-                {/* Topic */}
-                <div className="col-span-5">
-                  <p className="text-sm font-semibold text-slate-800 group-hover:text-blue-600 transition-colors">{s.topic}</p>
-                  <p className="text-xs text-slate-400 mt-0.5">{s.date}</p>
-                </div>
+          {loading && (
+            <div className="flex items-center justify-center gap-2 p-8 text-sm font-semibold text-slate-500">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Loading history
+            </div>
+          )}
 
-                {/* Type */}
-                <div className="col-span-2">
-                  <span className="text-xs font-semibold px-2 py-1 bg-slate-100 text-slate-600 rounded-full">
-                    {s.type}
-                  </span>
-                </div>
+          {!loading && error && (
+            <p className="p-5 text-sm font-semibold text-red-600">{error}</p>
+          )}
 
-                {/* Band */}
-                <div className="col-span-2 flex justify-center">
-                  <span className={`text-sm font-extrabold px-3 py-1 rounded-xl border ${bandBg(s.band)} ${bandColor(s.band)}`}>
-                    {s.band}
-                  </span>
-                </div>
+          {!loading && !error && sorted.length === 0 && (
+            <div className="p-8 text-center">
+              <p className="text-sm font-bold text-slate-800">No submissions yet</p>
+              <p className="mt-1 text-xs text-slate-500">Start a writing session to create your first record.</p>
+            </div>
+          )}
 
-                {/* Errors */}
-                <div className="col-span-2 flex justify-center">
-                  <div className="flex items-center gap-1.5">
-                    <AlertCircle className="w-3.5 h-3.5 text-red-400" />
-                    <span className="text-sm font-semibold text-slate-700">{s.errors}</span>
+          {!loading && !error && sorted.length > 0 && (
+            <div className="divide-y divide-slate-50">
+              {sorted.map(submission => (
+                <Link
+                  key={submission.id}
+                  href={`/result?submissionId=${submission.id}`}
+                  className="grid grid-cols-12 items-center gap-4 px-5 py-4 transition-colors hover:bg-slate-50 group"
+                >
+                  <div className="col-span-5">
+                    <p className="truncate text-sm font-semibold text-slate-800 transition-colors group-hover:text-blue-600">{submission.topic}</p>
+                    <p className="mt-0.5 text-xs text-slate-400">{formatDate(submission.submittedAt)}</p>
                   </div>
-                </div>
-
-                {/* Arrow */}
-                <div className="col-span-1 flex justify-end">
-                  <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-blue-500 transition-colors" />
-                </div>
-              </a>
-            ))}
-          </div>
+                  <div className="col-span-2">
+                    <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-600">
+                      {submission.status}
+                    </span>
+                  </div>
+                  <div className="col-span-2 flex justify-center">
+                    <span className={`rounded-xl border px-3 py-1 text-sm font-extrabold ${bandBg(submission.overallScore)} ${bandColor(submission.overallScore)}`}>
+                      {submission.overallScore ?? "--"}
+                    </span>
+                  </div>
+                  <div className="col-span-2 flex justify-center">
+                    <div className="flex items-center gap-1.5">
+                      <AlertCircle className="h-3.5 w-3.5 text-slate-300" />
+                      <span className="text-sm font-semibold text-slate-700">{submission.wordCount}</span>
+                    </div>
+                  </div>
+                  <div className="col-span-1 flex justify-end">
+                    <ChevronRight className="h-4 w-4 text-slate-300 transition-colors group-hover:text-blue-500" />
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* Progress note */}
-        <div className="flex items-start gap-3 p-4 bg-blue-50 border border-blue-100 rounded-2xl">
-          <Check className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" />
+        <div className="flex items-start gap-3 rounded-2xl border border-blue-100 bg-blue-50 p-4">
+          <Check className="mt-0.5 h-4 w-4 shrink-0 text-blue-500" />
           <div>
-            <p className="text-sm font-semibold text-blue-800">Band của bạn tăng 1.5 trong 3 tháng</p>
-            <p className="text-xs text-blue-600 mt-0.5">Từ 5.5 → 7.0 — tiếp tục duy trì streak luyện tập mỗi ngày.</p>
+            <p className="text-sm font-semibold text-blue-800">History is connected to the Writing service.</p>
+            <p className="mt-0.5 text-xs text-blue-600">Scores appear once the grading service has completed a submission.</p>
           </div>
-          <a href="/write" className="ml-auto flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-700 shrink-0">
-            Viết thêm <ArrowRight className="w-3 h-3" />
-          </a>
         </div>
       </div>
     </AppShell>

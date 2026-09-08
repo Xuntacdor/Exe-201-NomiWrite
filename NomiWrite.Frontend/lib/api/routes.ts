@@ -9,18 +9,19 @@ export const apiRoutes = {
   },
   users: {
     me: "/api/users/me",
+    account: "/api/users/me/account",
   },
   writing: {
     types: "/api/writing/types",
     prompts: "/api/writing/prompts",
   },
   submissions: {
-    list: "/api/submissions",
-    detail: (id: string) => `/api/submissions/${id}`,
-    grade: (id: string) => `/api/submissions/${id}/grade`,
+    list: "/api/writing/submissions",
+    detail: (id: string) => `/api/writing/submissions/${id}`,
+    submit: (id: string) => `/api/writing/submissions/${id}/submit`,
   },
   feedback: {
-    detail: (submissionId: string) => `/api/feedback/${submissionId}`,
+    detail: (submissionId: string) => `/api/grading/submissions/${submissionId}`,
   },
   dashboard: {
     summary: "/api/dashboard/summary",
@@ -39,5 +40,9 @@ export const apiRoutes = {
   payments: {
     checkout: "/api/payment",
     status: (id: string) => `/api/payment/${id}`,
+  },
+  subscriptions: {
+    plans: "/api/subscriptions/plans",
+    me: "/api/subscriptions/me",
   },
 } as const;

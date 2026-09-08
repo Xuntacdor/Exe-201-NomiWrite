@@ -1,169 +1,276 @@
+"use client";
+
+import Link from "next/link";
+import { FormEvent, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import AppShell from "../components/AppShell";
 import {
-  User,
+  Award,
+  BookOpen,
+  Check,
+  Edit2,
+  Loader2,
   Mail,
+  PenLine,
+  Save,
   Target,
   TrendingUp,
-  Award,
-  Edit2,
+  User as UserIcon,
+  X,
   Zap,
-  BookOpen,
-  PenLine,
-  BrainCircuit,
-  CheckCircle2,
 } from "lucide-react";
+import { apiClient, apiMode } from "@/lib/api/client";
+import { getSession } from "@/lib/auth/session";
+import type { User } from "@/lib/types";
 
-const errorBreakdown = [
-  { label: "Mạo từ",         pct: 85, color: "bg-red-500" },
-  { label: "Chia thì",       pct: 58, color: "bg-orange-400" },
-  { label: "Giới từ",        pct: 42, color: "bg-yellow-400" },
-  { label: "Collocation",    pct: 33, color: "bg-violet-400" },
-  { label: "Trật tự từ",    pct: 21, color: "bg-blue-400" },
-];
+const levels = ["Beginner", "Elementary", "Intermediate", "UpperIntermediate", "Advanced", "Proficient"];
+const targets = ["IELTS", "TOEFL", "Business Email", "Academic", "Cover Letter"];
 
-const achievements = [
-  { icon: PenLine,      label: "Bài viết đầu tiên",    done: true  },
-  { icon: BrainCircuit, label: "Hoàn thành 10 quiz",   done: true  },
-  { icon: TrendingUp,   label: "Band 7.0 lần đầu",     done: true  },
-  { icon: BookOpen,     label: "Thành thạo 50 từ",     done: false },
-  { icon: Award,        label: "Streak 30 ngày",        done: false },
-  { icon: Zap,          label: "100 bài nộp",           done: false },
-];
+function formatDate(value?: string) {
+  if (!value) return "Not available";
+  return new Intl.DateTimeFormat("en", { dateStyle: "medium" }).format(new Date(value));
+}
 
 export default function ProfilePage() {
+  const router = useRouter();
+  const [profile, setProfile] = useState<User | null>(null);
+  const [displayName, setDisplayName] = useState("");
+  const [currentLevel, setCurrentLevel] = useState("");
+  const [targetType, setTargetType] = useState("");
+  const [targetBand, setTargetBand] = useState("");
+  const [editing, setEditing] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (apiMode === "real" && !getSession()?.accessToken) {
+      router.replace("/login");
+      return;
+    }
+
+    let ignore = false;
+    const loadTimer = setTimeout(() => {
+      setLoading(true);
+      apiClient.getMyAccount()
+        .then(user => {
+          if (ignore) return;
+          setProfile(user);
+          setDisplayName(user.displayName);
+          setCurrentLevel(user.currentLevel ?? "");
+          setTargetType(user.targetType ?? "");
+          setTargetBand(user.targetBand?.toString() ?? "");
+        })
+        .catch(err => {
+          if (!ignore) setError(err instanceof Error ? err.message : "Could not load profile.");
+        })
+        .finally(() => {
+          if (!ignore) setLoading(false);
+        });
+    }, 0);
+
+    return () => {
+      ignore = true;
+      clearTimeout(loadTimer);
+    };
+  }, [router]);
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setSaving(true);
+    setError("");
+    try {
+      const updated = await apiClient.updateMe({
+        displayName: displayName.trim(),
+        currentLevel: currentLevel || undefined,
+        targetType: targetType || undefined,
+        targetBand: targetBand ? Number(targetBand) : undefined,
+      });
+      setProfile(updated);
+      setEditing(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not update profile.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const initial = (profile?.displayName ?? "N").slice(0, 1).toUpperCase();
+  const planLabel = profile?.plan === "premium" ? "Premium" : "Free";
+
   return (
     <AppShell activePath="/profile">
-      {/* Top bar */}
-      <div className="sticky top-0 z-10 bg-white/90 backdrop-blur border-b border-slate-100 px-6 h-14 flex items-center justify-between">
+      <div className="sticky top-0 z-10 flex h-14 items-center justify-between border-b border-slate-100 bg-white/90 px-6 backdrop-blur">
         <div className="flex items-center gap-2">
-          <User className="w-4 h-4 text-slate-500" />
-          <h1 className="text-sm font-extrabold text-slate-900">Hồ sơ học tập</h1>
+          <UserIcon className="h-4 w-4 text-slate-500" />
+          <h1 className="text-sm font-extrabold text-slate-900">Learning profile</h1>
         </div>
-        <button className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-600 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors">
-          <Edit2 className="w-3.5 h-3.5" />
-          Chỉnh sửa
+        <button
+          type="button"
+          onClick={() => setEditing(value => !value)}
+          className="flex items-center gap-1.5 rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-200"
+        >
+          {editing ? <X className="h-3.5 w-3.5" /> : <Edit2 className="h-3.5 w-3.5" />}
+          {editing ? "Cancel" : "Edit"}
         </button>
       </div>
 
-      <div className="p-6 w-full space-y-5">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-
-          {/* Left: Profile card */}
-          <div className="lg:col-span-1 space-y-4">
-            {/* Avatar + info */}
-            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 text-center">
-              <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center text-white text-3xl font-extrabold mx-auto mb-4 shadow-lg shadow-blue-200">
-                M
-              </div>
-              <h2 className="text-base font-extrabold text-slate-900">Minh Quang</h2>
-              <div className="flex items-center justify-center gap-1.5 mt-1 text-xs text-slate-500">
-                <Mail className="w-3 h-3" />
-                <span>minhquang@email.com</span>
-              </div>
-
-              <div className="mt-4 flex items-center justify-center gap-2">
-                <span className="px-3 py-1 text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200 rounded-full">
-                  B1 — Trung cấp
-                </span>
-                <span className="px-3 py-1 text-xs font-bold bg-violet-50 text-violet-700 border border-violet-200 rounded-full">
-                  Gói miễn phí
-                </span>
-              </div>
-
-              <div className="mt-5 pt-5 border-t border-slate-100">
-                <div className="flex items-center gap-2 text-xs text-slate-500 mb-2">
-                  <Target className="w-3.5 h-3.5 text-blue-500" />
-                  <span className="font-semibold text-slate-700">Mục tiêu:</span>
-                  IELTS Writing Band 7.0
-                </div>
-                <div className="flex items-center gap-2 text-xs text-slate-500">
-                  <TrendingUp className="w-3.5 h-3.5 text-emerald-500" />
-                  <span className="font-semibold text-slate-700">Tham gia:</span>
-                  3 tháng trước
-                </div>
-              </div>
-            </div>
-
-            {/* Plan card */}
-            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Gói hiện tại</p>
-              <p className="text-base font-extrabold text-slate-900 mb-1">Miễn phí</p>
-              <div className="flex items-center justify-between text-xs text-slate-500 mb-2">
-                <span>Bài đã viết tháng này</span>
-                <span className="font-bold text-slate-700">3/5</span>
-              </div>
-              <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden mb-4">
-                <div className="h-full bg-blue-500 rounded-full" style={{ width: "60%" }} />
-              </div>
-              <a href="/upgrade" className="block w-full py-2.5 text-xs font-bold text-center text-white bg-gradient-to-r from-blue-600 to-violet-600 rounded-xl hover:opacity-90 transition-opacity">
-                Nâng cấp Premium →
-              </a>
-            </div>
+      <div className="w-full space-y-5 p-6">
+        {loading && (
+          <div className="flex items-center justify-center gap-2 rounded-2xl border border-slate-100 bg-white p-8 text-sm font-semibold text-slate-500 shadow-sm">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Loading profile
           </div>
+        )}
 
-          {/* Right: Stats + weaknesses + achievements */}
-          <div className="lg:col-span-2 space-y-4">
-            {/* Stats */}
-            <div className="grid grid-cols-3 gap-3">
-              {[
-                { label: "Tổng bài viết", value: "12",  color: "text-slate-900" },
-                { label: "Band trung bình", value: "6.2", color: "text-blue-600" },
-                { label: "Streak hiện tại", value: "7 ngày", color: "text-orange-500" },
-              ].map(({ label, value, color }) => (
-                <div key={label} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 text-center">
-                  <p className={`text-xl font-extrabold ${color}`}>{value}</p>
-                  <p className="text-xs text-slate-500 mt-0.5">{label}</p>
+        {!loading && error && (
+          <p className="rounded-2xl border border-red-100 bg-red-50 p-4 text-sm font-semibold text-red-600">{error}</p>
+        )}
+
+        {!loading && profile && (
+          <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+            <div className="space-y-4 lg:col-span-1">
+              <div className="rounded-2xl border border-slate-100 bg-white p-6 text-center shadow-sm">
+                <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-violet-600 text-3xl font-extrabold text-white shadow-lg shadow-blue-200">
+                  {initial}
                 </div>
-              ))}
-            </div>
+                <h2 className="text-base font-extrabold text-slate-900">{profile.displayName}</h2>
+                <div className="mt-1 flex items-center justify-center gap-1.5 text-xs text-slate-500">
+                  <Mail className="h-3 w-3" />
+                  <span>{profile.email ?? getSession()?.email ?? "No email in profile service"}</span>
+                </div>
 
-            {/* Weakness profile */}
-            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
-              <h3 className="text-sm font-extrabold text-slate-900 mb-4">Nhóm lỗi thường gặp</h3>
-              <div className="space-y-3">
-                {errorBreakdown.map(({ label, pct, color }) => (
-                  <div key={label}>
-                    <div className="flex justify-between mb-1.5">
-                      <span className="text-xs font-semibold text-slate-700">{label}</span>
-                      <span className="text-xs text-slate-400">{pct}% tần suất</span>
-                    </div>
-                    <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                      <div className={`h-full ${color} rounded-full transition-all`} style={{ width: `${pct}%` }} />
-                    </div>
+                <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+                  <span className="rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700">
+                    {profile.currentLevel ?? "Level not set"}
+                  </span>
+                  <span className="rounded-full border border-violet-200 bg-violet-50 px-3 py-1 text-xs font-bold text-violet-700">
+                    {planLabel}
+                  </span>
+                </div>
+
+                <div className="mt-5 border-t border-slate-100 pt-5">
+                  <div className="mb-2 flex items-center gap-2 text-xs text-slate-500">
+                    <Target className="h-3.5 w-3.5 text-blue-500" />
+                    <span className="font-semibold text-slate-700">Goal:</span>
+                    {profile.targetType ?? "Not set"} {profile.targetBand ? `Band ${profile.targetBand}` : ""}
                   </div>
-                ))}
+                  <div className="flex items-center gap-2 text-xs text-slate-500">
+                    <TrendingUp className="h-3.5 w-3.5 text-emerald-500" />
+                    <span className="font-semibold text-slate-700">Subscription end:</span>
+                    {formatDate(profile.subscriptionEndDate)}
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <p className="mb-3 text-xs font-bold uppercase tracking-widest text-slate-400">Current plan</p>
+                <p className="mb-1 text-base font-extrabold text-slate-900">{planLabel}</p>
+                <p className="mb-4 text-xs leading-relaxed text-slate-500">
+                  Subscription data is loaded from `/api/users/me/account`.
+                </p>
+                <Link href="/upgrade" className="block w-full rounded-xl bg-gradient-to-r from-blue-600 to-violet-600 py-2.5 text-center text-xs font-bold text-white transition-opacity hover:opacity-90">
+                  Upgrade Premium
+                </Link>
               </div>
             </div>
 
-            {/* Achievements */}
-            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
-              <h3 className="text-sm font-extrabold text-slate-900 mb-4">Thành tích</h3>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                {achievements.map(({ icon: Icon, label, done }) => (
-                  <div
-                    key={label}
-                    className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${
-                      done
-                        ? "border-emerald-200 bg-emerald-50"
-                        : "border-slate-100 bg-slate-50 opacity-50"
-                    }`}
+            <div className="space-y-4 lg:col-span-2">
+              {editing ? (
+                <form onSubmit={handleSubmit} className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+                  <h3 className="mb-4 text-sm font-extrabold text-slate-900">Edit profile</h3>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <label className="text-xs font-semibold text-slate-600">
+                      Display name
+                      <input
+                        value={displayName}
+                        onChange={event => setDisplayName(event.target.value)}
+                        className="mt-1.5 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm text-slate-800 focus:border-blue-400 focus:outline-none"
+                      />
+                    </label>
+                    <label className="text-xs font-semibold text-slate-600">
+                      Current level
+                      <select
+                        value={currentLevel}
+                        onChange={event => setCurrentLevel(event.target.value)}
+                        className="mt-1.5 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm text-slate-800 focus:border-blue-400 focus:outline-none"
+                      >
+                        <option value="">Not set</option>
+                        {levels.map(level => <option key={level} value={level}>{level}</option>)}
+                      </select>
+                    </label>
+                    <label className="text-xs font-semibold text-slate-600">
+                      Target
+                      <select
+                        value={targetType}
+                        onChange={event => setTargetType(event.target.value)}
+                        className="mt-1.5 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm text-slate-800 focus:border-blue-400 focus:outline-none"
+                      >
+                        <option value="">Not set</option>
+                        {targets.map(target => <option key={target} value={target}>{target}</option>)}
+                      </select>
+                    </label>
+                    <label className="text-xs font-semibold text-slate-600">
+                      Target band
+                      <input
+                        type="number"
+                        min="0"
+                        max="9"
+                        step="0.5"
+                        value={targetBand}
+                        onChange={event => setTargetBand(event.target.value)}
+                        className="mt-1.5 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm text-slate-800 focus:border-blue-400 focus:outline-none"
+                      />
+                    </label>
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={saving}
+                    className="mt-5 flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-xs font-bold text-white transition-colors hover:bg-blue-700 disabled:opacity-60"
                   >
-                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
-                      done ? "bg-emerald-500" : "bg-slate-200"
-                    }`}>
-                      {done
-                        ? <CheckCircle2 className="w-4 h-4 text-white" />
-                        : <Icon className="w-4 h-4 text-slate-400" />}
+                    {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+                    Save profile
+                  </button>
+                </form>
+              ) : (
+                <div className="grid grid-cols-3 gap-3">
+                  {[
+                    { label: "Level", value: profile.currentLevel ?? "--", color: "text-slate-900", icon: PenLine },
+                    { label: "Target", value: profile.targetType ?? "--", color: "text-blue-600", icon: Target },
+                    { label: "Plan", value: planLabel, color: "text-orange-500", icon: Award },
+                  ].map(({ label, value, color, icon: Icon }) => (
+                    <div key={label} className="rounded-2xl border border-slate-100 bg-white p-4 text-center shadow-sm">
+                      <Icon className="mx-auto mb-2 h-4 w-4 text-slate-300" />
+                      <p className={`text-xl font-extrabold ${color}`}>{value}</p>
+                      <p className="mt-0.5 text-xs text-slate-500">{label}</p>
                     </div>
-                    <span className={`text-xs font-semibold leading-tight ${done ? "text-emerald-800" : "text-slate-500"}`}>
-                      {label}
-                    </span>
-                  </div>
-                ))}
+                  ))}
+                </div>
+              )}
+
+              <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+                <h3 className="mb-4 text-sm font-extrabold text-slate-900">API-backed profile fields</h3>
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                  {[
+                    { icon: UserIcon, label: "Profile", done: true },
+                    { icon: Target, label: "Learning target", done: true },
+                    { icon: Award, label: "Subscription", done: true },
+                    { icon: BookOpen, label: "Vocabulary", done: false },
+                    { icon: Zap, label: "Achievements", done: false },
+                    { icon: PenLine, label: "Usage quota", done: false },
+                  ].map(({ icon: Icon, label, done }) => (
+                    <div key={label} className={`flex items-center gap-3 rounded-xl border p-3 ${done ? "border-emerald-200 bg-emerald-50" : "border-slate-100 bg-slate-50 opacity-60"}`}>
+                      <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${done ? "bg-emerald-500" : "bg-slate-200"}`}>
+                        {done ? <Check className="h-4 w-4 text-white" /> : <Icon className="h-4 w-4 text-slate-400" />}
+                      </div>
+                      <span className={`text-xs font-semibold leading-tight ${done ? "text-emerald-800" : "text-slate-500"}`}>{label}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
     </AppShell>
   );

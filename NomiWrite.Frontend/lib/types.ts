@@ -4,13 +4,16 @@ export type UserPlan = "free" | "premium";
 
 export interface User {
   id: string;
-  email: string;
+  email?: string;
   displayName: string;
-  currentLevel: string;
-  targetType: string;
+  avatarUrl?: string;
+  bio?: string;
+  currentLevel?: string;
+  targetType?: string;
   targetBand?: number;
   plan: UserPlan;
-  createdAt: string;
+  subscriptionEndDate?: string;
+  createdAt?: string;
 }
 
 export interface LoginRequest {
@@ -38,19 +41,22 @@ export interface WritingType {
   id: string;
   label: string;
   badge: string;
+  description?: string;
   minWords: number;
 }
 
 export interface WritingPrompt {
+  id: string;
+  writingTypeId: string;
   writingType: string;
   topic: string;
   prompt: string;
+  difficulty?: "Beginner" | "Intermediate" | "Advanced" | string;
 }
 
 export interface SubmitSubmissionRequest {
-  writingType: string;
-  topic: string;
-  prompt: string;
+  writingPromptId: string;
+  isTimed?: boolean;
   content: string;
 }
 
@@ -168,6 +174,7 @@ export interface CheckoutRequest {
   paymentMethod: "vnpay" | "vietqr" | "momo" | "card";
   amount?: number;
   currency?: string;
+  planId?: string;
 }
 
 export interface CheckoutResponse {
@@ -189,6 +196,7 @@ export interface ApiClient {
   logout(): Promise<void>;
   getMe(): Promise<User>;
   updateMe(request: Partial<Pick<User, "displayName" | "currentLevel" | "targetType" | "targetBand">>): Promise<User>;
+  getMyAccount(): Promise<User>;
   listWritingTypes(): Promise<WritingType[]>;
   listWritingPrompts(writingType?: string, topic?: string): Promise<WritingPrompt[]>;
   submitSubmission(request: SubmitSubmissionRequest): Promise<Submission>;
@@ -204,4 +212,27 @@ export interface ApiClient {
   submitQuizAttempt(request: SubmitQuizAttemptRequest): Promise<QuizAttempt>;
   createCheckout(request: CheckoutRequest): Promise<CheckoutResponse>;
   getPaymentStatus(id: string): Promise<CheckoutResponse>;
+  listSubscriptionPlans(): Promise<SubscriptionPlan[]>;
+  getCurrentSubscription(): Promise<SubscriptionStatus>;
+}
+
+export interface SubscriptionPlan {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  currency: string;
+  billingCycle: "Monthly" | "Yearly" | string;
+  durationDays: number;
+}
+
+export interface SubscriptionStatus {
+  hasSubscription: boolean;
+  status?: {
+    planName: string;
+    status: string;
+    startDate: string;
+    endDate: string;
+    daysRemaining: number;
+  } | null;
 }

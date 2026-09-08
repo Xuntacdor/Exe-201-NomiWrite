@@ -1,18 +1,23 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { PenLine, Menu, X } from "lucide-react";
+import { Menu, PenLine, X } from "lucide-react";
+import { getSession } from "@/lib/auth/session";
 
 const navLinks = [
-  { label: "Cách hoạt động", href: "#how-it-works" },
-  { label: "Tính năng", href: "#features" },
-  { label: "Bảng giá", href: "#pricing" },
+  { label: "How it works", href: "/#how-it-works" },
+  { label: "Features", href: "/#features" },
+  { label: "Pricing", href: "/#pricing" },
 ];
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [signedIn] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return Boolean(getSession()?.accessToken);
+  });
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
@@ -22,86 +27,78 @@ export default function Navbar() {
 
   return (
     <header
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        scrolled
-          ? "bg-white/90 backdrop-blur-md shadow-sm border-b border-slate-100"
-          : "bg-transparent"
+      className={`fixed left-0 right-0 top-0 z-50 transition-all duration-300 ${
+        scrolled ? "border-b border-slate-100 bg-white/90 shadow-sm backdrop-blur-md" : "bg-transparent"
       }`}
     >
-      <nav className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-        {/* Logo */}
-        <Link href="/" className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center">
-            <PenLine className="w-4 h-4 text-white" strokeWidth={2.5} />
+      <nav className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
+        <Link href={signedIn ? "/dashboard" : "/"} className="flex items-center gap-2">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600">
+            <PenLine className="h-4 w-4 text-white" strokeWidth={2.5} />
           </div>
           <span className="text-lg font-bold text-slate-900">NomiWrite</span>
         </Link>
 
-        {/* Desktop links */}
-        <div className="hidden md:flex items-center gap-8">
-          {navLinks.map((link) => (
-            <a
-              key={link.href}
-              href={link.href}
-              className="text-sm font-medium text-slate-600 hover:text-blue-600 transition-colors"
-            >
+        <div className="hidden items-center gap-8 md:flex">
+          {navLinks.map(link => (
+            <Link key={link.href} href={link.href} className="text-sm font-medium text-slate-600 transition-colors hover:text-blue-600">
               {link.label}
-            </a>
+            </Link>
           ))}
         </div>
 
-        {/* Desktop CTA */}
-        <div className="hidden md:flex items-center gap-3">
-          <a
-            href="/login"
-            className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
+        <div className="hidden items-center gap-3 md:flex">
+          <Link
+            href={signedIn ? "/dashboard" : "/login"}
+            className="text-sm font-medium text-slate-600 transition-colors hover:text-slate-900"
           >
-            Đăng nhập
-          </a>
-          <a
-            href="/register"
-            className="px-4 py-2 text-sm font-semibold text-white bg-blue-600 rounded-full hover:bg-blue-700 transition-colors shadow-sm shadow-blue-200"
+            {signedIn ? "Dashboard" : "Login"}
+          </Link>
+          <Link
+            href={signedIn ? "/write" : "/register"}
+            className="rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-blue-200 transition-colors hover:bg-blue-700"
           >
-            Dùng miễn phí
-          </a>
+            {signedIn ? "Write" : "Start free"}
+          </Link>
         </div>
 
-        {/* Mobile menu button */}
         <button
-          className="md:hidden p-2 rounded-lg text-slate-600 hover:bg-slate-100 transition-colors"
-          onClick={() => setMobileOpen(!mobileOpen)}
+          className="rounded-lg p-2 text-slate-600 transition-colors hover:bg-slate-100 md:hidden"
+          onClick={() => setMobileOpen(value => !value)}
           aria-label="Toggle menu"
+          type="button"
         >
-          {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </button>
       </nav>
 
-      {/* Mobile menu */}
       {mobileOpen && (
-        <div className="md:hidden bg-white border-t border-slate-100 px-4 py-4 space-y-3">
-          {navLinks.map((link) => (
-            <a
+        <div className="space-y-3 border-t border-slate-100 bg-white px-4 py-4 md:hidden">
+          {navLinks.map(link => (
+            <Link
               key={link.href}
               href={link.href}
-              className="block text-sm font-medium text-slate-700 hover:text-blue-600 py-2"
+              className="block py-2 text-sm font-medium text-slate-700 hover:text-blue-600"
               onClick={() => setMobileOpen(false)}
             >
               {link.label}
-            </a>
+            </Link>
           ))}
-          <div className="pt-2 flex flex-col gap-2">
-            <a
-              href="/login"
-              className="block text-sm font-medium text-slate-600 text-center py-2"
+          <div className="flex flex-col gap-2 pt-2">
+            <Link
+              href={signedIn ? "/dashboard" : "/login"}
+              className="block py-2 text-center text-sm font-medium text-slate-600"
+              onClick={() => setMobileOpen(false)}
             >
-              Đăng nhập
-            </a>
-            <a
-              href="/register"
-              className="block text-sm font-semibold text-white bg-blue-600 rounded-full text-center py-2.5 hover:bg-blue-700 transition-colors"
+              {signedIn ? "Dashboard" : "Login"}
+            </Link>
+            <Link
+              href={signedIn ? "/write" : "/register"}
+              className="block rounded-full bg-blue-600 py-2.5 text-center text-sm font-semibold text-white transition-colors hover:bg-blue-700"
+              onClick={() => setMobileOpen(false)}
             >
-              Dùng miễn phí
-            </a>
+              {signedIn ? "Write" : "Start free"}
+            </Link>
           </div>
         </div>
       )}

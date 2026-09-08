@@ -201,9 +201,14 @@ Use this order for every feature area:
 
 Current known backend status:
 
-- Auth has real endpoints and should be integrated first through the gateway.
-- User, Payment, and AI Coordinator still need final contracts before removing their frontend fallback behavior.
-- Writing/submission/feedback/history/vocabulary/quiz pages must be converted from static MVP data to API-backed data as soon as those backend modules expose endpoints.
+- Auth has real endpoints: `POST /api/auth/register`, `POST /api/auth/login`, `POST /api/auth/refresh`, and `POST /api/auth/logout`.
+- User profile has real endpoints: `GET /api/users/me`, `PUT /api/users/me`, and `GET /api/users/me/account`.
+- Writing has real endpoints for types, prompts, draft creation, content update, submit, list, and detail under `/api/writing`.
+- AI Coordinator has a real grading read endpoint: `GET /api/grading/submissions/{submissionId}`.
+- Payment has real create/status endpoints under `/api/payment`, plus VNPay and MoMo IPN handlers.
+- Subscription has real plan/status endpoints: `GET /api/subscriptions/plans` and `GET /api/subscriptions/me`.
+- Dashboard, vocabulary, quiz, quiz-attempts, and dedicated vocabulary suggestions are not exposed as real backend modules yet; keep those as mock/demo or derive from available Writing/User/Grading data only.
+- Gateway still depends on a local `ReverseProxy` config, while tracked `NomiWrite.Gateway/appsettings.json` was removed from source after the latest backend merge.
 
 ## Frontend MVP Scope
 
@@ -494,50 +499,50 @@ Backend must only return `grammar_category` values from this list, or `Khác`.
 
 ### Phase 2 - Auth And Layout
 
-- [ ] Convert `app/login/page.tsx` from static link to controlled form.
-- [ ] Add email/password validation.
-- [ ] Add loading and error states.
-- [ ] Connect login/register to real `POST /api/auth/login` and `POST /api/auth/register` through the gateway.
-- [ ] Store real access/refresh token response from backend; use mock session only when `NEXT_PUBLIC_API_MODE=mock`.
-- [ ] Convert `app/register/page.tsx` to controlled form.
+- [x] Convert `app/login/page.tsx` from static link to controlled form.
+- [x] Add email/password validation.
+- [x] Add loading and error states.
+- [x] Connect login/register to real `POST /api/auth/login` and `POST /api/auth/register` through the gateway.
+- [x] Store real access/refresh token response from backend; use mock session only when `NEXT_PUBLIC_API_MODE=mock`.
+- [x] Convert `app/register/page.tsx` to controlled form.
 - [ ] Save selected level and target through profile/user API when available; otherwise store only through API client fallback.
 - [ ] Add logout behavior in `AppSidebar`.
-- [ ] Add simple route guard for app pages.
+- [x] Add simple route guard for API-backed app pages in real mode.
 - [ ] Add mobile navigation for `AppShell`.
 
 ### Phase 3 - Writing Flow
 
-- [ ] Connect writing type/topic selectors to shared constants.
-- [ ] Add draft autosave keyed by user and writing type.
-- [ ] Recover draft on page load.
-- [ ] Validate minimum word count by writing type.
-- [ ] Submit through `api.submitSubmission()`.
-- [ ] Use real submission/grading endpoint when available; no direct `localStorage` submission handoff for production mode.
-- [ ] Navigate to `/result?submissionId=...`.
-- [ ] Keep client-side AI Coach suggestions as temporary helper until backend feedback exists.
-- [ ] Remove local fake scoring logic once backend returns grading/feedback.
+- [x] Connect writing type/topic selectors to backend `api.listWritingTypes()` and `api.listWritingPrompts()`.
+- [x] Add draft autosave keyed by selected writing prompt/type.
+- [x] Recover draft on page load.
+- [x] Validate/display recommended minimum word count by writing type.
+- [x] Submit through `api.submitSubmission()`.
+- [x] Use real submission/grading endpoint when available; no direct `localStorage` submission handoff for production mode.
+- [x] Navigate to `/result?submissionId=...`.
+- [x] Replace page-level client-side AI Coach heuristics with backend-first submission flow notes.
+- [x] Remove local fake scoring logic once backend returns grading/feedback.
 
 ### Phase 4 - Result And Feedback
 
-- [ ] Load result by `submissionId`.
-- [ ] Add loading, error, and empty states.
-- [ ] Render criteria scores from `WritingFeedback`.
-- [ ] Render grammar errors from API-shaped data.
-- [ ] Render vocabulary suggestions from API-shaped data.
-- [ ] Remove hard-coded grammar/vocabulary feedback from `app/result/page.tsx`.
-- [ ] Read persisted feedback from backend/database through API client in real mode.
-- [ ] Keep AI score disclaimer visible.
-- [ ] Add CTA to generate quiz from current submission.
+- [x] Load result by `submissionId`.
+- [x] Add loading, error, and empty states.
+- [x] Render criteria scores from `WritingFeedback`.
+- [x] Render grammar errors from API-shaped data.
+- [ ] Render vocabulary suggestions from API-shaped data; backend grading DTO does not expose vocabulary suggestions yet.
+- [x] Remove hard-coded grammar/vocabulary feedback from `app/result/page.tsx`.
+- [x] Read persisted feedback from backend/database through API client in real mode.
+- [x] Keep AI score disclaimer visible.
+- [x] Add CTA to generate quiz from current submission.
 
 ### Phase 5 - Dashboard And History
 
-- [ ] Replace dashboard hard-coded stats with `api.getDashboardSummary()`.
-- [ ] Add empty dashboard state for new user.
+- [x] Replace dashboard hard-coded stats with frontend aggregation over real `api.listSubmissions()` and `api.getMyAccount()` until a dedicated dashboard endpoint exists.
+- [x] Add empty dashboard state for new user.
 - [ ] Use backend/database summary data for score trend and grammar error profile when available.
-- [ ] Keep frontend aggregation only as fallback over API client fixture data.
-- [ ] Replace history hard-coded list with `api.listSubmissions()`.
+- [x] Keep frontend aggregation only as fallback/derived behavior over API client data.
+- [x] Replace history hard-coded list with `api.listSubmissions()`.
 - [ ] Add search, filter, and sort.
-- [ ] Link each row to `/result?submissionId=...`.
+- [x] Link each row to `/result?submissionId=...`.
 
 ### Phase 6 - Vocabulary
 
@@ -560,24 +565,25 @@ Backend must only return `grammar_category` values from this list, or `Khác`.
 
 ### Phase 8 - Profile And Plan
 
-- [ ] Load user profile through `api.getMe()`.
-- [ ] Edit display name, current level, target type, and target band.
-- [ ] Save profile through `api.updateMe()`.
-- [ ] Show current plan and monthly usage.
-- [ ] Remove mocked achievements when backend exposes achievements/progress; otherwise hide or label as demo-only.
+- [x] Load user profile/account through `api.getMyAccount()` and fallback `api.getMe()`.
+- [x] Edit display name, current level, target type, and target band.
+- [x] Save profile through `api.updateMe()`.
+- [x] Show current plan/subscription status where backend exposes it.
+- [x] Remove mocked achievements; show API coverage/status instead until achievements/progress exists.
 
 ### Phase 9 - Upgrade Payment Stub
 
-- [ ] Keep billing toggle and payment method UI.
-- [ ] Add card form validation.
-- [ ] Submit checkout through real payment API when available; mock checkout only in local/demo mode.
-- [ ] Show pending, success, and failure states.
-- [ ] Prepare boundary for VNPay, VietQR, and MoMo.
+- [x] Keep billing toggle and backend-supported payment method UI.
+- [x] Remove fake card form; backend currently supports provider checkout, not direct card capture.
+- [x] Load subscription plans through `api.listSubscriptionPlans()` and pass `planId` into checkout when available.
+- [x] Submit checkout through real payment API when available; mock checkout only in local/demo mode.
+- [x] Show pending, success, and failure states.
+- [x] Prepare boundary for VNPay, VietQR, and MoMo.
 
 ### Phase 10 - Mock Data Removal And Real Backend Cutover
 
 - [ ] Set default `.env.example` mode to real once backend gateway is ready for frontend integration.
-- [ ] Verify every page uses `lib/api/client.ts` instead of local sample arrays.
+- [ ] Verify every page uses `lib/api/client.ts` instead of local sample arrays; completed for write, result, dashboard, history, profile, and upgrade.
 - [ ] Delete obsolete fixtures from `lib/mock-data/` after equivalent backend/database data exists.
 - [ ] Remove fake score generation, fake history generation, fake dashboard aggregation, and fake quiz/vocabulary records from production code paths.
 - [ ] Confirm real API smoke tests: auth, current user, writing submit, grading/feedback, dashboard, history, vocabulary, quiz attempt, and payment status where available.
@@ -585,8 +591,8 @@ Backend must only return `grammar_category` values from this list, or `Khác`.
 
 ## Testing Checklist
 
-- [ ] `npm run build`
-- [ ] `npm run lint`
+- [x] `npm run build`
+- [x] `npm run lint`
 - [ ] Login validation works
 - [ ] Register validation works
 - [ ] Real login redirects to dashboard when backend auth is available
@@ -658,16 +664,31 @@ Backend must only return `grammar_category` values from this list, or `Khác`.
 - [x] Confirmed Phase 1 slice passes `npm run lint` and `npm run build`.
 - [ ] Review npm audit output separately: current install reports 8 vulnerabilities from dependency tree.
 
+### 2026-09-08
+
+- [x] Pulled latest `origin/develop` into `PhmHai0702/fe/api-boundary-real-first`.
+- [x] Re-read newly merged backend controllers and DTOs for Auth, User, Writing, Grading, Payment, and Subscription.
+- [x] Updated frontend API routes to match backend paths under `/api/writing`, `/api/grading`, `/api/users`, `/api/payment`, and `/api/subscriptions`.
+- [x] Added real-client DTO mappers so frontend types stay stable while consuming backend response shapes.
+- [x] Connected `app/write/page.tsx` to backend writing types/prompts and authenticated draft/create/update/submit flow.
+- [x] Replaced result `localStorage` handoff and fake scoring with `submissionId` query loading through the backend grading endpoint.
+- [x] Replaced history hard-coded submissions with `api.listSubmissions()` and result links using `submissionId`.
+- [x] Replaced dashboard hard-coded stats with derived data from real user/account and writing submissions APIs.
+- [x] Connected profile to `GET /api/users/me/account` and `PUT /api/users/me`.
+- [x] Connected upgrade to subscription plans and payment checkout with optional backend `planId`.
+- [x] Removed mock testimonials/reviews and fake card-entry UI from upgrade page because backend has no review/card-capture API.
+- [x] Confirmed frontend `npm run lint` and `npm run build` pass after backend API integration.
+
 ## Current Status For Next Session
 
-Next recommended task: continue Phase 1 on `PhmHai0702/fe/api-boundary-real-first`.
+Next recommended task: run real-mode smoke testing against locally running backend services on `PhmHai0702/fe/api-boundary-real-first`.
 
 Concrete first commands/files to work on:
 
-1. Move writing types/topics/prompts and coach data out of `app/write/page.tsx`.
+1. Restore or create local Gateway `ReverseProxy` config because tracked `NomiWrite.Gateway/appsettings.json` was removed by backend changes.
 2. Move duplicated guide data out of `app/guide/page.tsx` and `app/components/GuideModal.tsx`.
-3. Move result/dashboard/history/vocabulary/quiz/profile sample records out of page files.
+3. Add backend prompt seed data if `/api/writing/prompts` is empty after migrations.
 4. Add a cleanup check for page-level hard-coded API records.
-5. Keep wiring pages to `apiClient` feature by feature, using real backend routes first when available.
+5. Keep vocabulary and quiz mocked until backend modules expose real endpoints.
 6. Run frontend `npm run lint` and `npm run build`.
 7. Update this Progress Log after finishing each backend integration slice.

@@ -11,6 +11,8 @@ import type {
   RegisterRequest,
   SubmitQuizAttemptRequest,
   Submission,
+  SubscriptionPlan,
+  SubscriptionStatus,
   SubmitSubmissionRequest,
   UpdateVocabularyMasteredRequest,
   User,
@@ -39,6 +41,62 @@ interface BackendPaymentResponse {
   paymentUrl?: string;
   createdAt?: string;
   updatedAt?: string;
+}
+
+interface BackendUserProfile {
+  userId: string;
+  displayName: string;
+  avatarUrl?: string | null;
+  bio?: string | null;
+  targetExam?: string | null;
+  targetBand?: number | null;
+  englishLevel?: string | null;
+  hasActiveSubscription?: boolean;
+  subscriptionPlanName?: string | null;
+  subscriptionEndDate?: string | null;
+}
+
+interface BackendWritingType {
+  id: string;
+  name: string;
+  category: string;
+  description: string;
+}
+
+interface BackendWritingPrompt {
+  id: string;
+  writingTypeId: string;
+  writingTypeName: string;
+  title: string;
+  instructions?: string;
+  difficulty: string;
+}
+
+interface BackendSubmission {
+  id: string;
+  writingPromptId: string;
+  promptTitle: string;
+  content: string;
+  wordCount: number;
+  status: "Draft" | "Submitted" | string;
+  startedAt: string;
+  submittedAt?: string | null;
+}
+
+interface BackendGradingResult {
+  id: string;
+  submissionId: string;
+  overallBand: number;
+  criterionScores: { criterionName: string; score: number; comment: string }[];
+  overallFeedback: string;
+  grammarErrors: { originalText: string; suggestion: string; explanation: string }[];
+  status: "Pending" | "Completed" | "Failed" | string;
+}
+
+interface BackendApiEnvelope<T> {
+  success: boolean;
+  data: T;
+  message?: string;
 }
 
 function getAuthHeaders(): HeadersInit {
@@ -88,6 +146,120 @@ function toCheckoutResponse(response: BackendPaymentResponse): CheckoutResponse 
     checkoutUrl: response.paymentUrl,
     createdAt: response.createdAt,
     updatedAt: response.updatedAt,
+  };
+}
+
+function badgeForCategory(category: string) {
+  if (category === "Professional") return "Work";
+  if (category === "Academic") return "Academic";
+  return "Exam";
+}
+
+function minWordsForWritingType(name: string) {
+  if (/task 1|letter/i.test(name)) return 150;
+  if (/email|minutes/i.test(name)) return 100;
+  if (/cover|statement|sop/i.test(name)) return 250;
+  return 250;
+}
+
+function toUser(profile: BackendUserProfile): User {
+  return {
+    id: profile.userId,
+    displayName: profile.displayName,
+    avatarUrl: profile.avatarUrl ?? undefined,
+    bio: profile.bio ?? undefined,
+    currentLevel: profile.englishLevel ?? undefined,
+    targetType: profile.targetExam ?? undefined,
+    targetBand: profile.targetBand ?? undefined,
+    plan: profile.hasActiveSubscription ? "premium" : "free",
+    subscriptionEndDate: profile.subscriptionEndDate ?? undefined,
+  };
+}
+
+function toBackendProfile(request: Partial<Pick<User, "displayName" | "currentLevel" | "targetType" | "targetBand">>) {
+  return {
+    displayName: request.displayName,
+    englishLevel: request.currentLevel,
+    targetExam: request.targetType,
+    targetBand: request.targetBand,
+  };
+}
+
+function toWritingType(item: BackendWritingType): WritingType {
+  return {
+    id: item.id,
+    label: item.name,
+    badge: badgeForCategory(item.category),
+    description: item.description,
+    minWords: minWordsForWritingType(item.name),
+  };
+}
+
+function toWritingPrompt(item: BackendWritingPrompt): WritingPrompt {
+  return {
+    id: item.id,
+    writingTypeId: item.writingTypeId,
+    writingType: item.writingTypeName,
+    topic: item.title,
+    prompt: item.instructions ?? item.title,
+    difficulty: item.difficulty,
+  };
+}
+
+function toSubmission(item: BackendSubmission, userId = ""): Submission {
+  const isSubmitted = item.status === "Submitted";
+  return {
+    id: item.id,
+    userId,
+    writingType: "",
+    topic: item.promptTitle,
+    prompt: item.promptTitle,
+    content: item.content,
+    wordCount: item.wordCount,
+    submittedAt: item.submittedAt ?? item.startedAt,
+    status: isSubmitted ? "submitted" : "draft",
+  };
+}
+
+function toWritingFeedback(result: BackendGradingResult, submission?: Submission): WritingFeedback {
+  const fallbackSubmission: Submission = submission ?? {
+    id: result.submissionId,
+    userId: "",
+    writingType: "",
+    topic: "Submitted writing",
+    prompt: "Submitted writing",
+    content: "",
+    wordCount: 0,
+    overallScore: result.overallBand,
+    overallFeedback: result.overallFeedback,
+    submittedAt: new Date().toISOString(),
+    status: result.status === "Completed" ? "graded" : "grading",
+  };
+
+  return {
+    submission: {
+      ...fallbackSubmission,
+      overallScore: result.overallBand,
+      overallFeedback: result.overallFeedback,
+      status: result.status === "Completed" ? "graded" : fallbackSubmission.status,
+    },
+    criteriaScores: Object.fromEntries(
+      result.criterionScores.map(score => [
+        score.criterionName.replace(/\s+/g, ""),
+        score.score,
+      ]),
+    ) as WritingFeedback["criteriaScores"],
+    grammarErrors: result.grammarErrors.map((error, index) => ({
+      id: `${result.id}-${index}`,
+      submissionId: result.submissionId,
+      userId: fallbackSubmission.userId,
+      grammarCategory: "AI feedback",
+      sentence: error.originalText,
+      errorPart: error.originalText,
+      suggestion: error.suggestion,
+      explanation: error.explanation,
+    })),
+    vocabSuggestions: [],
   };
 }
 
@@ -142,49 +314,77 @@ export const realClient: ApiClient = {
   },
 
   getMe() {
-    return request<User>(apiRoutes.users.me, { method: "GET" }, true);
+    return request<BackendUserProfile>(apiRoutes.users.me, { method: "GET" }, true).then(toUser);
   },
 
   updateMe(requestBody) {
-    return request<User>(apiRoutes.users.me, {
-      method: "PATCH",
-      body: JSON.stringify(requestBody),
-    }, true);
+    return request<BackendUserProfile>(apiRoutes.users.me, {
+      method: "PUT",
+      body: JSON.stringify(toBackendProfile(requestBody)),
+    }, true).then(toUser);
+  },
+
+  getMyAccount() {
+    return request<BackendUserProfile>(apiRoutes.users.account, { method: "GET" }, true).then(toUser);
   },
 
   listWritingTypes() {
-    return request<WritingType[]>(apiRoutes.writing.types, { method: "GET" });
+    return request<BackendWritingType[]>(apiRoutes.writing.types, { method: "GET" }).then(items => items.map(toWritingType));
   },
 
-  listWritingPrompts(writingType?: string, topic?: string) {
+  listWritingPrompts(writingType?: string, difficulty?: string) {
     const params = new URLSearchParams();
-    if (writingType) params.set("type", writingType);
-    if (topic) params.set("topic", topic);
+    if (writingType) params.set("typeId", writingType);
+    if (difficulty) params.set("difficulty", difficulty);
     const query = params.toString();
-    return request<WritingPrompt[]>(`${apiRoutes.writing.prompts}${query ? `?${query}` : ""}`, { method: "GET" });
+    return request<BackendWritingPrompt[]>(`${apiRoutes.writing.prompts}${query ? `?${query}` : ""}`, { method: "GET" })
+      .then(items => items.map(toWritingPrompt));
   },
 
-  submitSubmission(requestBody: SubmitSubmissionRequest) {
-    return request<Submission>(apiRoutes.submissions.list, {
+  async submitSubmission(requestBody: SubmitSubmissionRequest) {
+    const created = await request<BackendSubmission>(apiRoutes.submissions.list, {
       method: "POST",
-      body: JSON.stringify(requestBody),
-    });
+      body: JSON.stringify({
+        writingPromptId: requestBody.writingPromptId,
+        isTimed: requestBody.isTimed ?? false,
+      }),
+    }, true);
+
+    const updated = await request<BackendSubmission>(apiRoutes.submissions.detail(created.id), {
+      method: "PUT",
+      body: JSON.stringify({ content: requestBody.content }),
+    }, true);
+
+    const submitted = await request<BackendSubmission>(apiRoutes.submissions.submit(created.id), {
+      method: "POST",
+    }, true);
+
+    return toSubmission({ ...updated, ...submitted });
   },
 
   listSubmissions() {
-    return request<Submission[]>(apiRoutes.submissions.list, { method: "GET" });
+    return request<BackendSubmission[]>(apiRoutes.submissions.list, { method: "GET" }, true)
+      .then(items => items.map(item => toSubmission(item)));
   },
 
   getSubmission(id: string) {
-    return request<Submission>(apiRoutes.submissions.detail(id), { method: "GET" });
+    return request<BackendSubmission>(apiRoutes.submissions.detail(id), { method: "GET" }, true).then(toSubmission);
   },
 
-  gradeSubmission(id: string) {
-    return request<WritingFeedback>(apiRoutes.submissions.grade(id), { method: "POST" });
+  async gradeSubmission(id: string) {
+    const [submission, envelope] = await Promise.all([
+      realClient.getSubmission(id).catch(() => undefined),
+      request<BackendApiEnvelope<BackendGradingResult>>(apiRoutes.feedback.detail(id), { method: "GET" }, true),
+    ]);
+    return toWritingFeedback(envelope.data, submission);
   },
 
-  getFeedback(submissionId: string) {
-    return request<WritingFeedback>(apiRoutes.feedback.detail(submissionId), { method: "GET" });
+  async getFeedback(submissionId: string) {
+    const [submission, envelope] = await Promise.all([
+      realClient.getSubmission(submissionId).catch(() => undefined),
+      request<BackendApiEnvelope<BackendGradingResult>>(apiRoutes.feedback.detail(submissionId), { method: "GET" }, true),
+    ]);
+    return toWritingFeedback(envelope.data, submission);
   },
 
   getDashboardSummary() {
@@ -229,6 +429,7 @@ export const realClient: ApiClient = {
         amount,
         currency: requestBody.currency ?? "VND",
         provider: toPaymentProvider(requestBody.paymentMethod),
+        planId: requestBody.planId,
       }),
     }, true).then(toCheckoutResponse);
   },
@@ -236,5 +437,13 @@ export const realClient: ApiClient = {
   getPaymentStatus(id: string) {
     return request<BackendPaymentResponse>(apiRoutes.payments.status(id), { method: "GET" }, true)
       .then(toCheckoutResponse);
+  },
+
+  listSubscriptionPlans() {
+    return request<SubscriptionPlan[]>(apiRoutes.subscriptions.plans, { method: "GET" });
+  },
+
+  getCurrentSubscription() {
+    return request<SubscriptionStatus>(apiRoutes.subscriptions.me, { method: "GET" }, true);
   },
 };

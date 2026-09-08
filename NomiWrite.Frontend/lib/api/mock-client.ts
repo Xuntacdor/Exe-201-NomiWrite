@@ -60,6 +60,11 @@ export const mockClient: ApiClient = {
     return { ...mockUser, ...request };
   },
 
+  async getMyAccount() {
+    await delay();
+    return mockUser;
+  },
+
   async listWritingTypes() {
     await delay();
     return mockWritingTypes;
@@ -83,7 +88,10 @@ export const mockClient: ApiClient = {
       wordCount: request.content.trim() ? request.content.trim().split(/\s+/).length : 0,
       submittedAt,
       status: "submitted",
-      ...request,
+      writingType: "Mock writing",
+      topic: "Mock prompt",
+      prompt: "Mock prompt",
+      content: request.content,
     };
   },
 
@@ -162,5 +170,34 @@ export const mockClient: ApiClient = {
       id,
       status: "pending",
     };
+  },
+
+  async listSubscriptionPlans() {
+    await delay();
+    return [
+      {
+        id: "mock-monthly-plan",
+        name: "Premium Monthly",
+        description: "Mock monthly premium plan.",
+        price: 199000,
+        currency: "VND",
+        billingCycle: "Monthly",
+        durationDays: 30,
+      },
+      {
+        id: "mock-yearly-plan",
+        name: "Premium Yearly",
+        description: "Mock yearly premium plan.",
+        price: 1908000,
+        currency: "VND",
+        billingCycle: "Yearly",
+        durationDays: 365,
+      },
+    ];
+  },
+
+  async getCurrentSubscription() {
+    await delay();
+    return { hasSubscription: false, status: null };
   },
 };
