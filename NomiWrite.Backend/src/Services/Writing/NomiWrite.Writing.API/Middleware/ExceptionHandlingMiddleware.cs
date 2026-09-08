@@ -48,6 +48,7 @@ public class ExceptionHandlingMiddleware
                 break;
 
             case ForbiddenSubmissionAccessException:
+            case SubscriptionRequiredException:
                 statusCode = StatusCodes.Status403Forbidden;
                 message = exception.Message;
                 errors = Array.Empty<string>();

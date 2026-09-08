@@ -10,6 +10,8 @@ public class WritingSubmission : BaseEntity
     public string Content { get; set; } = string.Empty;
     public int WordCount { get; set; }
     public bool IsTimed { get; set; }
+    public DateTime? DeadlineAt { get; set; }
+    public bool SubmittedLate { get; set; }
     public SubmissionStatus Status { get; set; } = SubmissionStatus.Draft;
     public DateTime StartedAt { get; set; } = DateTime.UtcNow;
     public DateTime? SubmittedAt { get; set; }

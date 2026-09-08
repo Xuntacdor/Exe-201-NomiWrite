@@ -43,6 +43,14 @@ public class WritingSubmissionConfiguration : IEntityTypeConfiguration<WritingSu
             .IsRequired()
             .HasDefaultValue(false);
 
+        builder.Property(s => s.DeadlineAt)
+            .HasColumnName("deadline_at");
+
+        builder.Property(s => s.SubmittedLate)
+            .HasColumnName("submitted_late")
+            .IsRequired()
+            .HasDefaultValue(false);
+
         builder.Property(s => s.Status)
             .HasColumnName("status")
             .IsRequired()

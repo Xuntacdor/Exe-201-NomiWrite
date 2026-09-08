@@ -2,6 +2,7 @@ using FluentValidation;
 using FluentValidation.Results;
 using MassTransit;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using NomiWrite.Shared.Contracts.Events.Writing;
 using NomiWrite.Writing.Application.DTOs;
 using NomiWrite.Writing.Application.Exceptions;
@@ -16,18 +17,24 @@ public class WritingService : IWritingService
     private readonly IWritingDbContext _dbContext;
     private readonly IValidator<CreateSubmissionRequestDto> _createSubmissionValidator;
     private readonly IValidator<UpdateSubmissionRequestDto> _updateSubmissionValidator;
+    private readonly ISubscriptionStatusClient _subscriptionStatusClient;
     private readonly IPublishEndpoint _publishEndpoint;
+    private readonly ILogger<WritingService> _logger;
 
     public WritingService(
         IWritingDbContext dbContext,
         IValidator<CreateSubmissionRequestDto> createSubmissionValidator,
         IValidator<UpdateSubmissionRequestDto> updateSubmissionValidator,
-        IPublishEndpoint publishEndpoint)
+        ISubscriptionStatusClient subscriptionStatusClient,
+        IPublishEndpoint publishEndpoint,
+        ILogger<WritingService> logger)
     {
         _dbContext = dbContext;
         _createSubmissionValidator = createSubmissionValidator;
         _updateSubmissionValidator = updateSubmissionValidator;
+        _subscriptionStatusClient = subscriptionStatusClient;
         _publishEndpoint = publishEndpoint;
+        _logger = logger;
     }
 
     public async Task<IReadOnlyList<WritingTypeDto>> GetWritingTypesAsync()
@@ -71,6 +78,7 @@ public class WritingService : IWritingService
                     WritingTypeId = p.WritingTypeId,
                     WritingTypeName = p.WritingType!.Name,
                     Title = p.Title,
+                    ImageUrl = p.ImageUrl,
                     Difficulty = p.Difficulty
                 })
                 .FirstOrDefaultAsync();
@@ -88,6 +96,7 @@ public class WritingService : IWritingService
                 WritingTypeId = p.WritingTypeId,
                 WritingTypeName = p.WritingType!.Name,
                 Title = p.Title,
+                ImageUrl = p.ImageUrl,
                 Difficulty = p.Difficulty
             })
             .ToListAsync();
@@ -105,6 +114,7 @@ public class WritingService : IWritingService
                 WritingTypeName = p.WritingType!.Name,
                 Title = p.Title,
                 Instructions = p.Instructions,
+                ImageUrl = p.ImageUrl,
                 Difficulty = p.Difficulty
             })
             .FirstOrDefaultAsync();
@@ -131,6 +141,22 @@ public class WritingService : IWritingService
             throw new PromptNotFoundException(dto.WritingPromptId);
 
         var now = DateTime.UtcNow;
+
+        var deadlineAt = default(DateTime?);
+        if (dto.IsTimed)
+        {
+            if (prompt.TimeLimitMinutes is null || prompt.TimeLimitMinutes.Value <= 0)
+            {
+                throw new ValidationException(
+                    new[]
+                    {
+                        new ValidationFailure("IsTimed", "This prompt does not support timed mode.")
+                    });
+            }
+
+            deadlineAt = now.AddMinutes(prompt.TimeLimitMinutes.Value);
+        }
+
         var submission = new WritingSubmission
         {
             UserId = userId,
@@ -138,6 +164,8 @@ public class WritingService : IWritingService
             Content = string.Empty,
             WordCount = 0,
             IsTimed = dto.IsTimed,
+            DeadlineAt = deadlineAt,
+            SubmittedLate = false,
             Status = SubmissionStatus.Draft,
             StartedAt = now,
             CreatedAt = now,
@@ -186,6 +214,12 @@ public class WritingService : IWritingService
         }
 
         var now = DateTime.UtcNow;
+
+        // Late submissions still go through (grading proceeds); flag the lateness so
+        // grading feedback / the UI can reflect the penalty instead of hard-blocking.
+        if (submission.IsTimed && submission.DeadlineAt.HasValue && submission.DeadlineAt.Value < now)
+            submission.SubmittedLate = true;
+
         submission.Status = SubmissionStatus.Submitted;
         submission.SubmittedAt = now;
 
@@ -227,6 +261,59 @@ public class WritingService : IWritingService
             .ToListAsync();
     }
 
+    public async Task<SubmissionTimeRemainingDto> GetSubmissionTimeRemainingAsync(Guid userId, Guid submissionId)
+    {
+        var submission = await GetOwnedSubmissionAsync(userId, submissionId);
+
+        var secondsRemaining = 0;
+        if (submission.IsTimed && submission.DeadlineAt.HasValue)
+        {
+            secondsRemaining = (int)Math.Ceiling((submission.DeadlineAt.Value - DateTime.UtcNow).TotalSeconds);
+        }
+
+        return new SubmissionTimeRemainingDto
+        {
+            DeadlineAt = submission.DeadlineAt,
+            SecondsRemaining = secondsRemaining,
+            IsTimed = submission.IsTimed
+        };
+    }
+
+    public async Task<SampleAnswerDto> GetSampleAnswerAsync(Guid userId, Guid promptId, string? accessToken)
+    {
+        var prompt = await _dbContext.WritingPrompts
+            .AsNoTracking()
+            .FirstOrDefaultAsync(p => p.Id == promptId && p.IsActive);
+
+        if (prompt is null)
+            throw new PromptNotFoundException(promptId);
+
+        var subscription = await GetSubscriptionStatusOrDefaultAsync(userId, accessToken);
+
+        // Sample answers are VIP-gated: Free users get a 403 and never receive the answer text.
+        if (!subscription.HasActiveSubscription)
+            throw new SubscriptionRequiredException();
+
+        return new SampleAnswerDto { SampleAnswer = prompt.SampleAnswer };
+    }
+
+    private async Task<SubscriptionStatusResult> GetSubscriptionStatusOrDefaultAsync(Guid userId, string? accessToken)
+    {
+        try
+        {
+            return await _subscriptionStatusClient.GetCurrentSubscriptionAsync(userId, accessToken);
+        }
+        catch (Exception exception)
+        {
+            _logger.LogWarning(
+                exception,
+                "Failed to retrieve subscription status for user {UserId}; defaulting to no active subscription.",
+                userId);
+
+            return new SubscriptionStatusResult(false, null, null);
+        }
+    }
+
     private async Task<WritingSubmission> GetOwnedSubmissionAsync(Guid userId, Guid submissionId)
     {
         var submission = await _dbContext.WritingSubmissions
@@ -262,6 +349,7 @@ public class WritingService : IWritingService
             Content = submission.Content,
             WordCount = submission.WordCount,
             Status = submission.Status,
+            SubmittedLate = submission.SubmittedLate,
             StartedAt = submission.StartedAt,
             SubmittedAt = submission.SubmittedAt
         };

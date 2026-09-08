@@ -23,4 +23,8 @@ public interface IWritingService
     Task<SubmissionResponseDto> GetSubmissionByIdAsync(Guid userId, Guid submissionId);
 
     Task<IReadOnlyList<SubmissionListItemDto>> GetUserSubmissionsAsync(Guid userId);
+
+    Task<SubmissionTimeRemainingDto> GetSubmissionTimeRemainingAsync(Guid userId, Guid submissionId);
+
+    Task<SampleAnswerDto> GetSampleAnswerAsync(Guid userId, Guid promptId, string? accessToken);
 }
