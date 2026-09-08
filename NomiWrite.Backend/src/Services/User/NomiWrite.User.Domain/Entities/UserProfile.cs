@@ -11,5 +11,6 @@ public class UserProfile : BaseEntity
     public string? Bio { get; set; }
     public string? TargetExam { get; set; }
     public decimal? TargetBand { get; set; }
+    public DateTime? TargetExamDate { get; set; }
     public EnglishLevel? EnglishLevel { get; set; }
 }
