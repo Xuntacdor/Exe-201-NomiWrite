@@ -30,6 +30,8 @@ export interface AuthResponse {
   expiresAt: string;
   userId: string;
   email: string;
+  fullName: string;
+  role: string;
 }
 
 export interface WritingType {
@@ -164,19 +166,27 @@ export interface CheckoutRequest {
   plan: UserPlan;
   billingCycle: "monthly" | "yearly";
   paymentMethod: "vnpay" | "vietqr" | "momo" | "card";
+  amount?: number;
+  currency?: string;
 }
 
 export interface CheckoutResponse {
   id: string;
-  status: "pending" | "success" | "failed";
+  orderReference?: string;
+  amount?: number;
+  currency?: string;
+  provider?: "VNPay" | "Momo" | "VietQR";
+  status: "pending" | "success" | "failed" | "refunded";
   checkoutUrl?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface ApiClient {
   login(request: LoginRequest): Promise<AuthResponse>;
   register(request: RegisterRequest): Promise<AuthResponse>;
   refresh(refreshToken: string): Promise<AuthResponse>;
-  logout(userId: string): Promise<void>;
+  logout(): Promise<void>;
   getMe(): Promise<User>;
   updateMe(request: Partial<Pick<User, "displayName" | "currentLevel" | "targetType" | "targetBand">>): Promise<User>;
   listWritingTypes(): Promise<WritingType[]>;

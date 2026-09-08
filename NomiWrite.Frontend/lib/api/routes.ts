@@ -5,7 +5,7 @@ export const apiRoutes = {
     login: `${auth}/login`,
     register: `${auth}/register`,
     refresh: `${auth}/refresh`,
-    logout: (userId: string) => `${auth}/logout/${userId}`,
+    logout: `${auth}/logout`,
   },
   users: {
     me: "/api/users/me",
@@ -37,7 +37,7 @@ export const apiRoutes = {
     create: "/api/quiz-attempts",
   },
   payments: {
-    checkout: "/api/payments/checkout",
-    status: (id: string) => `/api/payments/${id}/status`,
+    checkout: "/api/payment",
+    status: (id: string) => `/api/payment/${id}`,
   },
 } as const;

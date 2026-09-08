@@ -19,22 +19,91 @@ import type {
   WritingPrompt,
   WritingType,
 } from "../types";
+import { getSession } from "../auth/session";
 import { apiRoutes } from "./routes";
 
-const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:5000";
+const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:5097";
 
-async function request<T>(path: string, init: RequestInit): Promise<T> {
+interface ApiErrorBody {
+  message?: string;
+  errors?: string[];
+}
+
+interface BackendPaymentResponse {
+  paymentId: string;
+  orderReference: string;
+  amount: number;
+  currency: string;
+  provider: "VNPay" | "Momo" | "VietQR";
+  status: "Pending" | "Completed" | "Failed" | "Refunded";
+  paymentUrl?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+function getAuthHeaders(): HeadersInit {
+  if (typeof window === "undefined") return {};
+
+  const session = getSession();
+  return session?.accessToken
+    ? { Authorization: `Bearer ${session.accessToken}` }
+    : {};
+}
+
+function buildErrorMessage(body: string, fallback: string) {
+  if (!body) return fallback;
+
+  try {
+    const parsed = JSON.parse(body) as ApiErrorBody;
+    if (parsed.errors?.length) return parsed.errors.join(" ");
+    if (parsed.message) return parsed.message;
+  } catch {
+    return body;
+  }
+
+  return fallback;
+}
+
+function toPaymentProvider(method: CheckoutRequest["paymentMethod"]): BackendPaymentResponse["provider"] {
+  if (method === "momo") return "Momo";
+  if (method === "vietqr") return "VietQR";
+  return "VNPay";
+}
+
+function toCheckoutStatus(status: BackendPaymentResponse["status"]): CheckoutResponse["status"] {
+  if (status === "Completed") return "success";
+  if (status === "Failed") return "failed";
+  if (status === "Refunded") return "refunded";
+  return "pending";
+}
+
+function toCheckoutResponse(response: BackendPaymentResponse): CheckoutResponse {
+  return {
+    id: response.paymentId,
+    orderReference: response.orderReference,
+    amount: response.amount,
+    currency: response.currency,
+    provider: response.provider,
+    status: toCheckoutStatus(response.status),
+    checkoutUrl: response.paymentUrl,
+    createdAt: response.createdAt,
+    updatedAt: response.updatedAt,
+  };
+}
+
+async function request<T>(path: string, init: RequestInit, authenticated = false): Promise<T> {
   const response = await fetch(`${apiBaseUrl}${path}`, {
     ...init,
     headers: {
       "Content-Type": "application/json",
+      ...(authenticated ? getAuthHeaders() : {}),
       ...init.headers,
     },
   });
 
   if (!response.ok) {
     const message = await response.text();
-    throw new Error(message || `Request failed with status ${response.status}`);
+    throw new Error(buildErrorMessage(message, `Request failed with status ${response.status}`));
   }
 
   if (response.status === 204) {
@@ -66,21 +135,21 @@ export const realClient: ApiClient = {
     });
   },
 
-  logout(userId: string) {
-    return request<void>(apiRoutes.auth.logout(userId), {
+  logout() {
+    return request<void>(apiRoutes.auth.logout, {
       method: "POST",
-    });
+    }, true);
   },
 
   getMe() {
-    return request<User>(apiRoutes.users.me, { method: "GET" });
+    return request<User>(apiRoutes.users.me, { method: "GET" }, true);
   },
 
   updateMe(requestBody) {
     return request<User>(apiRoutes.users.me, {
       method: "PATCH",
       body: JSON.stringify(requestBody),
-    });
+    }, true);
   },
 
   listWritingTypes() {
@@ -152,13 +221,20 @@ export const realClient: ApiClient = {
   },
 
   createCheckout(requestBody: CheckoutRequest) {
-    return request<CheckoutResponse>(apiRoutes.payments.checkout, {
+    const amount = requestBody.amount ?? (requestBody.billingCycle === "monthly" ? 199_000 : 159_000 * 12);
+
+    return request<BackendPaymentResponse>(apiRoutes.payments.checkout, {
       method: "POST",
-      body: JSON.stringify(requestBody),
-    });
+      body: JSON.stringify({
+        amount,
+        currency: requestBody.currency ?? "VND",
+        provider: toPaymentProvider(requestBody.paymentMethod),
+      }),
+    }, true).then(toCheckoutResponse);
   },
 
   getPaymentStatus(id: string) {
-    return request<CheckoutResponse>(apiRoutes.payments.status(id), { method: "GET" });
+    return request<BackendPaymentResponse>(apiRoutes.payments.status(id), { method: "GET" }, true)
+      .then(toCheckoutResponse);
   },
 };

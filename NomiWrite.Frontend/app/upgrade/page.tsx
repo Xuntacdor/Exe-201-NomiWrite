@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { FormEvent, type ElementType, useState } from "react";
 import Link from "next/link";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
@@ -18,6 +18,9 @@ import {
   BadgeCheck,
   Star,
 } from "lucide-react";
+import { apiClient } from "@/lib/api/client";
+import { getSession } from "@/lib/auth/session";
+import type { CheckoutRequest } from "@/lib/types";
 
 const proFeatures = [
   "Không giới hạn số bài viết mỗi tháng",
@@ -37,7 +40,7 @@ const testimonials = [
 
 type PaymentMethod = "card" | "bank" | "momo";
 
-const paymentMethods: { id: PaymentMethod; label: string; icon: React.ElementType; sub: string }[] = [
+const paymentMethods: { id: PaymentMethod; label: string; icon: ElementType; sub: string }[] = [
   { id: "card", label: "Thẻ tín dụng / ghi nợ", icon: CreditCard, sub: "Visa · Mastercard · JCB" },
   { id: "bank", label: "Chuyển khoản ngân hàng", icon: Building2,  sub: "Thanh toán qua QR Code" },
   { id: "momo", label: "Ví MoMo",                icon: Wallet,     sub: "Thanh toán nhanh qua app" },
@@ -53,6 +56,7 @@ export default function UpgradePage() {
   const [agreed, setAgreed]   = useState(false);
   const [loading, setLoading] = useState(false);
   const [done, setDone]       = useState(false);
+  const [error, setError]     = useState("");
 
   const monthlyPrice = 199_000;
   const yearlyPrice  = 159_000;
@@ -60,11 +64,43 @@ export default function UpgradePage() {
   const total        = billing === "monthly" ? monthlyPrice : yearlyPrice * 12;
   const saving       = monthlyPrice * 12 - total;
 
-  function handleSubmit(e: React.FormEvent) {
+  const paymentMethodByUi: Record<PaymentMethod, CheckoutRequest["paymentMethod"]> = {
+    card: "vnpay",
+    bank: "vietqr",
+    momo: "momo",
+  };
+
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!agreed) return;
-    setLoading(true);
-    setTimeout(() => { setLoading(false); setDone(true); }, 1800);
+    setError("");
+
+    if (!getSession()?.accessToken) {
+      window.location.href = "/login";
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const checkout = await apiClient.createCheckout({
+        plan: "premium",
+        billingCycle: billing,
+        paymentMethod: paymentMethodByUi[method],
+        amount: total,
+        currency: "VND",
+      });
+
+      if (checkout.checkoutUrl) {
+        window.location.assign(checkout.checkoutUrl);
+        return;
+      }
+
+      setDone(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Khong the tao thanh toan. Vui long thu lai.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   /* ── Success screen ── */
@@ -453,6 +489,12 @@ export default function UpgradePage() {
                   {" "}của NomiWrite. Tôi hiểu rằng gói sẽ tự gia hạn và có thể hủy bất cứ lúc nào.
                 </span>
               </label>
+
+              {error && (
+                <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+                  {error}
+                </p>
+              )}
 
               {/* Submit button */}
               <button

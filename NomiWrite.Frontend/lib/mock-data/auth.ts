@@ -18,5 +18,7 @@ export function createMockAuthResponse(email: string): AuthResponse {
     expiresAt: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
     userId: mockUser.id,
     email,
+    fullName: mockUser.displayName,
+    role: "Student",
   };
 }
