@@ -10,6 +10,8 @@ public class GradingDbContext : DbContext, IGradingDbContext
     public GradingDbContext(DbContextOptions<GradingDbContext> options) : base(options) { }
 
     public DbSet<GradingResult> GradingResults => Set<GradingResult>();
+    public DbSet<TutorReviewRequest> TutorReviewRequests => Set<TutorReviewRequest>();
+    public DbSet<GradingFeedbackFlag> GradingFeedbackFlags => Set<GradingFeedbackFlag>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

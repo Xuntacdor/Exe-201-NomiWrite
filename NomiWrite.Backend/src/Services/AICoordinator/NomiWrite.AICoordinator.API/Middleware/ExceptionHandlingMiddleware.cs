@@ -41,7 +41,15 @@ public class ExceptionHandlingMiddleware
                 break;
 
             case GradingResultNotFoundException:
+            case GradingResultByIdNotFoundException:
                 statusCode = StatusCodes.Status404NotFound;
+                message = exception.Message;
+                errors = Array.Empty<string>();
+                break;
+
+            case ForbiddenGradingResultAccessException:
+            case TutorReviewSubscriptionRequiredException:
+                statusCode = StatusCodes.Status403Forbidden;
                 message = exception.Message;
                 errors = Array.Empty<string>();
                 break;

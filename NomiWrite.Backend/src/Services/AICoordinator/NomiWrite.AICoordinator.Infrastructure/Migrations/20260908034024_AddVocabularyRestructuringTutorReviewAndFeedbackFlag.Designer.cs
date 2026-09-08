@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NomiWrite.AICoordinator.Infrastructure.Persistence;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace NomiWrite.AICoordinator.Infrastructure.Migrations
 {
     [DbContext(typeof(GradingDbContext))]
-    partial class GradingDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260908034024_AddVocabularyRestructuringTutorReviewAndFeedbackFlag")]
+    partial class AddVocabularyRestructuringTutorReviewAndFeedbackFlag
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
