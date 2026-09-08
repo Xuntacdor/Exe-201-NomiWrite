@@ -21,3 +21,9 @@ public class UserSubscriptionStatusDto
     public DateTime EndDate { get; set; }
     public int DaysRemaining { get; set; }
 }
+
+public class PromoCodeValidationResultDto
+{
+    public bool Valid { get; set; }
+    public int? DiscountPercent { get; set; }
+}

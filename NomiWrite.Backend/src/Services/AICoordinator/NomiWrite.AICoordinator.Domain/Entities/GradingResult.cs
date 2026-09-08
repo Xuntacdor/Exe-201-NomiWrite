@@ -11,6 +11,8 @@ public class GradingResult : BaseEntity
     public List<CriterionScore> CriterionScores { get; set; } = new();
     public string OverallFeedback { get; set; } = string.Empty;
     public string GrammarErrorsJson { get; set; } = "[]";
+    public string VocabularySuggestionsJson { get; set; } = "[]";
+    public string RestructuringSuggestionsJson { get; set; } = "[]";
     public GradingStatus Status { get; set; } = GradingStatus.Pending;
     public string? ErrorMessage { get; set; }
     public DateTime? CompletedAt { get; set; }

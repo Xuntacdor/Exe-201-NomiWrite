@@ -52,6 +52,26 @@ public class SubscriptionController : ControllerBase
         });
     }
 
+    [HttpPost("me/cancel")]
+    [Authorize]
+    public async Task<ActionResult<UserSubscriptionStatusDto>> CancelSubscription()
+    {
+        var userId = GetUserId();
+        if (userId is null)
+            return Unauthorized();
+
+        var status = await _subscriptionService.CancelSubscriptionAsync(userId.Value);
+        return Ok(status);
+    }
+
+    [HttpGet("promo-codes/{code}/validate")]
+    [AllowAnonymous]
+    public async Task<ActionResult<PromoCodeValidationResultDto>> ValidatePromoCode(string code)
+    {
+        var result = await _subscriptionService.ValidatePromoCodeAsync(code);
+        return Ok(result);
+    }
+
     private Guid? GetUserId()
     {
         var userIdValue = User.FindFirstValue(JwtRegisteredClaimNames.Sub);

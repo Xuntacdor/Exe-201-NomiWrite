@@ -102,9 +102,46 @@ public class WritingController : ControllerBase
         return Ok(result);
     }
 
+    [HttpGet("submissions/{id:guid}/time-remaining")]
+    [Authorize]
+    public async Task<ActionResult<SubmissionTimeRemainingDto>> GetSubmissionTimeRemaining(Guid id)
+    {
+        var userId = GetUserId();
+        if (userId is null)
+            return Unauthorized();
+
+        var result = await _writingService.GetSubmissionTimeRemainingAsync(userId.Value, id);
+        return Ok(result);
+    }
+
+    [HttpGet("prompts/{id:guid}/sample-answer")]
+    [Authorize]
+    public async Task<ActionResult<SampleAnswerDto>> GetSampleAnswer(Guid id)
+    {
+        var userId = GetUserId();
+        if (userId is null)
+            return Unauthorized();
+
+        var result = await _writingService.GetSampleAnswerAsync(userId.Value, id, GetBearerToken());
+        return Ok(result);
+    }
+
     private Guid? GetUserId()
     {
         var userIdValue = User.FindFirstValue(JwtRegisteredClaimNames.Sub);
         return Guid.TryParse(userIdValue, out var userId) ? userId : null;
+    }
+
+    private string? GetBearerToken()
+    {
+        var authorizationHeader = Request.Headers.Authorization.ToString();
+
+        if (string.IsNullOrWhiteSpace(authorizationHeader))
+            return null;
+
+        const string bearerPrefix = "Bearer ";
+        return authorizationHeader.StartsWith(bearerPrefix, StringComparison.OrdinalIgnoreCase)
+            ? authorizationHeader[bearerPrefix.Length..]
+            : authorizationHeader;
     }
 }

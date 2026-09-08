@@ -30,3 +30,30 @@ public class AuthResponseDto
     public string FullName { get; set; } = string.Empty;
     public UserRole Role { get; set; }
 }
+
+public class VerifyEmailRequestDto
+{
+    public string Token { get; set; } = string.Empty;
+}
+
+public class ResendVerificationEmailRequestDto
+{
+    public string Email { get; set; } = string.Empty;
+}
+
+public class ForgotPasswordRequestDto
+{
+    public string Email { get; set; } = string.Empty;
+}
+
+public class ResetPasswordRequestDto
+{
+    public string Token { get; set; } = string.Empty;
+    public string NewPassword { get; set; } = string.Empty;
+}
+
+public class AuthResultDto
+{
+    public bool Success { get; set; }
+    public string Message { get; set; } = string.Empty;
+}

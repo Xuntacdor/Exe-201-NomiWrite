@@ -39,6 +39,12 @@ public class ExceptionHandlingMiddleware
                 errors = Array.Empty<string>();
                 break;
 
+            case NoActiveSubscriptionException:
+                statusCode = StatusCodes.Status404NotFound;
+                message = exception.Message;
+                errors = Array.Empty<string>();
+                break;
+
             default:
                 statusCode = StatusCodes.Status500InternalServerError;
                 message = "An unexpected error occurred.";

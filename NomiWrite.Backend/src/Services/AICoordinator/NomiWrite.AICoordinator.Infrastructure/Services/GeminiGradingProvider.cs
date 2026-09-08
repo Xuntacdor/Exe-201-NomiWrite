@@ -26,7 +26,7 @@ public class GeminiGradingProvider : IAiGradingProvider
         Also provide:
         - An overall band score (calculate as the average of the four criteria, rounded to the nearest 0.5).
         - A short overall feedback paragraph (3-5 sentences) summarizing the essay's strengths and areas for improvement.
-        - Up to 10 inline grammar or spelling errors found in the text. For each error, provide the exact original text, a suggested correction, and a brief one-line explanation.
+        - Up to 20 inline grammar or spelling errors found in the text. Identify EVERY grammar, spelling, punctuation, or word-choice error in the text, no matter how minor. If the text has zero errors, return an empty array — but do not skip errors that are present. For each error, provide the exact original text, a suggested correction, and a brief one-line explanation.
 
         Be strict but fair in your grading. Use the standard IELTS band descriptors.
         """;
@@ -122,9 +122,51 @@ public class GeminiGradingProvider : IAiGradingProvider
                                 },
                                 required = new[] { "originalText", "suggestion", "explanation" }
                             }
+                        },
+                        vocabularySuggestions = new
+                        {
+                            type = "array",
+                            items = new
+                            {
+                                type = "object",
+                                properties = new
+                                {
+                                    originalWord = new { type = "string" },
+                                    suggestedAlternatives = new
+                                    {
+                                        type = "array",
+                                        items = new { type = "string" }
+                                    },
+                                    context = new { type = "string" }
+                                },
+                                required = new[] { "originalWord", "suggestedAlternatives", "context" }
+                            }
+                        },
+                        restructuringSuggestions = new
+                        {
+                            type = "array",
+                            items = new
+                            {
+                                type = "object",
+                                properties = new
+                                {
+                                    originalSentence = new { type = "string" },
+                                    suggestedRewrite = new { type = "string" },
+                                    reason = new { type = "string" }
+                                },
+                                required = new[] { "originalSentence", "suggestedRewrite", "reason" }
+                            }
                         }
                     },
-                    required = new[] { "overallBand", "criteria", "overallFeedback", "grammarErrors" }
+                    required = new[]
+                    {
+                        "overallBand",
+                        "criteria",
+                        "overallFeedback",
+                        "grammarErrors",
+                        "vocabularySuggestions",
+                        "restructuringSuggestions"
+                    }
                 }
             }
         };

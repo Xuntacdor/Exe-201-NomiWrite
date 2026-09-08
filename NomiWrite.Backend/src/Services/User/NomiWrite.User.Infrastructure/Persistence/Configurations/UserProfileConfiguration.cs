@@ -45,6 +45,9 @@ public class UserProfileConfiguration : IEntityTypeConfiguration<UserProfile>
             .HasColumnName("target_band")
             .HasColumnType("numeric(3,1)");
 
+        builder.Property(p => p.TargetExamDate)
+            .HasColumnName("target_exam_date");
+
         builder.Property(p => p.EnglishLevel)
             .HasColumnName("english_level")
             .HasConversion<string>()

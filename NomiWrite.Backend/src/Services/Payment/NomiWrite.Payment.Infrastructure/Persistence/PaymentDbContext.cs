@@ -11,6 +11,7 @@ public class PaymentDbContext : DbContext, IPaymentDbContext
 
     public DbSet<PaymentOrder> Payments => Set<PaymentOrder>();
     public DbSet<PaymentTransaction> PaymentTransactions => Set<PaymentTransaction>();
+    public DbSet<RefundRequest> RefundRequests => Set<RefundRequest>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

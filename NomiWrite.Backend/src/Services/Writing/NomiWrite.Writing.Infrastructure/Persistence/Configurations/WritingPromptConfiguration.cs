@@ -43,6 +43,17 @@ public class WritingPromptConfiguration : IEntityTypeConfiguration<WritingPrompt
             .IsRequired()
             .HasDefaultValue(true);
 
+        builder.Property(p => p.TimeLimitMinutes)
+            .HasColumnName("time_limit_minutes");
+
+        builder.Property(p => p.ImageUrl)
+            .HasColumnName("image_url")
+            .HasMaxLength(2048);
+
+        builder.Property(p => p.SampleAnswer)
+            .HasColumnName("sample_answer")
+            .HasMaxLength(20000);
+
         builder.Property(p => p.CreatedAt)
             .HasColumnName("created_at")
             .IsRequired();

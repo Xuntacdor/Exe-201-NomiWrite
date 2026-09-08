@@ -50,4 +50,52 @@ public class AuthController : ControllerBase
         await _authService.LogoutAsync(userId);
         return NoContent();
     }
+
+    [HttpPost("verify-email")]
+    [AllowAnonymous]
+    public async Task<ActionResult<AuthResultDto>> VerifyEmail([FromBody] VerifyEmailRequestDto request)
+    {
+        var result = await _authService.VerifyEmailAsync(request);
+        return Ok(result);
+    }
+
+    [HttpPost("resend-verification-email")]
+    [Authorize]
+    public async Task<ActionResult<AuthResultDto>> ResendVerificationEmail([FromBody] ResendVerificationEmailRequestDto request)
+    {
+        var userIdValue = User.FindFirstValue(JwtRegisteredClaimNames.Sub);
+        if (string.IsNullOrWhiteSpace(userIdValue) || !Guid.TryParse(userIdValue, out var userId))
+            return Unauthorized();
+
+        var result = await _authService.ResendVerificationEmailAsync(request, userId);
+        return Ok(result);
+    }
+
+    [HttpPost("forgot-password")]
+    [AllowAnonymous]
+    public async Task<ActionResult<AuthResultDto>> ForgotPassword([FromBody] ForgotPasswordRequestDto request)
+    {
+        var result = await _authService.ForgotPasswordAsync(request);
+        return Ok(result);
+    }
+
+    [HttpPost("reset-password")]
+    [AllowAnonymous]
+    public async Task<ActionResult<AuthResultDto>> ResetPassword([FromBody] ResetPasswordRequestDto request)
+    {
+        var result = await _authService.ResetPasswordAsync(request);
+        return Ok(result);
+    }
+
+    [HttpPost("deactivate")]
+    [Authorize]
+    public async Task<ActionResult<AuthResultDto>> Deactivate()
+    {
+        var userIdValue = User.FindFirstValue(JwtRegisteredClaimNames.Sub);
+        if (string.IsNullOrWhiteSpace(userIdValue) || !Guid.TryParse(userIdValue, out var userId))
+            return Unauthorized();
+
+        var result = await _authService.DeactivateAccountAsync(userId);
+        return Ok(result);
+    }
 }

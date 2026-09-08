@@ -17,17 +17,23 @@ public class PaymentService : IPaymentService
     private readonly IPaymentDbContext _dbContext;
     private readonly IPaymentGatewayService _gatewayService;
     private readonly IValidator<CreatePaymentRequestDto> _createPaymentValidator;
+    private readonly IValidator<CreateRefundRequestDto> _createRefundValidator;
+    private readonly IPromoCodeValidator _promoCodeValidator;
     private readonly IPublishEndpoint _publishEndpoint;
 
     public PaymentService(
         IPaymentDbContext dbContext,
         IPaymentGatewayService gatewayService,
         IValidator<CreatePaymentRequestDto> createPaymentValidator,
+        IValidator<CreateRefundRequestDto> createRefundValidator,
+        IPromoCodeValidator promoCodeValidator,
         IPublishEndpoint publishEndpoint)
     {
         _dbContext = dbContext;
         _gatewayService = gatewayService;
         _createPaymentValidator = createPaymentValidator;
+        _createRefundValidator = createRefundValidator;
+        _promoCodeValidator = promoCodeValidator;
         _publishEndpoint = publishEndpoint;
     }
 
@@ -40,15 +46,36 @@ public class PaymentService : IPaymentService
         }
 
         var now = DateTime.UtcNow;
+
+        var amount = request.Amount;
+        int? appliedDiscountPercent = null;
+
+        if (!string.IsNullOrWhiteSpace(request.PromoCode))
+        {
+            // Fail open: if the Subscription service is unreachable or rejects the
+            // code (including an invalid or expired code), we simply do not apply a
+            // discount rather than blocking the payment from being created. Promo
+            // codes here are informational discounts, not strictly enforced
+            // one-time-use codes.
+            var promoResult = await _promoCodeValidator.ValidateAsync(request.PromoCode);
+
+            if (promoResult.Valid && promoResult.DiscountPercent is > 0 and <= 100)
+            {
+                appliedDiscountPercent = promoResult.DiscountPercent.Value;
+                amount = decimal.Round(amount * (100m - appliedDiscountPercent.Value) / 100m, 2);
+            }
+        }
+
         var payment = new PaymentOrder
         {
             UserId = userId,
-            Amount = request.Amount,
+            Amount = amount,
             Currency = NormalizeCurrency(request.Currency),
             Provider = request.Provider,
             Status = PaymentStatus.Pending,
             OrderReference = GenerateOrderReference(),
             PlanId = request.PlanId,
+            AppliedDiscountPercent = appliedDiscountPercent,
             CreatedAt = now,
             UpdatedAt = now
         };
@@ -86,7 +113,8 @@ public class PaymentService : IPaymentService
             Provider = payment.Provider,
             Status = payment.Status,
             PaymentUrl = paymentUrl,
-            CreatedAt = payment.CreatedAt
+            CreatedAt = payment.CreatedAt,
+            AppliedDiscountPercent = payment.AppliedDiscountPercent
         };
     }
 
@@ -160,6 +188,90 @@ public class PaymentService : IPaymentService
             ?? throw new PaymentNotFoundException(paymentId);
 
         return ToStatusResponse(payment);
+    }
+
+    public async Task<IEnumerable<PaymentHistoryItemDto>> GetPaymentHistoryAsync(Guid userId)
+    {
+        return await _dbContext.Payments
+            .Where(p => p.UserId == userId)
+            .OrderByDescending(p => p.CreatedAt)
+            .Select(p => new PaymentHistoryItemDto
+            {
+                Id = p.Id,
+                Amount = p.Amount,
+                Currency = p.Currency,
+                Provider = p.Provider,
+                Status = p.Status,
+                PlanId = p.PlanId,
+                CreatedAt = p.CreatedAt
+            })
+            .ToListAsync();
+    }
+
+    public async Task<RefundRequestDto> CreateRefundRequestAsync(Guid userId, Guid paymentOrderId, string reason)
+    {
+        var refundDto = new CreateRefundRequestDto { Reason = reason };
+        var validationResult = await _createRefundValidator.ValidateAsync(refundDto);
+        if (!validationResult.IsValid)
+        {
+            throw new ValidationException(validationResult.Errors);
+        }
+
+        var payment = await _dbContext.Payments.FirstOrDefaultAsync(p => p.Id == paymentOrderId)
+            ?? throw new PaymentNotFoundException(paymentOrderId);
+
+        if (payment.UserId != userId)
+            throw new InvalidRefundException("Payment does not belong to the caller.", 403);
+
+        if (payment.Status != PaymentStatus.Completed)
+            throw new InvalidRefundException("Only completed payments can be refunded.");
+
+        var now = DateTime.UtcNow;
+        var refundRequest = new RefundRequest
+        {
+            PaymentOrderId = paymentOrderId,
+            UserId = userId,
+            Reason = reason,
+            Status = RefundStatus.Pending,
+            RequestedAt = now,
+            CreatedAt = now,
+            UpdatedAt = now
+        };
+
+        _dbContext.RefundRequests.Add(refundRequest);
+        await _dbContext.SaveChangesAsync();
+
+        return ToRefundRequestDto(refundRequest);
+    }
+
+    public async Task<IEnumerable<RefundRequestDto>> GetRefundRequestsAsync(Guid userId)
+    {
+        return await _dbContext.RefundRequests
+            .Where(r => r.UserId == userId)
+            .OrderByDescending(r => r.RequestedAt)
+            .Select(r => new RefundRequestDto
+            {
+                Id = r.Id,
+                PaymentOrderId = r.PaymentOrderId,
+                Reason = r.Reason,
+                Status = r.Status,
+                RequestedAt = r.RequestedAt,
+                CreatedAt = r.CreatedAt
+            })
+            .ToListAsync();
+    }
+
+    private static RefundRequestDto ToRefundRequestDto(RefundRequest refundRequest)
+    {
+        return new RefundRequestDto
+        {
+            Id = refundRequest.Id,
+            PaymentOrderId = refundRequest.PaymentOrderId,
+            Reason = refundRequest.Reason,
+            Status = refundRequest.Status,
+            RequestedAt = refundRequest.RequestedAt,
+            CreatedAt = refundRequest.CreatedAt
+        };
     }
 
     private static PaymentStatusResponseDto ToStatusResponse(PaymentOrder payment)

@@ -53,6 +53,12 @@ public class ExceptionHandlingMiddleware
                 errors = Array.Empty<string>();
                 break;
 
+            case AccountDeactivatedException:
+                statusCode = StatusCodes.Status403Forbidden;
+                message = exception.Message;
+                errors = Array.Empty<string>();
+                break;
+
             default:
                 statusCode = StatusCodes.Status500InternalServerError;
                 message = "An unexpected error occurred.";

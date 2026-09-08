@@ -33,6 +33,10 @@ namespace NomiWrite.Payment.Infrastructure.Persistence.Migrations
                         .HasColumnType("numeric(18,2)")
                         .HasColumnName("amount");
 
+                    b.Property<int?>("AppliedDiscountPercent")
+                        .HasColumnType("integer")
+                        .HasColumnName("applied_discount_percent");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
@@ -119,6 +123,56 @@ namespace NomiWrite.Payment.Infrastructure.Persistence.Migrations
                     b.ToTable("payment_transactions", (string)null);
                 });
 
+            modelBuilder.Entity("NomiWrite.Payment.Domain.Entities.RefundRequest", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("PaymentOrderId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("payment_order_id");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("reason");
+
+                    b.Property<DateTime>("RequestedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("requested_at");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PaymentOrderId")
+                        .HasDatabaseName("ix_refund_requests_payment_order_id");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("ix_refund_requests_user_id");
+
+                    b.ToTable("refund_requests", (string)null);
+                });
+
             modelBuilder.Entity("NomiWrite.Payment.Domain.Entities.PaymentTransaction", b =>
                 {
                     b.HasOne("NomiWrite.Payment.Domain.Entities.PaymentOrder", "PaymentOrder")
@@ -130,8 +184,21 @@ namespace NomiWrite.Payment.Infrastructure.Persistence.Migrations
                     b.Navigation("PaymentOrder");
                 });
 
+            modelBuilder.Entity("NomiWrite.Payment.Domain.Entities.RefundRequest", b =>
+                {
+                    b.HasOne("NomiWrite.Payment.Domain.Entities.PaymentOrder", "PaymentOrder")
+                        .WithMany("RefundRequests")
+                        .HasForeignKey("PaymentOrderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("PaymentOrder");
+                });
+
             modelBuilder.Entity("NomiWrite.Payment.Domain.Entities.PaymentOrder", b =>
                 {
+                    b.Navigation("RefundRequests");
+
                     b.Navigation("Transactions");
                 });
 #pragma warning restore 612, 618
