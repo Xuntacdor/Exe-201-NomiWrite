@@ -7,6 +7,7 @@ using NomiWrite.Payment.Application.DTOs;
 using NomiWrite.Payment.Application.Interfaces;
 using NomiWrite.Payment.Application.Services;
 using NomiWrite.Payment.Application.Validation;
+using NomiWrite.Payment.Infrastructure.Clients;
 using NomiWrite.Payment.Infrastructure.Options;
 using NomiWrite.Payment.Infrastructure.Persistence;
 using NomiWrite.Payment.Infrastructure.Services;
@@ -30,7 +31,15 @@ public static class DependencyInjection
         services.Configure<VnPaySettings>(configuration.GetSection(VnPaySettings.SectionName));
         services.Configure<MomoSettings>(configuration.GetSection(MomoSettings.SectionName));
 
+        var serviceUrls = configuration.GetSection(ServiceUrls.SectionName).Get<ServiceUrls>() ?? new ServiceUrls();
+        services.AddHttpClient<IPromoCodeValidator, PromoCodeValidatorClient>(client =>
+        {
+            client.BaseAddress = new Uri(serviceUrls.SubscriptionService);
+            client.Timeout = TimeSpan.FromSeconds(3);
+        });
+
         services.AddScoped<IValidator<CreatePaymentRequestDto>, CreatePaymentRequestValidator>();
+        services.AddScoped<IValidator<CreateRefundRequestDto>, CreateRefundRequestValidator>();
         services.AddScoped<IPaymentGatewayService, MockedPaymentGatewayService>();
         services.AddScoped<VnPayGatewayService>();
         services.AddHttpClient<MomoGatewayService>();

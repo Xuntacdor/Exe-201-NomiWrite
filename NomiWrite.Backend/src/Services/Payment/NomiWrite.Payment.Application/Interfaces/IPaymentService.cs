@@ -9,4 +9,10 @@ public interface IPaymentService
     Task<PaymentStatusResponseDto> HandleWebhookAsync(WebhookCallbackDto callback);
 
     Task<PaymentStatusResponseDto> GetPaymentStatusAsync(Guid paymentId);
+
+    Task<IEnumerable<PaymentHistoryItemDto>> GetPaymentHistoryAsync(Guid userId);
+
+    Task<RefundRequestDto> CreateRefundRequestAsync(Guid userId, Guid paymentOrderId, string reason);
+
+    Task<IEnumerable<RefundRequestDto>> GetRefundRequestsAsync(Guid userId);
 }
