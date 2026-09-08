@@ -48,6 +48,7 @@ public class PaymentService : IPaymentService
             Provider = request.Provider,
             Status = PaymentStatus.Pending,
             OrderReference = GenerateOrderReference(),
+            PlanId = request.PlanId,
             CreatedAt = now,
             UpdatedAt = now
         };
@@ -72,7 +73,8 @@ public class PaymentService : IPaymentService
             Amount = payment.Amount,
             Currency = payment.Currency,
             Provider = payment.Provider.ToString(),
-            CreatedAt = now
+            CreatedAt = now,
+            PlanId = payment.PlanId
         });
 
         return new CreatePaymentResponseDto
@@ -126,7 +128,7 @@ public class PaymentService : IPaymentService
         {
             payment.Status = PaymentStatus.Completed;
             payment.UpdatedAt = now;
-            completed = new PaymentCompletedEvent(payment.Id, payment.UserId, payment.Amount, payment.OrderReference);
+            completed = new PaymentCompletedEvent(payment.Id, payment.UserId, payment.Amount, payment.OrderReference, payment.PlanId);
         }
         else if (!callback.IsSuccess && payment.Status != PaymentStatus.Failed)
         {

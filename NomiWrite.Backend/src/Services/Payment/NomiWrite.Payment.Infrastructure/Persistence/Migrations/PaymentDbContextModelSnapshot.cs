@@ -49,6 +49,10 @@ namespace NomiWrite.Payment.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(64)")
                         .HasColumnName("order_reference");
 
+                    b.Property<Guid?>("PlanId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("plan_id");
+
                     b.Property<string>("Provider")
                         .IsRequired()
                         .HasMaxLength(20)

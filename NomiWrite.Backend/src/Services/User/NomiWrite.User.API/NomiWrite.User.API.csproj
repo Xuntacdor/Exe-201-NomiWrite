@@ -7,13 +7,16 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="MassTransit.RabbitMQ" Version="8.*" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.*" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.25" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.*" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" Version="8.0.*" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.9.0" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\Shared\NomiWrite.Shared.Contracts\NomiWrite.Shared.Contracts.csproj" />
+    <ProjectReference Include="..\NomiWrite.User.Application\NomiWrite.User.Application.csproj" />
+    <ProjectReference Include="..\NomiWrite.User.Infrastructure\NomiWrite.User.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

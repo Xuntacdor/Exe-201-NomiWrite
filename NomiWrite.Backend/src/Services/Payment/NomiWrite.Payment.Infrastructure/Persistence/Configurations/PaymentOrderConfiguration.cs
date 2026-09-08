@@ -49,6 +49,9 @@ public class PaymentOrderConfiguration : IEntityTypeConfiguration<PaymentOrder>
             .IsRequired()
             .HasMaxLength(64);
 
+        builder.Property(p => p.PlanId)
+            .HasColumnName("plan_id");
+
         builder.HasIndex(p => p.OrderReference)
             .IsUnique()
             .HasDatabaseName("ix_payment_orders_order_reference");

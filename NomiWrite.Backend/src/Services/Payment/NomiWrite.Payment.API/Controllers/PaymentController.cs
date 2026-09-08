@@ -57,6 +57,7 @@ public class PaymentController : ControllerBase
             {
                 Amount = result.Amount,
                 OrderReference = result.OrderReference,
+                PlanId = request.PlanId,
                 CreatedAt = result.CreatedAt == default ? DateTime.UtcNow : result.CreatedAt
             };
 
@@ -67,7 +68,8 @@ public class PaymentController : ControllerBase
             var order = new PaymentOrder
             {
                 Amount = result.Amount,
-                OrderReference = result.OrderReference
+                OrderReference = result.OrderReference,
+                PlanId = request.PlanId
             };
 
             result.PaymentUrl = await _momoGateway.CreatePaymentAsync(order);
@@ -198,7 +200,7 @@ public class PaymentController : ControllerBase
             payment.UpdatedAt = now;
             await _dbContext.SaveChangesAsync();
             await _publishEndpoint.Publish(
-                new PaymentCompletedEvent(payment.Id, payment.UserId, payment.Amount, payment.OrderReference));
+                new PaymentCompletedEvent(payment.Id, payment.UserId, payment.Amount, payment.OrderReference, payment.PlanId));
         }
         else
         {
@@ -263,7 +265,7 @@ public class PaymentController : ControllerBase
             payment.UpdatedAt = now;
             await _dbContext.SaveChangesAsync();
             await _publishEndpoint.Publish(
-                new PaymentCompletedEvent(payment.Id, payment.UserId, payment.Amount, payment.OrderReference));
+                new PaymentCompletedEvent(payment.Id, payment.UserId, payment.Amount, payment.OrderReference, payment.PlanId));
         }
         else if (!success && payment.Status != PaymentStatus.Failed)
         {
