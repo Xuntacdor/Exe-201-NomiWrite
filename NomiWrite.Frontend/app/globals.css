@@ -1,0 +1,74 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #0f172a;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, system-ui, sans-serif;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-10px); }
+}
+
+@keyframes pulse-slow {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.5; }
+}
+
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+.animate-fade-in-up  { animation: fadeInUp 0.6s ease-out forwards; }
+.animate-float       { animation: float 4s ease-in-out infinite; }
+.animate-pulse-slow  { animation: pulse-slow 3s ease-in-out infinite; }
+.animate-spin-slow   { animation: spin-slow 8s linear infinite; }
+
+.gradient-text {
+  background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gradient-text-warm {
+  background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.hero-gradient {
+  background: radial-gradient(ellipse 120% 80% at 50% -10%, #dbeafe 0%, #ede9fe 45%, #f8fafc 100%);
+}
+
+.card-hover {
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+.card-hover:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 24px 48px rgba(0,0,0,0.10);
+}
+
+.glow-blue  { box-shadow: 0 0 40px rgba(37,99,235,0.18); }
+.glow-violet { box-shadow: 0 0 40px rgba(124,58,237,0.15); }
+
+.step-connector {
+  background: linear-gradient(90deg, #e2e8f0 0%, #c7d2fe 100%);
+}
