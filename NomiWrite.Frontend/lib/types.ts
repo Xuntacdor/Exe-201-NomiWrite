@@ -1,5 +1,3 @@
-export type ApiMode = "real";
-
 export type UserPlan = "free" | "premium";
 
 export interface User {

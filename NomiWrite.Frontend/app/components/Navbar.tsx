@@ -14,15 +14,19 @@ const navLinks = [
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [signedIn] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return Boolean(getSession()?.accessToken);
-  });
+  const [signedIn, setSignedIn] = useState(false);
 
   useEffect(() => {
+    const authTimer = setTimeout(() => {
+      setSignedIn(Boolean(getSession()?.accessToken));
+    }, 0);
+
     const onScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener("scroll", onScroll);
-    return () => window.removeEventListener("scroll", onScroll);
+    return () => {
+      clearTimeout(authTimer);
+      window.removeEventListener("scroll", onScroll);
+    };
   }, []);
 
   return (

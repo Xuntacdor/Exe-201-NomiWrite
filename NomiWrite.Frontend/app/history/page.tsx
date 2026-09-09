@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import AppShell from "../components/AppShell";
 import { AlertCircle, Check, ChevronRight, Clock, Filter, Loader2, PenLine } from "lucide-react";
-import { apiClient, apiMode } from "@/lib/api/client";
+import { apiClient } from "@/lib/api/client";
 import { getSession } from "@/lib/auth/session";
 import type { Submission } from "@/lib/types";
 
@@ -34,7 +34,7 @@ export default function HistoryPage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (apiMode === "real" && !getSession()?.accessToken) {
+    if (!getSession()?.accessToken) {
       router.replace("/login");
       return;
     }

@@ -19,7 +19,7 @@ import {
   X,
   Zap,
 } from "lucide-react";
-import { apiClient, apiMode } from "@/lib/api/client";
+import { apiClient } from "@/lib/api/client";
 import { getSession } from "@/lib/auth/session";
 import type { User } from "@/lib/types";
 
@@ -44,7 +44,7 @@ export default function ProfilePage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (apiMode === "real" && !getSession()?.accessToken) {
+    if (!getSession()?.accessToken) {
       router.replace("/login");
       return;
     }

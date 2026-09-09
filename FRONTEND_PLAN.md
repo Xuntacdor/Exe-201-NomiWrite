@@ -213,6 +213,7 @@ Current known backend status:
 - Dashboard, vocabulary, quiz, quiz-attempts, forum/community, notifications, admin/moderation, billing history, invoices, refunds, content CMS, and dedicated vocabulary suggestions are not exposed as real backend modules yet.
 - Dashboard currently derives from Writing/User APIs. Vocabulary and Quiz are `1/2` frontend shells.
 - Gateway still depends on a local `ReverseProxy` config, while tracked `NomiWrite.Gateway/appsettings.json` was removed from source after the latest backend merge.
+- Local backend services require PostgreSQL and RabbitMQ. Without those, HTTP ports can listen but data APIs may timeout or return database/message-bus errors.
 
 ## Frontend MVP Scope
 
@@ -746,6 +747,10 @@ Backend must only return `grammar_category` values from this list, or `Khác`.
 - [x] Replaced static quiz and vocabulary data with `1/2` frontend-ready pages that wait for backend APIs.
 - [x] Updated README to describe real-only API integration and `1/2` status shells.
 - [x] Confirmed frontend `npm run lint` and `npm run build` pass after mock data removal.
+- [x] Added local gateway `ReverseProxy` development routes for Auth, User, Writing, Grading, Payment, and Subscription service ports.
+- [x] Added development appsettings for User, Writing, AICoordinator, and Subscription, plus local overrides for Auth/Payment.
+- [x] Confirmed `dotnet build NomiWrite.Backend/NomiWrite.sln` passes after running outside the sandbox so .NET can read NuGet config.
+- [x] Started frontend, gateway, and backend HTTP services locally; ports are open, but data APIs still need PostgreSQL/RabbitMQ running.
 
 ## Current Status For Next Session
 

@@ -22,6 +22,7 @@ import { getSession } from "../auth/session";
 import { apiRoutes } from "./routes";
 
 const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:5097";
+const requestTimeoutMs = 8_000;
 
 function unavailable<T>(feature: string): Promise<T> {
   return Promise.reject(new Error(`${feature} API is not available from the backend yet.`));
@@ -265,14 +266,30 @@ function toWritingFeedback(result: BackendGradingResult, submission?: Submission
 }
 
 async function request<T>(path: string, init: RequestInit, authenticated = false): Promise<T> {
-  const response = await fetch(`${apiBaseUrl}${path}`, {
-    ...init,
-    headers: {
-      "Content-Type": "application/json",
-      ...(authenticated ? getAuthHeaders() : {}),
-      ...init.headers,
-    },
-  });
+  let response: Response;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), requestTimeoutMs);
+
+  try {
+    response = await fetch(`${apiBaseUrl}${path}`, {
+      ...init,
+      signal: controller.signal,
+      headers: {
+        "Content-Type": "application/json",
+        ...(authenticated ? getAuthHeaders() : {}),
+        ...init.headers,
+      },
+    });
+  } catch (error) {
+    const aborted = error instanceof DOMException && error.name === "AbortError";
+    throw new Error(
+      aborted
+        ? `Backend API at ${apiBaseUrl} did not respond within ${requestTimeoutMs / 1000}s. Check PostgreSQL/RabbitMQ and reload this page.`
+        : `Cannot connect to backend API at ${apiBaseUrl}. Start the gateway/backend services and reload this page.`,
+    );
+  } finally {
+    clearTimeout(timeout);
+  }
 
   if (!response.ok) {
     const message = await response.text();

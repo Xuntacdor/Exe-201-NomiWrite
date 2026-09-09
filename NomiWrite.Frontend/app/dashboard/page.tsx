@@ -18,7 +18,7 @@ import {
   TrendingUp,
   X,
 } from "lucide-react";
-import { apiClient, apiMode } from "@/lib/api/client";
+import { apiClient } from "@/lib/api/client";
 import { getSession } from "@/lib/auth/session";
 import type { Submission, User } from "@/lib/types";
 
@@ -48,7 +48,7 @@ export default function DashboardPage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (apiMode === "real" && !getSession()?.accessToken) {
+    if (!getSession()?.accessToken) {
       router.replace("/login");
       return;
     }

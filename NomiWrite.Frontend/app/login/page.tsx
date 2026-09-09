@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { PenLine, Mail, Lock, ArrowRight, Globe2 } from "lucide-react";
-import { apiClient, apiMode } from "@/lib/api/client";
+import { apiClient } from "@/lib/api/client";
 import { saveSession } from "@/lib/auth/session";
 
 export default function LoginPage() {
@@ -121,10 +121,6 @@ export default function LoginPage() {
               <ArrowRight className="w-4 h-4" />
             </button>
           </form>
-
-          <p className="mt-4 text-center text-[11px] text-slate-500">
-            API mode: {apiMode}
-          </p>
         </div>
 
         <p className="text-center mt-6 text-sm text-slate-500">
