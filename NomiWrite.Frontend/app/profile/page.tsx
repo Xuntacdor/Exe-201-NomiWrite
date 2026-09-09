@@ -19,8 +19,7 @@ import {
   X,
   Zap,
 } from "lucide-react";
-import { apiClient } from "@/lib/api/client";
-import { handleAuthFailure } from "@/lib/auth/handle-auth-error";
+import { apiClient, apiMode } from "@/lib/api/client";
 import { getSession } from "@/lib/auth/session";
 import type { User } from "@/lib/types";
 
@@ -45,7 +44,7 @@ export default function ProfilePage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (!getSession()?.accessToken) {
+    if (apiMode === "real" && !getSession()?.accessToken) {
       router.replace("/login");
       return;
     }
@@ -63,9 +62,7 @@ export default function ProfilePage() {
           setTargetBand(user.targetBand?.toString() ?? "");
         })
         .catch(err => {
-          if (ignore) return;
-          if (handleAuthFailure(err, router)) return;
-          setError(err instanceof Error ? err.message : "Could not load profile.");
+          if (!ignore) setError(err instanceof Error ? err.message : "Could not load profile.");
         })
         .finally(() => {
           if (!ignore) setLoading(false);
@@ -92,7 +89,6 @@ export default function ProfilePage() {
       setProfile(updated);
       setEditing(false);
     } catch (err) {
-      if (handleAuthFailure(err, router)) return;
       setError(err instanceof Error ? err.message : "Could not update profile.");
     } finally {
       setSaving(false);

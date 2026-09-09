@@ -14,8 +14,7 @@ import {
   Loader2,
   Sparkles,
 } from "lucide-react";
-import { apiClient } from "@/lib/api/client";
-import { handleAuthFailure } from "@/lib/auth/handle-auth-error";
+import { apiClient, apiMode } from "@/lib/api/client";
 import { getSession } from "@/lib/auth/session";
 import type { WritingFeedback } from "@/lib/types";
 
@@ -35,7 +34,7 @@ function ResultContent() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (!getSession()?.accessToken) {
+    if (apiMode === "real" && !getSession()?.accessToken) {
       router.replace("/login");
       return;
     }
@@ -57,9 +56,7 @@ function ResultContent() {
           if (!ignore) setFeedback(result);
         })
         .catch(err => {
-          if (ignore) return;
-          if (handleAuthFailure(err, router)) return;
-          setError(err instanceof Error ? err.message : "Could not load grading result yet.");
+          if (!ignore) setError(err instanceof Error ? err.message : "Could not load grading result yet.");
         })
         .finally(() => {
           if (!ignore) setLoading(false);

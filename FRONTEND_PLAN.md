@@ -213,7 +213,6 @@ Current known backend status:
 - Dashboard, vocabulary, quiz, quiz-attempts, forum/community, notifications, admin/moderation, billing history, invoices, refunds, content CMS, and dedicated vocabulary suggestions are not exposed as real backend modules yet.
 - Dashboard currently derives from Writing/User APIs. Vocabulary and Quiz are `1/2` frontend shells.
 - Gateway still depends on a local `ReverseProxy` config, while tracked `NomiWrite.Gateway/appsettings.json` was removed from source after the latest backend merge.
-- Local backend services require the backend team's database and RabbitMQ configuration. Without those, HTTP ports can listen but data APIs may timeout or return database/message-bus errors.
 
 ## Frontend MVP Scope
 
@@ -747,8 +746,6 @@ Backend must only return `grammar_category` values from this list, or `Khác`.
 - [x] Replaced static quiz and vocabulary data with `1/2` frontend-ready pages that wait for backend APIs.
 - [x] Updated README to describe real-only API integration and `1/2` status shells.
 - [x] Confirmed frontend `npm run lint` and `npm run build` pass after mock data removal.
-- [x] Reverted accidental backend development config edits; frontend work must not own backend service configuration.
-- [x] Started frontend and pointed it at the backend gateway; backend API `500`/timeout issues remain backend-runtime concerns.
 
 ## Current Status For Next Session
 
@@ -756,9 +753,10 @@ Next recommended task: run real-mode smoke testing against locally running backe
 
 Concrete first commands/files to work on:
 
-1. Move duplicated guide data out of `app/guide/page.tsx` and `app/components/GuideModal.tsx`.
-2. Add a cleanup check for page-level hard-coded API records.
-3. Keep vocabulary and quiz as `1/2` frontend shells until backend APIs are delivered.
-4. Retest login/register once backend Auth service is healthy again.
+1. Restore or create local Gateway `ReverseProxy` config because tracked `NomiWrite.Gateway/appsettings.json` was removed by backend changes.
+2. Move duplicated guide data out of `app/guide/page.tsx` and `app/components/GuideModal.tsx`.
+3. Add backend prompt seed data if `/api/writing/prompts` is empty after migrations.
+4. Add a cleanup check for page-level hard-coded API records.
+5. Implement backend modules for vocabulary and quiz, then switch the `1/2` frontend shells to real data.
 6. Run frontend `npm run lint` and `npm run build`.
 7. Update this Progress Log after finishing each backend integration slice.

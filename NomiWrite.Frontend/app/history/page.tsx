@@ -5,8 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import AppShell from "../components/AppShell";
 import { AlertCircle, Check, ChevronRight, Clock, Filter, Loader2, PenLine } from "lucide-react";
-import { apiClient } from "@/lib/api/client";
-import { handleAuthFailure } from "@/lib/auth/handle-auth-error";
+import { apiClient, apiMode } from "@/lib/api/client";
 import { getSession } from "@/lib/auth/session";
 import type { Submission } from "@/lib/types";
 
@@ -35,7 +34,7 @@ export default function HistoryPage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (!getSession()?.accessToken) {
+    if (apiMode === "real" && !getSession()?.accessToken) {
       router.replace("/login");
       return;
     }
@@ -48,9 +47,7 @@ export default function HistoryPage() {
           if (!ignore) setSubmissions(items);
         })
         .catch(err => {
-          if (ignore) return;
-          if (handleAuthFailure(err, router)) return;
-          setError(err instanceof Error ? err.message : "Could not load writing history.");
+          if (!ignore) setError(err instanceof Error ? err.message : "Could not load writing history.");
         })
         .finally(() => {
           if (!ignore) setLoading(false);
