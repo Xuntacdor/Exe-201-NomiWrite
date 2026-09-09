@@ -18,9 +18,7 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddUserInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
-        var connectionString = configuration.GetConnectionString("SupabaseDb")
-            ?? configuration["SUPABASE_DB_CONNECTION_STRING"]
-            ?? configuration.GetConnectionString("UserDb")
+        var connectionString = configuration.GetConnectionString("UserDb")
             ?? throw new InvalidOperationException("Connection string 'UserDb' is not configured.");
 
         services.AddDbContext<UserDbContext>(options =>

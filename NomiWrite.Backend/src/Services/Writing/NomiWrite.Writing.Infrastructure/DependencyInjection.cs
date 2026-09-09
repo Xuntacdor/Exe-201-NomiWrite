@@ -16,9 +16,7 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddWritingInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
-        var connectionString = configuration.GetConnectionString("SupabaseDb")
-            ?? configuration["SUPABASE_DB_CONNECTION_STRING"]
-            ?? configuration.GetConnectionString("WritingDb")
+        var connectionString = configuration.GetConnectionString("WritingDb")
             ?? throw new InvalidOperationException("Connection string 'WritingDb' is not configured.");
 
         services.AddDbContext<WritingDbContext>(options =>

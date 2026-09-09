@@ -291,7 +291,7 @@ async function request<T>(path: string, init: RequestInit, authenticated = false
     const aborted = error instanceof DOMException && error.name === "AbortError";
     throw new ApiRequestError(
       aborted
-        ? `Backend API at ${apiBaseUrl} did not respond within ${requestTimeoutMs / 1000}s. Check Supabase/PostgreSQL/RabbitMQ and reload this page.`
+        ? `Backend API at ${apiBaseUrl} did not respond within ${requestTimeoutMs / 1000}s. Check the backend services and reload this page.`
         : `Cannot connect to backend API at ${apiBaseUrl}. Start the gateway/backend services and reload this page.`,
     );
   } finally {

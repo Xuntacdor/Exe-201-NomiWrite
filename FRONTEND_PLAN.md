@@ -213,7 +213,7 @@ Current known backend status:
 - Dashboard, vocabulary, quiz, quiz-attempts, forum/community, notifications, admin/moderation, billing history, invoices, refunds, content CMS, and dedicated vocabulary suggestions are not exposed as real backend modules yet.
 - Dashboard currently derives from Writing/User APIs. Vocabulary and Quiz are `1/2` frontend shells.
 - Gateway still depends on a local `ReverseProxy` config, while tracked `NomiWrite.Gateway/appsettings.json` was removed from source after the latest backend merge.
-- Local backend services use Supabase Postgres in the shared environment. Set `ConnectionStrings__SupabaseDb` or `SUPABASE_DB_CONNECTION_STRING` before starting services; RabbitMQ is still required for cross-service events. Without those, HTTP ports can listen but data APIs may timeout or return database/message-bus errors.
+- Local backend services require the backend team's database and RabbitMQ configuration. Without those, HTTP ports can listen but data APIs may timeout or return database/message-bus errors.
 
 ## Frontend MVP Scope
 
@@ -750,9 +750,7 @@ Backend must only return `grammar_category` values from this list, or `Khác`.
 - [x] Added local gateway `ReverseProxy` development routes for Auth, User, Writing, Grading, Payment, and Subscription service ports.
 - [x] Added development appsettings for User, Writing, AICoordinator, and Subscription, plus local overrides for Auth/Payment.
 - [x] Confirmed `dotnet build NomiWrite.Backend/NomiWrite.sln` passes after running outside the sandbox so .NET can read NuGet config.
-- [x] Started frontend, gateway, and backend HTTP services locally; ports are open, but data APIs still need Supabase Postgres connection settings and RabbitMQ running.
-- [x] Backend services now prefer a shared Supabase connection string via `ConnectionStrings__SupabaseDb` or `SUPABASE_DB_CONNECTION_STRING`, while keeping per-service local DB strings as fallback.
-- [x] Added `NomiWrite.Backend/.env.example` with the Supabase project host and RabbitMQ placeholders; no database password is committed.
+- [x] Started frontend, gateway, and backend HTTP services locally; ports are open, but data APIs still need the backend team's database and RabbitMQ configuration.
 
 ## Current Status For Next Session
 

@@ -17,9 +17,7 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddAuthInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
-        var connectionString = configuration.GetConnectionString("SupabaseDb")
-            ?? configuration["SUPABASE_DB_CONNECTION_STRING"]
-            ?? configuration.GetConnectionString("AuthDb")
+        var connectionString = configuration.GetConnectionString("AuthDb")
             ?? throw new InvalidOperationException("Connection string 'AuthDb' is not configured.");
 
         services.AddDbContext<AuthDbContext>(options =>

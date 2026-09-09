@@ -16,9 +16,7 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddAICoordinatorInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
-        var connectionString = configuration.GetConnectionString("SupabaseDb")
-            ?? configuration["SUPABASE_DB_CONNECTION_STRING"]
-            ?? configuration.GetConnectionString("GradingDb")
+        var connectionString = configuration.GetConnectionString("GradingDb")
             ?? throw new InvalidOperationException("Connection string 'GradingDb' is not configured.");
 
         services.AddDbContext<GradingDbContext>(options =>
