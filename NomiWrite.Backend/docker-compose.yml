@@ -1,0 +1,216 @@
+version: "3.8"
+
+services:
+  # ── RabbitMQ ──────────────────────────────────────────────────────
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: nomiwrite-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: [ "CMD", "rabbitmq-diagnostics", "-q", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+
+      - nomiwrite
+
+  # ── Gateway (YARP reverse proxy — single external entry point) ───
+  gateway:
+    build:
+      context: .
+      dockerfile: src/Gateway/NomiWrite.Gateway/Dockerfile
+    container_name: nomiwrite-gateway
+    # Only the gateway port is meant for external/browser access.
+    # In a stricter production setup the other 6 services would not be host-exposed.
+    ports:
+      - "5097:8080"
+    environment:
+      - ASPNETCORE_URLS=http://+:8080
+      - ReverseProxy__Clusters__auth-cluster__Destinations__auth-service__Address=http://auth-service:8080
+      - ReverseProxy__Clusters__payment-cluster__Destinations__payment-service__Address=http://payment-service:8080
+      - ReverseProxy__Clusters__user-cluster__Destinations__user-service__Address=http://user-service:8080
+      - ReverseProxy__Clusters__ai-cluster__Destinations__ai-service__Address=http://aicoordinator-service:8080
+      - ReverseProxy__Clusters__writing-cluster__Destinations__writing-service__Address=http://writing-service:8080
+      - ReverseProxy__Clusters__grading-cluster__Destinations__grading-service__Address=http://aicoordinator-service:8080
+      - ReverseProxy__Clusters__subscription-cluster__Destinations__subscription-service__Address=http://subscription-service:8080
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - nomiwrite
+
+  # ── Auth API ─────────────────────────────────────────────────────
+  auth-service:
+    build:
+      context: .
+      dockerfile: src/Services/Auth/NomiWrite.Auth.API/Dockerfile
+    container_name: nomiwrite-auth
+    ports:
+      - "5100:8080"
+    environment:
+      - ASPNETCORE_URLS=http://+:8080
+      - ConnectionStrings__AuthDb=${ConnectionStrings__AuthDb}
+      - RabbitMQ__Host=rabbitmq
+      - RabbitMQ__Username=${RabbitMQ__Username}
+      - RabbitMQ__Password=${RabbitMQ__Password}
+      - JwtSettings__Secret=${JwtSettings__Secret}
+      - JwtSettings__Issuer=${JwtSettings__Issuer}
+      - JwtSettings__Audience=${JwtSettings__Audience}
+      - SmtpSettings__Host=${SmtpSettings__Host}
+      - SmtpSettings__Port=${SmtpSettings__Port}
+      - SmtpSettings__Username=${SmtpSettings__Username}
+      - SmtpSettings__Password=${SmtpSettings__Password}
+      - SmtpSettings__FromEmail=${SmtpSettings__FromEmail}
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - nomiwrite
+
+  # ── User API ─────────────────────────────────────────────────────
+  user-service:
+    build:
+      context: .
+      dockerfile: src/Services/User/NomiWrite.User.API/Dockerfile
+    container_name: nomiwrite-user
+    ports:
+      - "5101:8080"
+    environment:
+      - ASPNETCORE_URLS=http://+:8080
+      - ConnectionStrings__UserDb=${ConnectionStrings__UserDb}
+      - RabbitMQ__Host=rabbitmq
+      - RabbitMQ__Username=${RabbitMQ__Username}
+      - RabbitMQ__Password=${RabbitMQ__Password}
+      - JwtSettings__Secret=${JwtSettings__Secret}
+      - JwtSettings__Issuer=${JwtSettings__Issuer}
+      - JwtSettings__Audience=${JwtSettings__Audience}
+      - ServiceUrls__SubscriptionService=http://subscription-service:8080
+      - ServiceUrls__WritingService=http://writing-service:8080
+      - ServiceUrls__AICoordinatorService=http://aicoordinator-service:8080
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - nomiwrite
+
+  # ── Payment API ──────────────────────────────────────────────────
+  payment-service:
+    build:
+      context: .
+      dockerfile: src/Services/Payment/NomiWrite.Payment.API/Dockerfile
+    container_name: nomiwrite-payment
+    ports:
+      - "5132:8080"
+    environment:
+      - ASPNETCORE_URLS=http://+:8080
+      - ConnectionStrings__PaymentDb=${ConnectionStrings__PaymentDb}
+      - RabbitMQ__Host=rabbitmq
+      - RabbitMQ__Username=${RabbitMQ__Username}
+      - RabbitMQ__Password=${RabbitMQ__Password}
+      - JwtSettings__Secret=${JwtSettings__Secret}
+      - JwtSettings__Issuer=${JwtSettings__Issuer}
+      - JwtSettings__Audience=${JwtSettings__Audience}
+      - ServiceUrls__SubscriptionService=http://subscription-service:8080
+      - VnPaySettings__TmnCode=${VnPaySettings__TmnCode}
+      - VnPaySettings__HashSecret=${VnPaySettings__HashSecret}
+      - VnPaySettings__ReturnUrl=${VnPaySettings__ReturnUrl}
+      - VnPaySettings__IpnUrl=${VnPaySettings__IpnUrl}
+      - MomoSettings__PartnerCode=${MomoSettings__PartnerCode}
+      - MomoSettings__AccessKey=${MomoSettings__AccessKey}
+      - MomoSettings__SecretKey=${MomoSettings__SecretKey}
+      - MomoSettings__RedirectUrl=${MomoSettings__RedirectUrl}
+      - MomoSettings__IpnUrl=${MomoSettings__IpnUrl}
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - nomiwrite
+
+  # ── Writing API ──────────────────────────────────────────────────
+  writing-service:
+    build:
+      context: .
+      dockerfile: src/Services/Writing/NomiWrite.Writing.API/Dockerfile
+    container_name: nomiwrite-writing
+    ports:
+      - "5133:8080"
+    environment:
+      - ASPNETCORE_URLS=http://+:8080
+      - ConnectionStrings__WritingDb=${ConnectionStrings__WritingDb}
+      - RabbitMQ__Host=rabbitmq
+      - RabbitMQ__Username=${RabbitMQ__Username}
+      - RabbitMQ__Password=${RabbitMQ__Password}
+      - JwtSettings__Secret=${JwtSettings__Secret}
+      - JwtSettings__Issuer=${JwtSettings__Issuer}
+      - JwtSettings__Audience=${JwtSettings__Audience}
+      - ServiceUrls__SubscriptionService=http://subscription-service:8080
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - nomiwrite
+
+  # ── AI Coordinator API ───────────────────────────────────────────
+  aicoordinator-service:
+    build:
+      context: .
+      dockerfile: src/Services/AICoordinator/NomiWrite.AICoordinator.API/Dockerfile
+    container_name: nomiwrite-aicoordinator
+    ports:
+      - "5150:8080"
+    environment:
+      - ASPNETCORE_URLS=http://+:8080
+      - ConnectionStrings__GradingDb=${ConnectionStrings__GradingDb}
+      - RabbitMQ__Host=rabbitmq
+      - RabbitMQ__Username=${RabbitMQ__Username}
+      - RabbitMQ__Password=${RabbitMQ__Password}
+      - JwtSettings__Secret=${JwtSettings__Secret}
+      - JwtSettings__Issuer=${JwtSettings__Issuer}
+      - JwtSettings__Audience=${JwtSettings__Audience}
+      - ServiceUrls__SubscriptionService=http://subscription-service:8080
+      - GeminiSettings__ApiKey=${GeminiSettings__ApiKey}
+      - GeminiSettings__Model=${GeminiSettings__Model}
+      - GeminiSettings__Endpoint=${GeminiSettings__Endpoint}
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - nomiwrite
+
+  # ── Subscription API ─────────────────────────────────────────────
+  subscription-service:
+    build:
+      context: .
+      dockerfile: src/Services/Subscription/NomiWrite.Subscription.API/Dockerfile
+    container_name: nomiwrite-subscription
+    ports:
+      - "5160:8080"
+    environment:
+      - ASPNETCORE_URLS=http://+:8080
+      - ConnectionStrings__SubscriptionDb=${ConnectionStrings__SubscriptionDb}
+      - RabbitMQ__Host=rabbitmq
+      - RabbitMQ__Username=${RabbitMQ__Username}
+      - RabbitMQ__Password=${RabbitMQ__Password}
+      - JwtSettings__Secret=${JwtSettings__Secret}
+      - JwtSettings__Issuer=${JwtSettings__Issuer}
+      - JwtSettings__Audience=${JwtSettings__Audience}
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - nomiwrite
+
+volumes:
+  rabbitmq_data:
+
+networks:
+  nomiwrite:
+    driver: bridge
