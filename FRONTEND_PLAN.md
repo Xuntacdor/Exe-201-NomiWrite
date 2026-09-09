@@ -1,6 +1,6 @@
 # NomiWrite Frontend Plan
 
-Last updated: 2026-09-08
+Last updated: 2026-09-05
 
 ## Location
 
@@ -30,7 +30,6 @@ Project naming note:
 - `WriteWise_Presentation_CP1_2.docx`
 - `NomiWrite_Presentation_CP3.docx`
 - `NomiWrite-Project.pptx`
-- `C:/Users/DELL/Downloads/Usecase List for NomiWrite.docx`
 - `D:/FPT_Uni/FALL26/EXE201/NomiWrite/nomiwrite/app/**` legacy Next.js MVP
 - `D:/FPT_Uni/FALL26/EXE201/NomiWrite/nomiwrite/package.json` legacy Next.js MVP
 - `D:/FPT_Uni/FALL26/EXE201/NomiWrite/nomiwrite/.gitignore` legacy Next.js MVP
@@ -140,8 +139,7 @@ Active repo status:
 - Gateway routes are configured for `/api/auth/**`, `/api/payment/**`, `/api/users/**`, and `/api/ai/**`.
 - Auth service has real controller endpoints: `POST /api/auth/register`, `POST /api/auth/login`, `POST /api/auth/refresh`, and `POST /api/auth/logout/{userId}`.
 - Auth DTOs currently include email, password, fullName, accessToken, refreshToken, expiresAt, userId, and email.
-- User, Payment, Writing, Grading, and Subscription now expose usable backend APIs for the main MVP flows.
-- Features without backend contracts must show a frontend-ready `1/2` status shell instead of local fake records.
+- User, Payment, and AI Coordinator services are still default/template minimal APIs with `/weatherforecast`, so frontend should keep those parts mocked until real contracts arrive.
 
 Legacy Next.js MVP status:
 
@@ -151,15 +149,14 @@ Main legacy frontend findings:
 
 - `app/login/page.tsx` and `app/register/page.tsx` are visual forms only. Submit is an `<a href="/dashboard">`, no validation/session/error state.
 - `app/write/page.tsx` owns writing types, topics, prompts, writing guide data, local essay state, basic word count, simple client-side AI Coach heuristics, and writes submission data to `localStorage`.
-- `app/result/page.tsx` now reads backend grading data by `submissionId`; old `localStorage` handoff and generated score were removed.
-- `app/dashboard/page.tsx`, `app/history/page.tsx`, `app/profile/page.tsx`, `app/result/page.tsx`, `app/write/page.tsx`, and `app/upgrade/page.tsx` are connected to available backend APIs or frontend aggregation over backend responses.
-- `app/vocabulary/page.tsx` and `app/quiz/page.tsx` are frontend-ready `1/2` screens waiting for backend modules; local vocabulary/quiz records were removed.
+- `app/result/page.tsx` reads `localStorage.nomiwrite_submission`, calculates fake score from word count, and renders hard-coded grammar/vocabulary feedback.
+- `app/dashboard/page.tsx`, `app/history/page.tsx`, `app/profile/page.tsx`, `app/vocabulary/page.tsx`, and `app/quiz/page.tsx` all contain local hard-coded data.
 - `app/guide/page.tsx` and `app/components/GuideModal.tsx` duplicate large writing guide data.
 - `app/components/AppShell.tsx` and `AppSidebar.tsx` provide desktop app layout, but mobile navigation still needs attention.
 - `app/layout.tsx` uses `next/font/google` with Geist, which caused build failure in restricted network because Google Fonts could not be fetched.
 - `README.md` is still the default create-next-app README and should be rewritten for NomiWrite later.
 - Many Vietnamese UI strings appear mojibake/encoding-corrupted in file output, so UI text should be reviewed in browser and normalized while touching each feature.
-- Guide content is still static duplicated content in `app/guide/page.tsx` and `app/components/GuideModal.tsx`; centralize it later or back it with CMS/content APIs.
+- `app/guide/page.tsx.bak` exists beside the active guide page; review/remove it when guide data is centralized.
 - `node_modules` is not part of the frontend source and should be installed locally when verifying the frontend.
 
 ## Product Direction From Docs
@@ -188,19 +185,19 @@ Frontend rule:
 
 - Never call AI providers directly from frontend.
 - Treat backend/API Gateway as the source of truth as soon as endpoints and database-backed contracts are available.
-- No production page should use mock records.
-- If backend is missing, keep the frontend route/UI ready and mark it `1/2` in this plan until the backend API is available.
+- Mock data is temporary only: keep it behind the API client for local fallback/demo mode, never embedded directly in pages/components.
+- Remove hard-coded product data from pages while integrating each feature with real API responses.
 
 ## Backend Integration Priority
 
-Backend/database integration should take priority over expanding frontend-only behavior.
+Backend/database integration should take priority over expanding mock-only frontend behavior.
 
 Use this order for every feature area:
 
 1. Connect to the real API Gateway endpoint if the backend contract exists.
-2. If the endpoint is not ready, define the typed frontend contract in `lib/api/routes.ts` and keep a `1/2` UI shell that explains the required backend contract.
-3. When the backend endpoint becomes available, implement the route in `real-client.ts`, verify the response shape, and mark the feature `2/2`.
-4. Do not leave sample API records inside `app/**/page.tsx` or a fixture directory.
+2. If the endpoint is not ready, define the typed frontend contract in `lib/api/routes.ts` and keep a matching mock implementation in `lib/api/mock-client.ts`.
+3. When the backend endpoint becomes available, switch the feature to `real-client.ts`, verify the response shape, and delete page-level hard-coded data for that feature.
+4. Keep only seed/demo fixtures in `lib/mock-data/`; do not leave sample arrays inside `app/**/page.tsx`.
 
 Current known backend status:
 
@@ -210,15 +207,14 @@ Current known backend status:
 - AI Coordinator has a real grading read endpoint: `GET /api/grading/submissions/{submissionId}`.
 - Payment has real create/status endpoints under `/api/payment`, plus VNPay and MoMo IPN handlers.
 - Subscription has real plan/status endpoints: `GET /api/subscriptions/plans` and `GET /api/subscriptions/me`.
-- Dashboard, vocabulary, quiz, quiz-attempts, forum/community, notifications, admin/moderation, billing history, invoices, refunds, content CMS, and dedicated vocabulary suggestions are not exposed as real backend modules yet.
-- Dashboard currently derives from Writing/User APIs. Vocabulary and Quiz are `1/2` frontend shells.
+- Dashboard, vocabulary, quiz, quiz-attempts, and dedicated vocabulary suggestions are not exposed as real backend modules yet; keep those as mock/demo or derive from available Writing/User/Grading data only.
 - Gateway still depends on a local `ReverseProxy` config, while tracked `NomiWrite.Gateway/appsettings.json` was removed from source after the latest backend merge.
 
 ## Frontend MVP Scope
 
 Do first:
 
-- Auth UX connected to real backend auth.
+- Auth UX connected to real backend auth when available; mock session only as fallback.
 - Protected app shell.
 - Writing editor.
 - Submit essay through API client; use real backend when submission/grading endpoints exist.
@@ -276,12 +272,14 @@ NomiWrite.Frontend/
   lib/
     api/
       client.ts
+      mock-client.ts
       real-client.ts
       routes.ts
     constants/
       grammar-categories.ts
       writing-guides.ts
       writing-prompts.ts
+    mock-data/
     types.ts
   public/
   package.json
@@ -291,7 +289,7 @@ NomiWrite.Frontend/
 
 Keep page files thin. Put data, types, and API logic outside pages.
 
-The old frontend fixture directory has been removed. If the team needs demo fixtures later, keep them outside production source or behind an explicitly separate demo build.
+`lib/mock-data/` is allowed only for fallback/demo fixtures. Delete or move any hard-coded arrays from `app/**` as each page is connected to the API client.
 
 ## TypeScript Domain Models
 
@@ -395,13 +393,7 @@ export interface QuizAttempt {
 }
 ```
 
-## Status Scale
-
-- `2/2`: Frontend UI is implemented and connected to a real backend/database API.
-- `1/2`: Frontend route/UI/typed contract is prepared, but backend API/database support is still missing.
-- `0/2`: Not implemented on frontend yet.
-
-## API Contract
+## Stub API Contract
 
 Suggested backend-aligned endpoints:
 
@@ -425,12 +417,10 @@ GET  /dashboard/summary
 
 GET   /vocabulary
 PATCH /vocabulary/:id/mastered
-POST  /vocabulary/from-feedback
 
 POST /quizzes/generate
 GET  /quizzes/:id
 POST /quiz-attempts
-GET  /quiz-attempts?userId=me
 
 POST /payments/checkout
 GET  /payments/:id/status
@@ -439,60 +429,15 @@ GET  /payments/:id/status
 Frontend implementation pattern:
 
 - Add `.env.example`.
-- Use `NEXT_PUBLIC_API_BASE_URL=http://localhost:5097` or backend team's gateway URL later.
+- Use `NEXT_PUBLIC_API_MODE=real` when backend endpoints are available.
+- Use `NEXT_PUBLIC_API_MODE=mock` only for local/demo fallback.
+- Use `NEXT_PUBLIC_API_BASE_URL=http://localhost:5000` or backend team's gateway URL later.
+- `lib/api/mock-client.ts` returns local mock data with fake delay.
 - `lib/api/real-client.ts` wraps `fetch`.
-- `lib/api/client.ts` exports the real client directly.
+- `lib/api/client.ts` exports the selected client.
 - Components call API client functions only.
-- No page should import local API fixtures.
+- No page should import from `lib/mock-data/` directly.
 - Before marking a feature done, confirm it does not keep hard-coded sample records inside `app/**`.
-
-## Usecase Gap Review From Word Doc
-
-The Word usecase list is broader than the current MVP UI/backend. These frontend-relevant usecases must be added to the roadmap or backend backlog before the feature can be marked `2/2`.
-
-Auth/account gaps:
-
-- `1/2` UC01 OAuth registration/login UI entry points; backend OAuth provider flow is missing.
-- `1/2` UC02 email verification UI/status; backend verification token flow is missing.
-- `1/2` UC05 password reset request/confirm pages; backend reset flow is missing.
-- `1/2` UC07 delete/deactivate account UI; backend account deletion API is missing.
-
-Writing gaps:
-
-- `1/2` UC09-UC10 full writing-type catalogue from Word: IELTS, TOEFL, PTE, Cambridge, VSTEP, professional, and academic formats need backend seed/content coverage.
-- `1/2` UC12 timed session has UI toggle only; backend should persist timed metadata and remaining time if resume is required.
-- `1/2` UC15-UC16 save/resume draft is local autosave plus backend draft creation; dedicated draft list/resume API UX still needs completion.
-- `1/2` UC18 chart/image attachment for Task 1; frontend upload/view UI and backend storage API are missing.
-- `1/2` UC19 sample/model answers for VIP; frontend library route and backend content/subscription gate are missing.
-- `1/2` UC20 rewrite/resubmit previous prompt; frontend CTA and backend attempt linking are missing.
-
-AI feedback gaps:
-
-- `1/2` UC24 inline grammar/spelling highlights; result page has list rendering, but inline span offsets need backend data.
-- `1/2` UC25 vocabulary suggestions; grading DTO does not expose saved vocabulary records yet.
-- `1/2` UC26 sentence restructuring; backend response and frontend comparison UI are missing.
-- `1/2` UC27 compare score to previous attempts; dashboard/result trend API is missing.
-- `1/2` UC28 human/tutor feedback for VIP; tutor review workflow is missing.
-- `1/2` UC29 flag AI result inaccurate; report form/API is missing.
-
-Progress gaps:
-
-- `1/2` UC31 score chart is derived minimally on dashboard; real analytics endpoint is missing.
-- `1/2` UC32 strengths/weaknesses needs backend aggregation.
-- `1/2` UC33 goals target band/exam date partly exists in profile; exam date API/UI is missing.
-- `1/2` UC34 streak/reminder and UC35 badges are not implemented.
-
-Community, notification, admin gaps:
-
-- `0/2` UC36-UC47 forum/community module is not in frontend plan yet; add routes for forum list, post detail, create post, comments, peer feedback, bookmarks, report, follow, DM, and study groups after backend scope is confirmed.
-- `0/2` UC67-UC70 notification center/preferences are not implemented and need backend events/preferences.
-- `0/2` UC71-UC78 admin/moderator portal is not implemented and should likely live in a separate admin app after backend authorization is ready.
-
-Payment/VIP gaps:
-
-- `1/2` UC51 confirmation/invoice page, UC56 billing history, and UC57 refund flow need backend billing records.
-- `1/2` UC53 downgrade, UC54 cancel, and UC55 promo code are not exposed by backend yet.
-- `1/2` UC60 model answer library, UC61 exclusive prompts, UC62 tutor review, UC63 PDF report, UC64 ad-free, UC65 VIP forum badge/support, and UC66 full exam simulation/certificate need backend/API scope before frontend completion.
 
 ## Fixed Grammar Categories
 
@@ -530,7 +475,7 @@ Backend must only return `grammar_category` values from this list, or `Khác`.
 - [x] Confirm frontend folder name with team; recommended `NomiWrite.Frontend/`.
 - [x] Copy or migrate the legacy Next.js MVP into the chosen frontend folder.
 - [x] Replace `next/font/google` in frontend `app/layout.tsx` with a network-safe approach.
-- [x] Add frontend `.env.example` with gateway base URL.
+- [x] Add frontend `.env.example` with `NEXT_PUBLIC_API_MODE=mock` and gateway base URL.
 - [x] Rewrite frontend README/setup notes for NomiWrite.
 - [x] Install dependencies inside the frontend folder if missing.
 - [x] Confirm frontend `npm run build`.
@@ -544,13 +489,13 @@ Backend must only return `grammar_category` values from this list, or `Khác`.
 - [x] Inventory every hard-coded sample array/object in `app/**` and decide whether it is static content, API data, or temporary fixture.
 - [ ] Move writing types, topics, prompts, and guide content out of `app/write/page.tsx`.
 - [ ] Move guide data out of `app/guide/page.tsx` and `app/components/GuideModal.tsx`.
-- [x] Remove local quiz questions from `app/quiz/page.tsx`; page is now `1/2` waiting for backend quiz API.
-- [x] Remove local vocabulary data from `app/vocabulary/page.tsx`; page is now `1/2` waiting for backend vocabulary API.
-- [x] Move dashboard/history/profile/result sample records out of page files.
-- [x] Create `lib/api/client.ts`, `real-client.ts`, and `routes.ts`.
+- [ ] Move quiz questions out of `app/quiz/page.tsx`.
+- [ ] Move vocabulary data out of `app/vocabulary/page.tsx`.
+- [ ] Move dashboard/history/profile/result sample records out of page files.
+- [x] Create `lib/api/client.ts`, `mock-client.ts`, `real-client.ts`, and `routes.ts`.
 - [x] Implement typed real API functions against gateway routes.
-- [x] Remove frontend mock API client and local fixture directory.
-- [ ] Add a cleanup check that blocks feature completion if page-level hard-coded API records remain.
+- [x] Keep typed mock responses only as fallback when real backend endpoints are not ready.
+- [ ] Add a cleanup check that blocks feature completion if page-level hard-coded data remains.
 
 ### Phase 2 - Auth And Layout
 
@@ -558,7 +503,7 @@ Backend must only return `grammar_category` values from this list, or `Khác`.
 - [x] Add email/password validation.
 - [x] Add loading and error states.
 - [x] Connect login/register to real `POST /api/auth/login` and `POST /api/auth/register` through the gateway.
-- [x] Store real access/refresh token response from backend.
+- [x] Store real access/refresh token response from backend; use mock session only when `NEXT_PUBLIC_API_MODE=mock`.
 - [x] Convert `app/register/page.tsx` to controlled form.
 - [ ] Save selected level and target through profile/user API when available; otherwise store only through API client fallback.
 - [ ] Add logout behavior in `AppSidebar`.
@@ -599,26 +544,22 @@ Backend must only return `grammar_category` values from this list, or `Khác`.
 - [ ] Add search, filter, and sort.
 - [x] Link each row to `/result?submissionId=...`.
 
-### Phase 6 - Vocabulary (`1/2`)
+### Phase 6 - Vocabulary
 
-- [x] Remove local vocabulary array and mock vocabulary records.
-- [x] Add frontend-ready `1/2` route that documents required backend API.
-- [x] Keep typed client boundary for `api.listVocabulary()` and `api.updateVocabularyMastered()`.
-- [ ] Connect `api.listVocabulary()` after backend module exists.
-- [ ] Persist mastered state through `api.updateVocabularyMastered()` after backend module exists.
-- [ ] Restore search/category/mastered filters over real API data.
-- [ ] Generate vocabulary quiz from filtered or weak words after quiz/vocabulary APIs exist.
+- [ ] Replace local vocabulary array with `api.listVocabulary()`.
+- [ ] Persist mastered state through `api.updateVocabularyMastered()`.
+- [ ] Use database-backed vocabulary records in real mode.
+- [ ] Keep search/category/mastered filters.
+- [ ] Add empty states.
+- [ ] Generate vocabulary quiz from filtered or weak words.
 
-### Phase 7 - Quiz (`1/2`)
+### Phase 7 - Quiz
 
-- [x] Remove static quiz question bank from `app/quiz/page.tsx`.
-- [x] Add frontend-ready `1/2` route that documents required backend API.
-- [x] Keep typed client boundary for `api.generateQuiz()`, `api.getQuiz()`, and `api.submitQuizAttempt()`.
-- [ ] Split quiz source into grammar quiz and vocabulary quiz after backend supports both.
-- [ ] Generate quiz through `api.generateQuiz()` after backend module exists.
-- [ ] Save attempt through `api.submitQuizAttempt()` after backend module exists.
-- [ ] Read quiz questions from backend/database, not static page arrays.
-- [ ] Show score and wrong-answer review over saved attempt data.
+- [ ] Split quiz source into grammar quiz and vocabulary quiz.
+- [ ] Generate quiz through `api.generateQuiz()`.
+- [ ] Save attempt through `api.submitQuizAttempt()`.
+- [ ] Read quiz questions from backend/database in real mode, not static page arrays.
+- [ ] Show score and wrong-answer review.
 - [ ] Support quiz from a specific submission.
 - [ ] Support quiz from weakest grammar categories.
 
@@ -635,19 +576,18 @@ Backend must only return `grammar_category` values from this list, or `Khác`.
 - [x] Keep billing toggle and backend-supported payment method UI.
 - [x] Remove fake card form; backend currently supports provider checkout, not direct card capture.
 - [x] Load subscription plans through `api.listSubscriptionPlans()` and pass `planId` into checkout when available.
-- [x] Submit checkout through real payment API.
+- [x] Submit checkout through real payment API when available; mock checkout only in local/demo mode.
 - [x] Show pending, success, and failure states.
 - [x] Prepare boundary for VNPay, VietQR, and MoMo.
 
 ### Phase 10 - Mock Data Removal And Real Backend Cutover
 
-- [x] Remove `NEXT_PUBLIC_API_MODE`; frontend now exports the real API client only.
-- [x] Verify every completed page uses `lib/api/client.ts` instead of local sample arrays; completed for write, result, dashboard, history, profile, and upgrade.
-- [x] Delete obsolete fixtures from `lib/mock-data/`.
-- [x] Delete `lib/api/mock-client.ts`.
-- [x] Remove fake score generation, fake history generation, and fake quiz/vocabulary records from production code paths.
-- [x] Mark vocabulary and quiz as `1/2` instead of keeping mock/demo behavior.
-- [ ] Confirm real API smoke tests: auth, current user, writing submit, grading/feedback, dashboard/history derived data, and payment status where available.
+- [ ] Set default `.env.example` mode to real once backend gateway is ready for frontend integration.
+- [ ] Verify every page uses `lib/api/client.ts` instead of local sample arrays; completed for write, result, dashboard, history, profile, and upgrade.
+- [ ] Delete obsolete fixtures from `lib/mock-data/` after equivalent backend/database data exists.
+- [ ] Remove fake score generation, fake history generation, fake dashboard aggregation, and fake quiz/vocabulary records from production code paths.
+- [ ] Confirm real API smoke tests: auth, current user, writing submit, grading/feedback, dashboard, history, vocabulary, quiz attempt, and payment status where available.
+- [ ] Keep a small documented demo fixture set only if the team still needs offline presentation mode.
 
 ## Testing Checklist
 
@@ -656,7 +596,7 @@ Backend must only return `grammar_category` values from this list, or `Khác`.
 - [ ] Login validation works
 - [ ] Register validation works
 - [ ] Real login redirects to dashboard when backend auth is available
-- [x] Login redirects use the real auth response only
+- [ ] Mock login redirects to dashboard only in `NEXT_PUBLIC_API_MODE=mock`
 - [ ] App pages guard unauthenticated users
 - [ ] Write page autosaves draft
 - [ ] Submit essay creates backend/database submission in real mode
@@ -738,18 +678,10 @@ Backend must only return `grammar_category` values from this list, or `Khác`.
 - [x] Connected upgrade to subscription plans and payment checkout with optional backend `planId`.
 - [x] Removed mock testimonials/reviews and fake card-entry UI from upgrade page because backend has no review/card-capture API.
 - [x] Confirmed frontend `npm run lint` and `npm run build` pass after backend API integration.
-- [x] Committed backend API integration and navbar/profile upgrade fixes as `ca19919 feat(frontend): connect available backend flows`.
-- [x] Read `C:/Users/DELL/Downloads/Usecase List for NomiWrite.docx` and compared it with current plan/UI/backend coverage.
-- [x] Added usecase gap review for Auth, Writing, AI feedback, Progress, Community, Notifications, Admin, Payment, and VIP scope.
-- [x] Removed the frontend mock API client and deleted the old local fixture directory.
-- [x] Switched `lib/api/client.ts` to real-client only and removed `NEXT_PUBLIC_API_MODE` from `.env.example`.
-- [x] Replaced static quiz and vocabulary data with `1/2` frontend-ready pages that wait for backend APIs.
-- [x] Updated README to describe real-only API integration and `1/2` status shells.
-- [x] Confirmed frontend `npm run lint` and `npm run build` pass after mock data removal.
 
 ## Current Status For Next Session
 
-Next recommended task: run real-mode smoke testing against locally running backend services on `PhmHai0702/fe/api-boundary-real-first`, then implement backend modules for the `1/2` frontend shells.
+Next recommended task: run real-mode smoke testing against locally running backend services on `PhmHai0702/fe/api-boundary-real-first`.
 
 Concrete first commands/files to work on:
 
@@ -757,6 +689,6 @@ Concrete first commands/files to work on:
 2. Move duplicated guide data out of `app/guide/page.tsx` and `app/components/GuideModal.tsx`.
 3. Add backend prompt seed data if `/api/writing/prompts` is empty after migrations.
 4. Add a cleanup check for page-level hard-coded API records.
-5. Implement backend modules for vocabulary and quiz, then switch the `1/2` frontend shells to real data.
+5. Keep vocabulary and quiz mocked until backend modules expose real endpoints.
 6. Run frontend `npm run lint` and `npm run build`.
 7. Update this Progress Log after finishing each backend integration slice.

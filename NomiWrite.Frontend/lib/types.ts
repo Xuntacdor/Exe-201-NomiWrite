@@ -1,4 +1,4 @@
-export type ApiMode = "real";
+export type ApiMode = "mock" | "real";
 
 export type UserPlan = "free" | "premium";
 

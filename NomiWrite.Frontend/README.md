@@ -41,14 +41,15 @@ npm run build
 npm run lint
 ```
 
-## Backend Integration
+## Backend Integration Mode
 
-Backend and database are being developed in parallel. The frontend now uses the real API client only; pages whose backend modules are not ready show a `1/2` status shell instead of local sample data.
+Backend and database are being developed in parallel. Frontend work should keep the existing MVP flows usable with mock/stub data until API contracts are ready.
 
-Default API base URL:
+Default local mode:
 
 ```text
-NEXT_PUBLIC_API_BASE_URL=http://localhost:5097
+NEXT_PUBLIC_API_MODE=mock
+NEXT_PUBLIC_API_BASE_URL=http://localhost:5000
 ```
 
 Planned API boundary:
