@@ -120,7 +120,8 @@ public class GradingService : IGradingService
                 Id = r.Id,
                 SubmissionId = r.SubmissionId,
                 OverallBand = r.OverallBand,
-                CreatedAt = r.CreatedAt
+                CreatedAt = r.CreatedAt,
+                CriteriaScores = r.CriterionScores.ToDictionary(c => c.CriterionName, c => c.Score)
             })
             .ToListAsync();
     }

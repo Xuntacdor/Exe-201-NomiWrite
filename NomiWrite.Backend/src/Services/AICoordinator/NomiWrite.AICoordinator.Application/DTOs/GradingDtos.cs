@@ -49,6 +49,7 @@ public class GradingHistoryItemDto
     public Guid SubmissionId { get; set; }
     public decimal OverallBand { get; set; }
     public DateTime CreatedAt { get; set; }
+    public Dictionary<string, decimal> CriteriaScores { get; set; } = new();
 }
 
 public class ComparisonDto
