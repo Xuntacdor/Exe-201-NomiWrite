@@ -17,7 +17,9 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddPaymentInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
-        var connectionString = configuration.GetConnectionString("PaymentDb")
+        var connectionString = configuration.GetConnectionString("SupabaseDb")
+            ?? configuration["SUPABASE_DB_CONNECTION_STRING"]
+            ?? configuration.GetConnectionString("PaymentDb")
             ?? throw new InvalidOperationException("Connection string 'PaymentDb' is not configured.");
 
         services.AddDbContext<PaymentDbContext>(options =>
