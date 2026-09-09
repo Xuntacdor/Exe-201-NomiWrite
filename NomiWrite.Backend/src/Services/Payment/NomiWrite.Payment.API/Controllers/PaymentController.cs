@@ -86,6 +86,44 @@ public class PaymentController : ControllerBase
         return Ok(result);
     }
 
+    [HttpGet("history")]
+    [Authorize]
+    public async Task<ActionResult<IEnumerable<PaymentHistoryItemDto>>> GetPaymentHistory()
+    {
+        var userId = GetUserId();
+        if (userId is null)
+            return Unauthorized();
+
+        var history = await _paymentService.GetPaymentHistoryAsync(userId.Value);
+        return Ok(history);
+    }
+
+    [HttpPost("{paymentOrderId:guid}/refund-request")]
+    [Authorize]
+    public async Task<ActionResult<RefundRequestDto>> CreateRefundRequest(
+        Guid paymentOrderId,
+        [FromBody] CreateRefundRequestDto request)
+    {
+        var userId = GetUserId();
+        if (userId is null)
+            return Unauthorized();
+
+        var result = await _paymentService.CreateRefundRequestAsync(userId.Value, paymentOrderId, request.Reason);
+        return Ok(result);
+    }
+
+    [HttpGet("refund-requests")]
+    [Authorize]
+    public async Task<ActionResult<IEnumerable<RefundRequestDto>>> GetRefundRequests()
+    {
+        var userId = GetUserId();
+        if (userId is null)
+            return Unauthorized();
+
+        var result = await _paymentService.GetRefundRequestsAsync(userId.Value);
+        return Ok(result);
+    }
+
     [HttpPost("webhook/{provider}")]
     [AllowAnonymous]
     public async Task<IActionResult> HandleWebhook(string provider)

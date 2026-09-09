@@ -46,6 +46,12 @@ public class ExceptionHandlingMiddleware
                 errors = Array.Empty<string>();
                 break;
 
+            case InvalidRefundException invalidRefund:
+                statusCode = invalidRefund.StatusCode;
+                message = exception.Message;
+                errors = Array.Empty<string>();
+                break;
+
             case InvalidWebhookException:
                 statusCode = StatusCodes.Status400BadRequest;
                 message = exception.Message;

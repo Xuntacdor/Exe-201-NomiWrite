@@ -37,6 +37,18 @@ public static class DependencyInjection
             client.Timeout = TimeSpan.FromSeconds(3);
         });
 
+        services.AddHttpClient<IWritingHistoryClient, WritingHistoryClient>(client =>
+        {
+            client.BaseAddress = new Uri(serviceUrls.WritingService);
+            client.Timeout = TimeSpan.FromSeconds(3);
+        });
+
+        services.AddHttpClient<IGradingHistoryClient, GradingHistoryClient>(client =>
+        {
+            client.BaseAddress = new Uri(serviceUrls.AICoordinatorService);
+            client.Timeout = TimeSpan.FromSeconds(3);
+        });
+
         services.AddScoped<IValidator<UpdateProfileRequestDto>, UpdateProfileRequestValidator>();
         services.AddScoped<IUserProfileService, UserProfileService>();
 

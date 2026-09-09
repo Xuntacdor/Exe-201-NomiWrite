@@ -63,6 +63,10 @@ namespace NomiWrite.User.Infrastructure.Migrations
                         .HasColumnType("character varying(50)")
                         .HasColumnName("target_exam");
 
+                    b.Property<DateTime?>("TargetExamDate")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("target_exam_date");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");

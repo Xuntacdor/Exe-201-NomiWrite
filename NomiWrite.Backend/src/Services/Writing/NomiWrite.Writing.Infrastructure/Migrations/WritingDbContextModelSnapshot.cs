@@ -39,6 +39,11 @@ namespace NomiWrite.Writing.Infrastructure.Migrations
                         .HasColumnType("character varying(20)")
                         .HasColumnName("difficulty");
 
+                    b.Property<string>("ImageUrl")
+                        .HasMaxLength(2048)
+                        .HasColumnType("character varying(2048)")
+                        .HasColumnName("image_url");
+
                     b.Property<string>("Instructions")
                         .IsRequired()
                         .HasMaxLength(5000)
@@ -50,6 +55,15 @@ namespace NomiWrite.Writing.Infrastructure.Migrations
                         .HasColumnType("boolean")
                         .HasDefaultValue(true)
                         .HasColumnName("is_active");
+
+                    b.Property<string>("SampleAnswer")
+                        .HasMaxLength(20000)
+                        .HasColumnType("character varying(20000)")
+                        .HasColumnName("sample_answer");
+
+                    b.Property<int?>("TimeLimitMinutes")
+                        .HasColumnType("integer")
+                        .HasColumnName("time_limit_minutes");
 
                     b.Property<string>("Title")
                         .IsRequired()
@@ -90,6 +104,10 @@ namespace NomiWrite.Writing.Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
+                    b.Property<DateTime?>("DeadlineAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deadline_at");
+
                     b.Property<bool>("IsTimed")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")
@@ -109,6 +127,12 @@ namespace NomiWrite.Writing.Infrastructure.Migrations
                     b.Property<DateTime?>("SubmittedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("submitted_at");
+
+                    b.Property<bool>("SubmittedLate")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("submitted_late");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")

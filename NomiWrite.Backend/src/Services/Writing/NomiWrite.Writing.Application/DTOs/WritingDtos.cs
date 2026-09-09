@@ -17,6 +17,7 @@ public class WritingPromptDto
     public string WritingTypeName { get; set; } = string.Empty;
     public string Title { get; set; } = string.Empty;
     public string Instructions { get; set; } = string.Empty;
+    public string? ImageUrl { get; set; }
     public DifficultyLevel Difficulty { get; set; }
 }
 
@@ -26,6 +27,7 @@ public class WritingPromptListItemDto
     public Guid WritingTypeId { get; set; }
     public string WritingTypeName { get; set; } = string.Empty;
     public string Title { get; set; } = string.Empty;
+    public string? ImageUrl { get; set; }
     public DifficultyLevel Difficulty { get; set; }
 }
 
@@ -48,6 +50,7 @@ public class SubmissionResponseDto
     public string Content { get; set; } = string.Empty;
     public int WordCount { get; set; }
     public SubmissionStatus Status { get; set; }
+    public bool SubmittedLate { get; set; }
     public DateTime StartedAt { get; set; }
     public DateTime? SubmittedAt { get; set; }
 }
@@ -61,4 +64,16 @@ public class SubmissionListItemDto
     public SubmissionStatus Status { get; set; }
     public DateTime StartedAt { get; set; }
     public DateTime? SubmittedAt { get; set; }
+}
+
+public class SubmissionTimeRemainingDto
+{
+    public DateTime? DeadlineAt { get; set; }
+    public int SecondsRemaining { get; set; }
+    public bool IsTimed { get; set; }
+}
+
+public class SampleAnswerDto
+{
+    public string? SampleAnswer { get; set; }
 }

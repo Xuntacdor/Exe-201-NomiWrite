@@ -8,4 +8,5 @@ public interface IUserProfileService
     Task<UserProfileDto> GetProfileAsync(Guid userId);
     Task<UserProfileDto> UpdateProfileAsync(Guid userId, UpdateProfileRequestDto dto);
     Task<MyAccountDto> GetMyAccountAsync(Guid userId, string? accessToken);
+    Task<ProgressResponseDto> GetProgressAsync(Guid userId, string? accessToken);
 }

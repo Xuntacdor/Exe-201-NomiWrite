@@ -22,6 +22,46 @@ namespace NomiWrite.AICoordinator.Infrastructure.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("NomiWrite.AICoordinator.Domain.Entities.GradingFeedbackFlag", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("GradingResultId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("grading_result_id");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("reason");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GradingResultId")
+                        .HasDatabaseName("ix_grading_feedback_flags_grading_result_id");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("ix_grading_feedback_flags_user_id");
+
+                    b.ToTable("grading_feedback_flags", (string)null);
+                });
+
             modelBuilder.Entity("NomiWrite.AICoordinator.Domain.Entities.GradingResult", b =>
                 {
                     b.Property<Guid>("Id")
@@ -62,6 +102,60 @@ namespace NomiWrite.AICoordinator.Infrastructure.Migrations
                         .HasColumnType("character varying(5000)")
                         .HasColumnName("overall_feedback");
 
+                    b.Property<string>("RestructuringSuggestionsJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("restructuring_suggestions_json");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status");
+
+                    b.Property<Guid>("SubmissionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("submission_id");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.Property<string>("VocabularySuggestionsJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("vocabulary_suggestions_json");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SubmissionId")
+                        .HasDatabaseName("ix_grading_results_submission_id");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("ix_grading_results_user_id");
+
+                    b.ToTable("grading_results", (string)null);
+                });
+
+            modelBuilder.Entity("NomiWrite.AICoordinator.Domain.Entities.TutorReviewRequest", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTime>("RequestedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("requested_at");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(20)
@@ -82,13 +176,10 @@ namespace NomiWrite.AICoordinator.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("SubmissionId")
-                        .HasDatabaseName("ix_grading_results_submission_id");
-
                     b.HasIndex("UserId")
-                        .HasDatabaseName("ix_grading_results_user_id");
+                        .HasDatabaseName("ix_tutor_review_requests_user_id");
 
-                    b.ToTable("grading_results", (string)null);
+                    b.ToTable("tutor_review_requests", (string)null);
                 });
 #pragma warning restore 612, 618
         }

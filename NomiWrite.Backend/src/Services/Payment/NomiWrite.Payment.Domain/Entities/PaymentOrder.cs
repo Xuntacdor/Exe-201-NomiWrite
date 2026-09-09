@@ -12,6 +12,8 @@ public class PaymentOrder : BaseEntity
     public PaymentStatus Status { get; set; } = PaymentStatus.Pending;
     public string OrderReference { get; set; } = string.Empty;
     public Guid? PlanId { get; set; }
+    public int? AppliedDiscountPercent { get; set; }
 
     public ICollection<PaymentTransaction> Transactions { get; set; } = new List<PaymentTransaction>();
+    public ICollection<RefundRequest> RefundRequests { get; set; } = new List<RefundRequest>();
 }

@@ -52,6 +52,17 @@ public class UserController : ControllerBase
         return Ok(myAccount);
     }
 
+    [HttpGet("me/progress")]
+    public async Task<ActionResult<ProgressResponseDto>> GetMyProgress()
+    {
+        var userId = GetUserId();
+        if (userId is null)
+            return Unauthorized();
+
+        var progress = await _userProfileService.GetProgressAsync(userId.Value, GetBearerToken());
+        return Ok(progress);
+    }
+
     private Guid? GetUserId()
     {
         var userIdValue = User.FindFirstValue(JwtRegisteredClaimNames.Sub);

@@ -62,6 +62,14 @@ public class GradingResultConfiguration : IEntityTypeConfiguration<GradingResult
             .HasColumnName("grammar_errors_json")
             .HasColumnType("jsonb");
 
+        builder.Property(g => g.VocabularySuggestionsJson)
+            .HasColumnName("vocabulary_suggestions_json")
+            .HasColumnType("jsonb");
+
+        builder.Property(g => g.RestructuringSuggestionsJson)
+            .HasColumnName("restructuring_suggestions_json")
+            .HasColumnType("jsonb");
+
         builder.Property(g => g.Status)
             .HasColumnName("status")
             .IsRequired()
