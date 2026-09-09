@@ -747,10 +747,8 @@ Backend must only return `grammar_category` values from this list, or `Khác`.
 - [x] Replaced static quiz and vocabulary data with `1/2` frontend-ready pages that wait for backend APIs.
 - [x] Updated README to describe real-only API integration and `1/2` status shells.
 - [x] Confirmed frontend `npm run lint` and `npm run build` pass after mock data removal.
-- [x] Added local gateway `ReverseProxy` development routes for Auth, User, Writing, Grading, Payment, and Subscription service ports.
-- [x] Added development appsettings for User, Writing, AICoordinator, and Subscription, plus local overrides for Auth/Payment.
-- [x] Confirmed `dotnet build NomiWrite.Backend/NomiWrite.sln` passes after running outside the sandbox so .NET can read NuGet config.
-- [x] Started frontend, gateway, and backend HTTP services locally; ports are open, but data APIs still need the backend team's database and RabbitMQ configuration.
+- [x] Reverted accidental backend development config edits; frontend work must not own backend service configuration.
+- [x] Started frontend and pointed it at the backend gateway; backend API `500`/timeout issues remain backend-runtime concerns.
 
 ## Current Status For Next Session
 
@@ -758,10 +756,9 @@ Next recommended task: run real-mode smoke testing against locally running backe
 
 Concrete first commands/files to work on:
 
-1. Restore or create local Gateway `ReverseProxy` config because tracked `NomiWrite.Gateway/appsettings.json` was removed by backend changes.
-2. Move duplicated guide data out of `app/guide/page.tsx` and `app/components/GuideModal.tsx`.
-3. Add backend prompt seed data if `/api/writing/prompts` is empty after migrations.
-4. Add a cleanup check for page-level hard-coded API records.
-5. Implement backend modules for vocabulary and quiz, then switch the `1/2` frontend shells to real data.
+1. Move duplicated guide data out of `app/guide/page.tsx` and `app/components/GuideModal.tsx`.
+2. Add a cleanup check for page-level hard-coded API records.
+3. Keep vocabulary and quiz as `1/2` frontend shells until backend APIs are delivered.
+4. Retest login/register once backend Auth service is healthy again.
 6. Run frontend `npm run lint` and `npm run build`.
 7. Update this Progress Log after finishing each backend integration slice.
