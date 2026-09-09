@@ -16,6 +16,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { apiClient } from "@/lib/api/client";
+import { handleAuthFailure } from "@/lib/auth/handle-auth-error";
 import { getSession } from "@/lib/auth/session";
 import type { WritingPrompt, WritingType } from "@/lib/types";
 
@@ -66,7 +67,9 @@ function WriteContent() {
           setSelectedTypeId(nextType);
         })
         .catch(err => {
-          if (!ignore) setError(err instanceof Error ? err.message : "Could not load writing types.");
+          if (ignore) return;
+          if (handleAuthFailure(err, router)) return;
+          setError(err instanceof Error ? err.message : "Could not load writing types.");
         })
         .finally(() => {
           if (!ignore) setLoadingTypes(false);
@@ -93,7 +96,9 @@ function WriteContent() {
           setSelectedPromptId(items[0]?.id ?? "");
         })
         .catch(err => {
-          if (!ignore) setError(err instanceof Error ? err.message : "Could not load writing prompts.");
+          if (ignore) return;
+          if (handleAuthFailure(err, router)) return;
+          setError(err instanceof Error ? err.message : "Could not load writing prompts.");
         })
         .finally(() => {
           if (!ignore) setLoadingPrompts(false);
@@ -155,6 +160,7 @@ function WriteContent() {
       localStorage.removeItem(draftKey);
       router.push(`/result?submissionId=${submission.id}`);
     } catch (err) {
+      if (handleAuthFailure(err, router)) return;
       setError(err instanceof Error ? err.message : "Could not submit your writing.");
     } finally {
       setSubmitting(false);

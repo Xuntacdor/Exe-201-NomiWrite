@@ -24,6 +24,13 @@ import { apiRoutes } from "./routes";
 const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:5097";
 const requestTimeoutMs = 8_000;
 
+export class ApiRequestError extends Error {
+  constructor(message: string, public readonly status?: number) {
+    super(message);
+    this.name = "ApiRequestError";
+  }
+}
+
 function unavailable<T>(feature: string): Promise<T> {
   return Promise.reject(new Error(`${feature} API is not available from the backend yet.`));
 }
@@ -282,7 +289,7 @@ async function request<T>(path: string, init: RequestInit, authenticated = false
     });
   } catch (error) {
     const aborted = error instanceof DOMException && error.name === "AbortError";
-    throw new Error(
+    throw new ApiRequestError(
       aborted
         ? `Backend API at ${apiBaseUrl} did not respond within ${requestTimeoutMs / 1000}s. Check Supabase/PostgreSQL/RabbitMQ and reload this page.`
         : `Cannot connect to backend API at ${apiBaseUrl}. Start the gateway/backend services and reload this page.`,
@@ -293,7 +300,7 @@ async function request<T>(path: string, init: RequestInit, authenticated = false
 
   if (!response.ok) {
     const message = await response.text();
-    throw new Error(buildErrorMessage(message, `Request failed with status ${response.status}`));
+    throw new ApiRequestError(buildErrorMessage(message, `Request failed with status ${response.status}`), response.status);
   }
 
   if (response.status === 204) {

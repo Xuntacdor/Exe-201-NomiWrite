@@ -2,6 +2,7 @@
 
 import { FormEvent, type ElementType, ReactNode, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import AppShell from "../components/AppShell";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
@@ -20,6 +21,7 @@ import {
   Zap,
 } from "lucide-react";
 import { apiClient } from "@/lib/api/client";
+import { handleAuthFailure } from "@/lib/auth/handle-auth-error";
 import { getSession } from "@/lib/auth/session";
 import type { SubscriptionPlan } from "@/lib/types";
 
@@ -66,10 +68,8 @@ function PageFrame({ signedIn, children }: { signedIn: boolean; children: ReactN
 }
 
 export default function UpgradePage() {
-  const [signedIn] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return Boolean(getSession()?.accessToken);
-  });
+  const router = useRouter();
+  const [signedIn, setSignedIn] = useState(false);
   const [method, setMethod] = useState<PaymentMethod>("vnpay");
   const [billing, setBilling] = useState<"monthly" | "yearly">("monthly");
   const [agreed, setAgreed] = useState(false);
@@ -80,6 +80,14 @@ export default function UpgradePage() {
 
   const fallbackMonthly = 199_000;
   const fallbackYearlyTotal = 1_908_000;
+
+  useEffect(() => {
+    const sessionTimer = setTimeout(() => {
+      setSignedIn(Boolean(getSession()?.accessToken));
+    }, 0);
+
+    return () => clearTimeout(sessionTimer);
+  }, []);
 
   useEffect(() => {
     let ignore = false;
@@ -133,6 +141,7 @@ export default function UpgradePage() {
 
       setDone(true);
     } catch (err) {
+      if (handleAuthFailure(err, router)) return;
       setError(err instanceof Error ? err.message : "Could not create payment. Please try again.");
     } finally {
       setLoading(false);

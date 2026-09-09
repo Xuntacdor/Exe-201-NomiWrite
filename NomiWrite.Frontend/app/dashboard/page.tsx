@@ -19,6 +19,7 @@ import {
   X,
 } from "lucide-react";
 import { apiClient } from "@/lib/api/client";
+import { handleAuthFailure } from "@/lib/auth/handle-auth-error";
 import { getSession } from "@/lib/auth/session";
 import type { Submission, User } from "@/lib/types";
 
@@ -66,7 +67,9 @@ export default function DashboardPage() {
           setSubmissions(history);
         })
         .catch(err => {
-          if (!ignore) setError(err instanceof Error ? err.message : "Could not load dashboard.");
+          if (ignore) return;
+          if (handleAuthFailure(err, router)) return;
+          setError(err instanceof Error ? err.message : "Could not load dashboard.");
         })
         .finally(() => {
           if (!ignore) setLoading(false);
