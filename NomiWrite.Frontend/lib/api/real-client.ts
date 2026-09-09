@@ -38,6 +38,8 @@ function unavailable<T>(feature: string): Promise<T> {
 interface ApiErrorBody {
   message?: string;
   errors?: string[];
+  title?: string;
+  detail?: string;
 }
 
 interface BackendPaymentResponse {
@@ -117,13 +119,20 @@ function getAuthHeaders(): HeadersInit {
     : {};
 }
 
-function buildErrorMessage(body: string, fallback: string) {
+function buildErrorMessage(body: string, fallback: string, status?: number) {
   if (!body) return fallback;
 
   try {
     const parsed = JSON.parse(body) as ApiErrorBody;
     if (parsed.errors?.length) return parsed.errors.join(" ");
-    if (parsed.message) return parsed.message;
+    const parsedMessage = parsed.message ?? parsed.detail ?? parsed.title;
+    if (parsedMessage) {
+      if (status && status >= 500 && /unexpected error/i.test(parsedMessage)) {
+        return `${fallback}. Check the backend logs for the root cause.`;
+      }
+
+      return parsedMessage;
+    }
   } catch {
     return body;
   }
@@ -300,7 +309,7 @@ async function request<T>(path: string, init: RequestInit, authenticated = false
 
   if (!response.ok) {
     const message = await response.text();
-    throw new ApiRequestError(buildErrorMessage(message, `Request failed with status ${response.status}`), response.status);
+    throw new ApiRequestError(buildErrorMessage(message, `Request failed with status ${response.status}`, response.status), response.status);
   }
 
   if (response.status === 204) {
