@@ -27,6 +27,28 @@ export interface RegisterRequest {
   fullName: string;
 }
 
+export interface AuthResult {
+  success: boolean;
+  message: string;
+}
+
+export interface ForgotPasswordRequest {
+  email: string;
+}
+
+export interface ResetPasswordRequest {
+  token: string;
+  newPassword: string;
+}
+
+export interface VerifyEmailRequest {
+  token: string;
+}
+
+export interface ResendVerificationEmailRequest {
+  email: string;
+}
+
 export interface AuthResponse {
   accessToken: string;
   refreshToken: string;
@@ -51,7 +73,14 @@ export interface WritingPrompt {
   writingType: string;
   topic: string;
   prompt: string;
+  imageUrl?: string;
   difficulty?: "Beginner" | "Intermediate" | "Advanced" | string;
+}
+
+export interface SubmissionTimeRemaining {
+  deadlineAt?: string | null;
+  secondsRemaining: number;
+  isTimed: boolean;
 }
 
 export interface SubmitSubmissionRequest {
@@ -108,11 +137,63 @@ export interface VocabSuggestion {
   isMastered: boolean;
 }
 
+export interface RestructuringSuggestion {
+  id: string;
+  submissionId: string;
+  originalSentence: string;
+  suggestedRewrite: string;
+  reason: string;
+}
+
 export interface WritingFeedback {
+  id?: string;
   submission: Submission;
   criteriaScores: CriteriaScores;
   grammarErrors: GrammarError[];
   vocabSuggestions: VocabSuggestion[];
+  restructuringSuggestions?: RestructuringSuggestion[];
+}
+
+export interface GradingHistoryItem {
+  id: string;
+  submissionId: string;
+  overallBand: number;
+  createdAt: string;
+}
+
+export interface FeedbackComparison {
+  current: WritingFeedback;
+  previous?: WritingFeedback | null;
+  bandDifference?: number | null;
+}
+
+export interface TutorReviewRequest {
+  id: string;
+  submissionId: string;
+  status: string;
+  requestedAt: string;
+}
+
+export interface FlagFeedbackRequest {
+  reason: string;
+}
+
+export interface FeedbackFlagConfirmation {
+  id: string;
+  gradingResultId: string;
+  reason: string;
+  createdAt: string;
+}
+
+export interface UserProgress {
+  bandHistory: { date: string; band: number }[];
+  strengthsWeaknesses?: string | null;
+  currentStreak: number;
+  totalSubmissions: number;
+  badges: { name: string; achieved: boolean }[];
+  targetExam?: string | null;
+  targetBand?: number | null;
+  targetExamDate?: string | null;
 }
 
 export interface QuizQuestion {
@@ -175,6 +256,7 @@ export interface CheckoutRequest {
   amount?: number;
   currency?: string;
   planId?: string;
+  promoCode?: string;
 }
 
 export interface CheckoutResponse {
@@ -187,6 +269,31 @@ export interface CheckoutResponse {
   checkoutUrl?: string;
   createdAt?: string;
   updatedAt?: string;
+  appliedDiscountPercent?: number;
+}
+
+export interface PaymentHistoryItem {
+  id: string;
+  amount: number;
+  currency: string;
+  provider: "VNPay" | "Momo" | "VietQR" | string;
+  status: "pending" | "success" | "failed" | "refunded" | string;
+  planId?: string | null;
+  createdAt: string;
+}
+
+export interface RefundRequest {
+  id: string;
+  paymentOrderId: string;
+  reason: string;
+  status: string;
+  requestedAt: string;
+  createdAt: string;
+}
+
+export interface PromoCodeValidation {
+  valid: boolean;
+  discountPercent?: number | null;
 }
 
 export interface ApiClient {
@@ -194,16 +301,30 @@ export interface ApiClient {
   register(request: RegisterRequest): Promise<AuthResponse>;
   refresh(refreshToken: string): Promise<AuthResponse>;
   logout(): Promise<void>;
+  verifyEmail(request: VerifyEmailRequest): Promise<AuthResult>;
+  resendVerificationEmail(request: ResendVerificationEmailRequest): Promise<AuthResult>;
+  forgotPassword(request: ForgotPasswordRequest): Promise<AuthResult>;
+  resetPassword(request: ResetPasswordRequest): Promise<AuthResult>;
+  deactivateAccount(): Promise<AuthResult>;
   getMe(): Promise<User>;
   updateMe(request: Partial<Pick<User, "displayName" | "currentLevel" | "targetType" | "targetBand">>): Promise<User>;
   getMyAccount(): Promise<User>;
+  getUserProgress(): Promise<UserProgress>;
   listWritingTypes(): Promise<WritingType[]>;
   listWritingPrompts(writingType?: string, topic?: string): Promise<WritingPrompt[]>;
+  getWritingPrompt(id: string): Promise<WritingPrompt>;
+  getPromptSampleAnswer(id: string): Promise<string | null>;
   submitSubmission(request: SubmitSubmissionRequest): Promise<Submission>;
   listSubmissions(): Promise<Submission[]>;
   getSubmission(id: string): Promise<Submission>;
+  getSubmissionTimeRemaining(id: string): Promise<SubmissionTimeRemaining>;
   gradeSubmission(id: string): Promise<WritingFeedback>;
   getFeedback(submissionId: string): Promise<WritingFeedback>;
+  listGradingHistory(): Promise<GradingHistoryItem[]>;
+  compareSubmissionFeedback(submissionId: string): Promise<FeedbackComparison>;
+  requestTutorReview(submissionId: string): Promise<TutorReviewRequest>;
+  listTutorReviewRequests(): Promise<TutorReviewRequest[]>;
+  flagFeedback(gradingResultId: string, request: FlagFeedbackRequest): Promise<FeedbackFlagConfirmation>;
   getDashboardSummary(): Promise<DashboardSummary>;
   listVocabulary(): Promise<VocabSuggestion[]>;
   updateVocabularyMastered(id: string, request: UpdateVocabularyMasteredRequest): Promise<VocabSuggestion>;
@@ -212,8 +333,13 @@ export interface ApiClient {
   submitQuizAttempt(request: SubmitQuizAttemptRequest): Promise<QuizAttempt>;
   createCheckout(request: CheckoutRequest): Promise<CheckoutResponse>;
   getPaymentStatus(id: string): Promise<CheckoutResponse>;
+  listPaymentHistory(): Promise<PaymentHistoryItem[]>;
+  createRefundRequest(paymentOrderId: string, reason: string): Promise<RefundRequest>;
+  listRefundRequests(): Promise<RefundRequest[]>;
   listSubscriptionPlans(): Promise<SubscriptionPlan[]>;
   getCurrentSubscription(): Promise<SubscriptionStatus>;
+  cancelSubscription(): Promise<SubscriptionStatus>;
+  validatePromoCode(code: string): Promise<PromoCodeValidation>;
 }
 
 export interface SubscriptionPlan {

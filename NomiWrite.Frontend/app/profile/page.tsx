@@ -9,10 +9,12 @@ import {
   BookOpen,
   Check,
   Edit2,
+  LoaderCircle,
   Loader2,
   Mail,
   PenLine,
   Save,
+  ShieldOff,
   Target,
   TrendingUp,
   User as UserIcon,
@@ -20,8 +22,8 @@ import {
   Zap,
 } from "lucide-react";
 import { apiClient, apiMode } from "@/lib/api/client";
-import { getSession } from "@/lib/auth/session";
-import type { User } from "@/lib/types";
+import { clearSession, getSession } from "@/lib/auth/session";
+import type { User, UserProgress } from "@/lib/types";
 
 const levels = ["Beginner", "Elementary", "Intermediate", "UpperIntermediate", "Advanced", "Proficient"];
 const targets = ["IELTS", "TOEFL", "Business Email", "Academic", "Cover Letter"];
@@ -40,7 +42,10 @@ export default function ProfilePage() {
   const [targetBand, setTargetBand] = useState("");
   const [editing, setEditing] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [progress, setProgress] = useState<UserProgress | null>(null);
+  const [loadingProgress, setLoadingProgress] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [accountAction, setAccountAction] = useState<"cancel" | "deactivate" | "">("");
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -66,6 +71,18 @@ export default function ProfilePage() {
         })
         .finally(() => {
           if (!ignore) setLoading(false);
+        });
+
+      setLoadingProgress(true);
+      apiClient.getUserProgress()
+        .then(data => {
+          if (!ignore) setProgress(data);
+        })
+        .catch(() => {
+          if (!ignore) setProgress(null);
+        })
+        .finally(() => {
+          if (!ignore) setLoadingProgress(false);
         });
     }, 0);
 
@@ -97,6 +114,41 @@ export default function ProfilePage() {
 
   const initial = (profile?.displayName ?? "N").slice(0, 1).toUpperCase();
   const planLabel = profile?.plan === "premium" ? "Premium" : "Free";
+
+  async function handleCancelSubscription() {
+    if (!window.confirm("Cancel your current subscription?")) return;
+
+    setAccountAction("cancel");
+    setError("");
+    try {
+      const status = await apiClient.cancelSubscription();
+      setProfile(current => current ? {
+        ...current,
+        plan: status.hasSubscription ? "premium" : "free",
+        subscriptionEndDate: status.status?.endDate ?? current.subscriptionEndDate,
+      } : current);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not cancel subscription.");
+    } finally {
+      setAccountAction("");
+    }
+  }
+
+  async function handleDeactivateAccount() {
+    if (!window.confirm("Deactivate this account? You will be signed out after the request succeeds.")) return;
+
+    setAccountAction("deactivate");
+    setError("");
+    try {
+      await apiClient.deactivateAccount();
+      clearSession();
+      router.push("/login");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not deactivate account.");
+    } finally {
+      setAccountAction("");
+    }
+  }
 
   return (
     <AppShell activePath="/profile">
@@ -172,6 +224,33 @@ export default function ProfilePage() {
                 <Link href="/upgrade" className="block w-full rounded-xl bg-gradient-to-r from-blue-600 to-violet-600 py-2.5 text-center text-xs font-bold text-white transition-opacity hover:opacity-90">
                   Upgrade Premium
                 </Link>
+                {profile.plan === "premium" && (
+                  <button
+                    type="button"
+                    onClick={handleCancelSubscription}
+                    disabled={accountAction === "cancel"}
+                    className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl border border-amber-200 bg-amber-50 py-2.5 text-xs font-bold text-amber-700 transition-colors hover:bg-amber-100 disabled:opacity-60"
+                  >
+                    {accountAction === "cancel" && <LoaderCircle className="h-3.5 w-3.5 animate-spin" />}
+                    Cancel subscription
+                  </button>
+                )}
+              </div>
+
+              <div className="rounded-2xl border border-red-100 bg-white p-5 shadow-sm">
+                <p className="mb-2 text-xs font-bold uppercase tracking-widest text-red-400">Account safety</p>
+                <p className="mb-4 text-xs leading-relaxed text-slate-500">
+                  Account deactivation is backed by `/api/auth/deactivate`.
+                </p>
+                <button
+                  type="button"
+                  onClick={handleDeactivateAccount}
+                  disabled={accountAction === "deactivate"}
+                  className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 py-2.5 text-xs font-bold text-red-700 transition-colors hover:bg-red-100 disabled:opacity-60"
+                >
+                  {accountAction === "deactivate" ? <LoaderCircle className="h-3.5 w-3.5 animate-spin" /> : <ShieldOff className="h-3.5 w-3.5" />}
+                  Deactivate account
+                </button>
               </div>
             </div>
 
@@ -249,6 +328,49 @@ export default function ProfilePage() {
               )}
 
               <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+                <div className="mb-4 flex items-center justify-between">
+                  <h3 className="text-sm font-extrabold text-slate-900">Learning progress</h3>
+                  {loadingProgress && <Loader2 className="h-4 w-4 animate-spin text-slate-400" />}
+                </div>
+                {progress ? (
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-3 gap-3">
+                      {[
+                        { label: "Submissions", value: progress.totalSubmissions, icon: PenLine },
+                        { label: "Streak", value: progress.currentStreak, icon: Zap },
+                        { label: "Target", value: progress.targetBand ?? "--", icon: Target },
+                      ].map(({ label, value, icon: Icon }) => (
+                        <div key={label} className="rounded-xl border border-slate-100 bg-slate-50 p-3 text-center">
+                          <Icon className="mx-auto mb-2 h-4 w-4 text-blue-500" />
+                          <p className="text-xl font-extrabold text-slate-900">{value}</p>
+                          <p className="text-xs text-slate-500">{label}</p>
+                        </div>
+                      ))}
+                    </div>
+                    {progress.strengthsWeaknesses && (
+                      <p className="rounded-xl border border-blue-100 bg-blue-50 p-3 text-xs leading-relaxed text-blue-700">
+                        {progress.strengthsWeaknesses}
+                      </p>
+                    )}
+                    <div className="flex flex-wrap gap-2">
+                      {progress.badges.map(badge => (
+                        <span
+                          key={badge.name}
+                          className={`rounded-full px-3 py-1 text-xs font-bold ${badge.achieved ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-400"}`}
+                        >
+                          {badge.name}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <p className="rounded-xl bg-slate-50 p-4 text-sm text-slate-500">
+                    Progress endpoint is ready in the frontend; no progress data was returned yet.
+                  </p>
+                )}
+              </div>
+
+              <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
                 <h3 className="mb-4 text-sm font-extrabold text-slate-900">API-backed profile fields</h3>
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                   {[
@@ -256,7 +378,7 @@ export default function ProfilePage() {
                     { icon: Target, label: "Learning target", done: true },
                     { icon: Award, label: "Subscription", done: true },
                     { icon: BookOpen, label: "Vocabulary", done: false },
-                    { icon: Zap, label: "Achievements", done: false },
+                    { icon: Zap, label: "Progress", done: Boolean(progress) },
                     { icon: PenLine, label: "Usage quota", done: false },
                   ].map(({ icon: Icon, label, done }) => (
                     <div key={label} className={`flex items-center gap-3 rounded-xl border p-3 ${done ? "border-emerald-200 bg-emerald-50" : "border-slate-100 bg-slate-50 opacity-60"}`}>

@@ -1,6 +1,6 @@
 # NomiWrite Frontend Plan
 
-Last updated: 2026-09-05
+Last updated: 2026-09-09
 
 ## Location
 
@@ -201,13 +201,14 @@ Use this order for every feature area:
 
 Current known backend status:
 
-- Auth has real endpoints: `POST /api/auth/register`, `POST /api/auth/login`, `POST /api/auth/refresh`, and `POST /api/auth/logout`.
-- User profile has real endpoints: `GET /api/users/me`, `PUT /api/users/me`, and `GET /api/users/me/account`.
-- Writing has real endpoints for types, prompts, draft creation, content update, submit, list, and detail under `/api/writing`.
-- AI Coordinator has a real grading read endpoint: `GET /api/grading/submissions/{submissionId}`.
-- Payment has real create/status endpoints under `/api/payment`, plus VNPay and MoMo IPN handlers.
-- Subscription has real plan/status endpoints: `GET /api/subscriptions/plans` and `GET /api/subscriptions/me`.
-- Dashboard, vocabulary, quiz, quiz-attempts, and dedicated vocabulary suggestions are not exposed as real backend modules yet; keep those as mock/demo or derive from available Writing/User/Grading data only.
+- Auth has real endpoints: `POST /api/auth/register`, `POST /api/auth/login`, `POST /api/auth/refresh`, `POST /api/auth/logout`, `POST /api/auth/verify-email`, `POST /api/auth/resend-verification-email`, `POST /api/auth/forgot-password`, `POST /api/auth/reset-password`, and `POST /api/auth/deactivate`.
+- User profile has real endpoints: `GET /api/users/me`, `PUT /api/users/me`, `GET /api/users/me/account`, and `GET /api/users/me/progress`.
+- Writing has real endpoints for types, prompts, prompt detail, sample answer, draft creation, content update, submit, list, detail, and timed-submission remaining time under `/api/writing`.
+- AI Coordinator has real grading endpoints for result detail, grading history, compare with previous attempt, tutor review request/list, and flagging feedback under `/api/grading`.
+- Payment has real create/status/history/refund endpoints under `/api/payment`, plus VNPay and MoMo IPN handlers.
+- Subscription has real plan/status/cancel/promo-code endpoints under `/api/subscriptions`.
+- Dashboard is still derived in frontend from User/Writing/Grading data because there is no dedicated dashboard endpoint in the pulled backend.
+- Vocabulary, quiz, quiz-attempts, notifications, forum, and usage quota are not exposed as dedicated backend modules yet; keep these pages at status 1/2 and do not call missing real endpoints.
 - Gateway still depends on a local `ReverseProxy` config, while tracked `NomiWrite.Gateway/appsettings.json` was removed from source after the latest backend merge.
 
 ## Frontend MVP Scope
@@ -494,6 +495,7 @@ Backend must only return `grammar_category` values from this list, or `Khác`.
 - [ ] Move dashboard/history/profile/result sample records out of page files.
 - [x] Create `lib/api/client.ts`, `mock-client.ts`, `real-client.ts`, and `routes.ts`.
 - [x] Implement typed real API functions against gateway routes.
+- [x] Add frontend API contracts for newly pulled Auth/User/Writing/Grading/Payment/Subscription endpoints.
 - [x] Keep typed mock responses only as fallback when real backend endpoints are not ready.
 - [ ] Add a cleanup check that blocks feature completion if page-level hard-coded data remains.
 
@@ -505,6 +507,8 @@ Backend must only return `grammar_category` values from this list, or `Khác`.
 - [x] Connect login/register to real `POST /api/auth/login` and `POST /api/auth/register` through the gateway.
 - [x] Store real access/refresh token response from backend; use mock session only when `NEXT_PUBLIC_API_MODE=mock`.
 - [x] Convert `app/register/page.tsx` to controlled form.
+- [x] Add frontend pages for email verification, resend verification email, forgot password, and reset password.
+- [x] Add frontend account deactivation action through `POST /api/auth/deactivate`.
 - [ ] Save selected level and target through profile/user API when available; otherwise store only through API client fallback.
 - [ ] Add logout behavior in `AppSidebar`.
 - [x] Add simple route guard for API-backed app pages in real mode.
@@ -513,6 +517,7 @@ Backend must only return `grammar_category` values from this list, or `Khác`.
 ### Phase 3 - Writing Flow
 
 - [x] Connect writing type/topic selectors to backend `api.listWritingTypes()` and `api.listWritingPrompts()`.
+- [x] Connect prompt sample answer UI to `GET /api/writing/prompts/{id}/sample-answer`.
 - [x] Add draft autosave keyed by selected writing prompt/type.
 - [x] Recover draft on page load.
 - [x] Validate/display recommended minimum word count by writing type.
@@ -528,11 +533,13 @@ Backend must only return `grammar_category` values from this list, or `Khác`.
 - [x] Add loading, error, and empty states.
 - [x] Render criteria scores from `WritingFeedback`.
 - [x] Render grammar errors from API-shaped data.
-- [ ] Render vocabulary suggestions from API-shaped data; backend grading DTO does not expose vocabulary suggestions yet.
+- [x] Render vocabulary suggestions from API-shaped data returned by grading.
+- [x] Render restructuring/rewrite suggestions from API-shaped data returned by grading.
 - [x] Remove hard-coded grammar/vocabulary feedback from `app/result/page.tsx`.
 - [x] Read persisted feedback from backend/database through API client in real mode.
 - [x] Keep AI score disclaimer visible.
 - [x] Add CTA to generate quiz from current submission.
+- [x] Add frontend actions for compare with previous attempt, request tutor review, and flag feedback.
 
 ### Phase 5 - Dashboard And History
 
@@ -541,27 +548,28 @@ Backend must only return `grammar_category` values from this list, or `Khác`.
 - [ ] Use backend/database summary data for score trend and grammar error profile when available.
 - [x] Keep frontend aggregation only as fallback/derived behavior over API client data.
 - [x] Replace history hard-coded list with `api.listSubmissions()`.
+- [x] Merge grading history bands into history rows when `GET /api/grading/history` returns data.
 - [ ] Add search, filter, and sort.
 - [x] Link each row to `/result?submissionId=...`.
 
 ### Phase 6 - Vocabulary
 
-- [ ] Replace local vocabulary array with `api.listVocabulary()`.
-- [ ] Persist mastered state through `api.updateVocabularyMastered()`.
-- [ ] Use database-backed vocabulary records in real mode.
-- [ ] Keep search/category/mastered filters.
-- [ ] Add empty states.
-- [ ] Generate vocabulary quiz from filtered or weak words.
+- [x] Replace page-level vocabulary array with `api.listVocabulary()` in mock/demo mode.
+- [x] Persist mastered state through `api.updateVocabularyMastered()` in mock/demo mode.
+- [ ] 1/2: Use database-backed vocabulary records in real mode after backend exposes dedicated vocabulary list/update endpoints.
+- [ ] 1/2: Keep category/mastered filters when real vocabulary taxonomy is defined by backend.
+- [x] Add empty/pending states.
+- [ ] 1/2: Generate vocabulary quiz from filtered or weak words after quiz/vocabulary APIs exist.
 
 ### Phase 7 - Quiz
 
-- [ ] Split quiz source into grammar quiz and vocabulary quiz.
-- [ ] Generate quiz through `api.generateQuiz()`.
-- [ ] Save attempt through `api.submitQuizAttempt()`.
-- [ ] Read quiz questions from backend/database in real mode, not static page arrays.
+- [ ] 1/2: Split quiz source into grammar quiz and vocabulary quiz after backend exposes quiz source contracts.
+- [x] Generate quiz through `api.generateQuiz()` in mock/demo mode.
+- [x] Save attempt through `api.submitQuizAttempt()` in mock/demo mode.
+- [ ] 1/2: Read quiz questions from backend/database in real mode after quiz endpoints exist.
 - [ ] Show score and wrong-answer review.
-- [ ] Support quiz from a specific submission.
-- [ ] Support quiz from weakest grammar categories.
+- [x] Support quiz from a specific submission in the frontend contract.
+- [ ] 1/2: Support quiz from weakest grammar categories after backend exposes weakness/category data.
 
 ### Phase 8 - Profile And Plan
 
@@ -569,13 +577,18 @@ Backend must only return `grammar_category` values from this list, or `Khác`.
 - [x] Edit display name, current level, target type, and target band.
 - [x] Save profile through `api.updateMe()`.
 - [x] Show current plan/subscription status where backend exposes it.
-- [x] Remove mocked achievements; show API coverage/status instead until achievements/progress exists.
+- [x] Load progress/badges from `GET /api/users/me/progress` when backend returns data.
+- [x] Add cancel subscription action through `POST /api/subscriptions/me/cancel`.
+- [x] Remove mocked achievements; show API progress/status instead.
 
 ### Phase 9 - Upgrade Payment Stub
 
 - [x] Keep billing toggle and backend-supported payment method UI.
 - [x] Remove fake card form; backend currently supports provider checkout, not direct card capture.
 - [x] Load subscription plans through `api.listSubscriptionPlans()` and pass `planId` into checkout when available.
+- [x] Validate promo codes through `GET /api/subscriptions/promo-codes/{code}/validate` and pass `promoCode` into checkout.
+- [x] Load payment history through `GET /api/payment/history`.
+- [x] Add refund request API boundary for `POST /api/payment/{paymentOrderId}/refund-request`.
 - [x] Submit checkout through real payment API when available; mock checkout only in local/demo mode.
 - [x] Show pending, success, and failure states.
 - [x] Prepare boundary for VNPay, VietQR, and MoMo.
@@ -583,7 +596,7 @@ Backend must only return `grammar_category` values from this list, or `Khác`.
 ### Phase 10 - Mock Data Removal And Real Backend Cutover
 
 - [ ] Set default `.env.example` mode to real once backend gateway is ready for frontend integration.
-- [ ] Verify every page uses `lib/api/client.ts` instead of local sample arrays; completed for write, result, dashboard, history, profile, and upgrade.
+- [ ] Verify every page uses `lib/api/client.ts` instead of local sample arrays; completed for write, result, dashboard, history, profile, upgrade, vocabulary, and quiz. Guide/static learning content still needs centralization.
 - [ ] Delete obsolete fixtures from `lib/mock-data/` after equivalent backend/database data exists.
 - [ ] Remove fake score generation, fake history generation, fake dashboard aggregation, and fake quiz/vocabulary records from production code paths.
 - [ ] Confirm real API smoke tests: auth, current user, writing submit, grading/feedback, dashboard, history, vocabulary, quiz attempt, and payment status where available.
@@ -678,6 +691,19 @@ Backend must only return `grammar_category` values from this list, or `Khác`.
 - [x] Connected upgrade to subscription plans and payment checkout with optional backend `planId`.
 - [x] Removed mock testimonials/reviews and fake card-entry UI from upgrade page because backend has no review/card-capture API.
 - [x] Confirmed frontend `npm run lint` and `npm run build` pass after backend API integration.
+
+### 2026-09-09
+
+- [x] Pulled latest backend updates from `origin/develop` into `PhmHai0702/fe/api-boundary-real-first`.
+- [x] Rechecked backend controllers/DTOs after the pull and confirmed new APIs for auth recovery/verification, user progress, writing sample answers/time remaining, grading history/compare/tutor review/flag, payment history/refunds, subscription cancel, and promo code validation.
+- [x] Restored mock-enabled frontend behavior after the real-only mock removal broke login when the gateway/backend was unavailable.
+- [x] Extended frontend API routes, shared types, real client, and mock client for newly available backend endpoints.
+- [x] Added frontend pages for forgot password, reset password, and verify/resend email.
+- [x] Added profile progress, cancel subscription, and deactivate account UI wired through the API boundary.
+- [x] Added upgrade promo-code validation and payment-history UI wired through the API boundary.
+- [x] Added result-page vocabulary suggestions, rewrite suggestions, compare, tutor review, and feedback flag actions.
+- [x] Reworked vocabulary and quiz pages so they no longer keep page-level mock arrays; real mode now shows 1/2 pending states instead of calling missing backend endpoints.
+- [x] Confirmed frontend `npm run lint` and `npm run build` pass.
 
 ## Current Status For Next Session
 

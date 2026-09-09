@@ -41,6 +41,7 @@ function WriteContent() {
   const [selectedTypeId, setSelectedTypeId] = useState(initialType ?? "");
   const [selectedPromptId, setSelectedPromptId] = useState("");
   const [content, setContent] = useState("");
+  const [sampleAnswer, setSampleAnswer] = useState<string | null>(null);
   const [timerOn, setTimerOn] = useState(false);
   const [guideOpen, setGuideOpen] = useState(false);
   const [loadingTypes, setLoadingTypes] = useState(true);
@@ -106,6 +107,26 @@ function WriteContent() {
       clearTimeout(loadTimer);
     };
   }, [selectedTypeId]);
+
+  useEffect(() => {
+    if (!selectedPromptId) {
+      const clearTimer = setTimeout(() => setSampleAnswer(null), 0);
+      return () => clearTimeout(clearTimer);
+    }
+
+    let ignore = false;
+    apiClient.getPromptSampleAnswer(selectedPromptId)
+      .then(answer => {
+        if (!ignore) setSampleAnswer(answer);
+      })
+      .catch(() => {
+        if (!ignore) setSampleAnswer(null);
+      });
+
+    return () => {
+      ignore = true;
+    };
+  }, [selectedPromptId]);
 
   const currentType = types.find(type => type.id === selectedTypeId) ?? fallbackType;
   const currentPrompt = prompts.find(prompt => prompt.id === selectedPromptId);
@@ -253,6 +274,15 @@ function WriteContent() {
             </div>
           )}
 
+          {sampleAnswer && (
+            <details className="rounded-2xl border border-emerald-100 bg-emerald-50 p-4">
+              <summary className="cursor-pointer text-[10px] font-extrabold uppercase tracking-widest text-emerald-700">
+                Sample answer
+              </summary>
+              <p className="mt-3 text-[12px] leading-relaxed text-emerald-900">{sampleAnswer}</p>
+            </details>
+          )}
+
           <div className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
             <div className="flex items-center justify-between border-b border-slate-50 px-4 py-3">
               <span className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400">Your essay</span>
@@ -324,6 +354,7 @@ function WriteContent() {
               <p className="rounded-xl bg-slate-50 p-3">1. Create a draft from the selected backend prompt.</p>
               <p className="rounded-xl bg-slate-50 p-3">2. Save essay content to the writing service.</p>
               <p className="rounded-xl bg-slate-50 p-3">3. Submit the draft so AI grading can process it.</p>
+              <p className="rounded-xl bg-slate-50 p-3">4. Timed drafts can read remaining time from the backend endpoint.</p>
             </div>
           </div>
 

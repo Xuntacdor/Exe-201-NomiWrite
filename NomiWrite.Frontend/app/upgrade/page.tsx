@@ -12,8 +12,10 @@ import {
   Check,
   ChevronRight,
   CreditCard,
+  History,
   Loader2,
   Lock,
+  Percent,
   ShieldCheck,
   Sparkles,
   Wallet,
@@ -21,7 +23,7 @@ import {
 } from "lucide-react";
 import { apiClient } from "@/lib/api/client";
 import { getSession } from "@/lib/auth/session";
-import type { SubscriptionPlan } from "@/lib/types";
+import type { PaymentHistoryItem, SubscriptionPlan } from "@/lib/types";
 
 type PaymentMethod = "vnpay" | "vietqr" | "momo";
 
@@ -77,6 +79,11 @@ export default function UpgradePage() {
   const [done, setDone] = useState(false);
   const [error, setError] = useState("");
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
+  const [paymentHistory, setPaymentHistory] = useState<PaymentHistoryItem[]>([]);
+  const [promoCode, setPromoCode] = useState("");
+  const [promoDiscount, setPromoDiscount] = useState<number | null>(null);
+  const [promoMessage, setPromoMessage] = useState("");
+  const [checkingPromo, setCheckingPromo] = useState(false);
 
   const fallbackMonthly = 199_000;
   const fallbackYearlyTotal = 1_908_000;
@@ -96,13 +103,62 @@ export default function UpgradePage() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!signedIn) return;
+
+    let ignore = false;
+    apiClient.listPaymentHistory()
+      .then(items => {
+        if (!ignore) setPaymentHistory(items.slice(0, 3));
+      })
+      .catch(() => {
+        if (!ignore) setPaymentHistory([]);
+      });
+
+    return () => {
+      ignore = true;
+    };
+  }, [signedIn]);
+
   const selectedPlan = useMemo(
     () => plans.find(plan => planMatches(plan, billing)),
     [billing, plans],
   );
 
-  const total = selectedPlan?.price ?? (billing === "monthly" ? fallbackMonthly : fallbackYearlyTotal);
+  const subtotal = selectedPlan?.price ?? (billing === "monthly" ? fallbackMonthly : fallbackYearlyTotal);
+  const total = promoDiscount ? Math.max(0, Math.round(subtotal * (100 - promoDiscount) / 100)) : subtotal;
   const monthlyEquivalent = billing === "monthly" ? total : Math.round(total / 12);
+
+  async function handlePromoCheck() {
+    const code = promoCode.trim();
+    setPromoMessage("");
+    setPromoDiscount(null);
+
+    if (!code) {
+      setPromoMessage("Enter a promo code first.");
+      return;
+    }
+
+    if (!getSession()?.accessToken) {
+      setPromoMessage("Sign in before validating a promo code.");
+      return;
+    }
+
+    try {
+      setCheckingPromo(true);
+      const result = await apiClient.validatePromoCode(code);
+      if (!result.valid) {
+        setPromoMessage("Promo code is not valid.");
+        return;
+      }
+      setPromoDiscount(result.discountPercent ?? 0);
+      setPromoMessage(`Promo applied: ${result.discountPercent ?? 0}% off.`);
+    } catch (err) {
+      setPromoMessage(err instanceof Error ? err.message : "Could not validate promo code.");
+    } finally {
+      setCheckingPromo(false);
+    }
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -124,6 +180,7 @@ export default function UpgradePage() {
         amount: total,
         currency: selectedPlan?.currency ?? "VND",
         planId: selectedPlan?.id,
+        promoCode: promoCode.trim() || undefined,
       });
 
       if (checkout.checkoutUrl) {
@@ -260,6 +317,30 @@ export default function UpgradePage() {
                   </div>
                 ))}
               </div>
+
+              {signedIn && (
+                <div className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
+                  <div className="mb-3 flex items-center gap-2">
+                    <History className="h-4 w-4 text-slate-400" />
+                    <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Payment history</p>
+                  </div>
+                  {paymentHistory.length ? (
+                    <div className="space-y-2">
+                      {paymentHistory.map(item => (
+                        <div key={item.id} className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2">
+                          <div className="min-w-0">
+                            <p className="truncate text-xs font-bold text-slate-700">{item.provider}</p>
+                            <p className="text-[11px] text-slate-400">{item.status}</p>
+                          </div>
+                          <span className="text-xs font-extrabold text-slate-800">{fmt(item.amount)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs leading-relaxed text-slate-500">No payment records returned yet.</p>
+                  )}
+                </div>
+              )}
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-5 lg:col-span-3">
@@ -299,10 +380,44 @@ export default function UpgradePage() {
               <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
                 <p className="mb-4 text-xs font-bold uppercase tracking-wider text-slate-400">Order summary</p>
                 <div className="space-y-3">
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <Percent className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                      <input
+                        value={promoCode}
+                        onChange={event => {
+                          setPromoCode(event.target.value);
+                          setPromoDiscount(null);
+                          setPromoMessage("");
+                        }}
+                        placeholder="Promo code"
+                        className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-9 pr-3 text-sm font-semibold text-slate-700 placeholder:text-slate-400 focus:border-blue-400 focus:outline-none"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handlePromoCheck}
+                      disabled={checkingPromo}
+                      className="rounded-xl bg-slate-900 px-4 py-2.5 text-xs font-bold text-white transition-colors hover:bg-slate-700 disabled:opacity-60"
+                    >
+                      {checkingPromo ? "Checking" : "Apply"}
+                    </button>
+                  </div>
+                  {promoMessage && (
+                    <p className={`text-xs font-semibold ${promoDiscount !== null ? "text-emerald-600" : "text-slate-500"}`}>
+                      {promoMessage}
+                    </p>
+                  )}
                   <div className="flex justify-between text-sm">
                     <span className="text-slate-500">{selectedPlan?.name ?? "NomiWrite Premium"} - {billing}</span>
-                    <span className="font-bold text-slate-800">{fmt(total)}</span>
+                    <span className="font-bold text-slate-800">{fmt(subtotal)}</span>
                   </div>
+                  {promoDiscount !== null && promoDiscount > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-emerald-600">Promo discount</span>
+                      <span className="font-bold text-emerald-600">-{promoDiscount}%</span>
+                    </div>
+                  )}
                   {selectedPlan && (
                     <div className="flex justify-between text-xs">
                       <span className="text-slate-400">Backend plan id</span>

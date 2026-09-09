@@ -42,9 +42,18 @@ export default function HistoryPage() {
     let ignore = false;
     const loadTimer = setTimeout(() => {
       setLoading(true);
-      apiClient.listSubmissions()
-        .then(items => {
-          if (!ignore) setSubmissions(items);
+      Promise.all([
+        apiClient.listSubmissions(),
+        apiClient.listGradingHistory().catch(() => []),
+      ])
+        .then(([items, gradingHistory]) => {
+          const scoreBySubmission = new Map(gradingHistory.map(item => [item.submissionId, item.overallBand]));
+          const merged = items.map(item => ({
+            ...item,
+            overallScore: item.overallScore ?? scoreBySubmission.get(item.id),
+            status: scoreBySubmission.has(item.id) ? "graded" as const : item.status,
+          }));
+          if (!ignore) setSubmissions(merged);
         })
         .catch(err => {
           if (!ignore) setError(err instanceof Error ? err.message : "Could not load writing history.");

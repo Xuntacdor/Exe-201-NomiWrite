@@ -10,9 +10,12 @@ import {
   BrainCircuit,
   ChevronDown,
   FileText,
+  Flag,
   Info,
   Loader2,
+  MessagesSquare,
   Sparkles,
+  SplitSquareHorizontal,
 } from "lucide-react";
 import { apiClient, apiMode } from "@/lib/api/client";
 import { getSession } from "@/lib/auth/session";
@@ -29,7 +32,10 @@ function ResultContent() {
   const searchParams = useSearchParams();
   const submissionId = searchParams.get("submissionId");
   const [feedback, setFeedback] = useState<WritingFeedback | null>(null);
+  const [comparisonMessage, setComparisonMessage] = useState("");
+  const [actionMessage, setActionMessage] = useState("");
   const [essayExpanded, setEssayExpanded] = useState(false);
+  const [workingAction, setWorkingAction] = useState<"compare" | "tutor" | "flag" | "">("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -73,6 +79,64 @@ function ResultContent() {
   const band = submission?.overallScore ?? 0;
   const criteriaScores = Object.entries(feedback?.criteriaScores ?? {}).filter(([, score]) => typeof score === "number");
   const excerpt = getExcerpt(submission?.content ?? "");
+  const gradingResultId = feedback?.id;
+
+  async function handleCompare() {
+    if (!submissionId) return;
+
+    setWorkingAction("compare");
+    setActionMessage("");
+    setComparisonMessage("");
+    try {
+      const comparison = await apiClient.compareSubmissionFeedback(submissionId);
+      const diff = comparison.bandDifference;
+      setComparisonMessage(
+        typeof diff === "number"
+          ? `Band change versus previous feedback: ${diff > 0 ? "+" : ""}${diff.toFixed(1)}`
+          : "No previous graded result is available for comparison yet.",
+      );
+    } catch (err) {
+      setActionMessage(err instanceof Error ? err.message : "Could not compare grading results.");
+    } finally {
+      setWorkingAction("");
+    }
+  }
+
+  async function handleTutorReview() {
+    if (!submissionId) return;
+
+    setWorkingAction("tutor");
+    setActionMessage("");
+    try {
+      const request = await apiClient.requestTutorReview(submissionId);
+      setActionMessage(`Tutor review request created: ${request.status}.`);
+    } catch (err) {
+      setActionMessage(err instanceof Error ? err.message : "Could not request tutor review.");
+    } finally {
+      setWorkingAction("");
+    }
+  }
+
+  async function handleFlag() {
+    if (!gradingResultId) {
+      setActionMessage("This result cannot be flagged because the grading result id is missing.");
+      return;
+    }
+
+    const reason = window.prompt("Reason for flagging this AI feedback");
+    if (!reason?.trim()) return;
+
+    setWorkingAction("flag");
+    setActionMessage("");
+    try {
+      await apiClient.flagFeedback(gradingResultId, { reason: reason.trim() });
+      setActionMessage("Feedback flag submitted.");
+    } catch (err) {
+      setActionMessage(err instanceof Error ? err.message : "Could not flag feedback.");
+    } finally {
+      setWorkingAction("");
+    }
+  }
 
   return (
     <AppShell activePath="/write">
@@ -172,6 +236,31 @@ function ResultContent() {
               </p>
             </div>
 
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              {[
+                { label: "Compare", icon: SplitSquareHorizontal, action: handleCompare, key: "compare" as const },
+                { label: "Tutor review", icon: MessagesSquare, action: handleTutorReview, key: "tutor" as const },
+                { label: "Flag feedback", icon: Flag, action: handleFlag, key: "flag" as const },
+              ].map(({ label, icon: Icon, action, key }) => (
+                <button
+                  key={label}
+                  type="button"
+                  onClick={action}
+                  disabled={Boolean(workingAction)}
+                  className="flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-xs font-bold text-slate-700 shadow-sm transition-all hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 disabled:opacity-60"
+                >
+                  {workingAction === key ? <Loader2 className="h-4 w-4 animate-spin" /> : <Icon className="h-4 w-4" />}
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            {(comparisonMessage || actionMessage) && (
+              <div className="rounded-xl border border-blue-100 bg-blue-50 p-3 text-xs font-semibold text-blue-700">
+                {comparisonMessage || actionMessage}
+              </div>
+            )}
+
             {submission.content && (
               <div className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
                 <button
@@ -221,6 +310,50 @@ function ResultContent() {
                 )) : (
                   <p className="p-5 text-sm text-slate-500">No grammar issues were returned.</p>
                 )}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+              <div className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
+                <div className="flex items-center justify-between border-b border-slate-50 px-5 py-4">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="h-4 w-4 text-emerald-500" />
+                    <h3 className="text-sm font-extrabold text-slate-900">Vocabulary suggestions</h3>
+                    <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-bold text-emerald-600">{feedback.vocabSuggestions.length}</span>
+                  </div>
+                </div>
+                <div className="divide-y divide-slate-50">
+                  {feedback.vocabSuggestions.length ? feedback.vocabSuggestions.map(item => (
+                    <div key={item.id} className="p-5">
+                      <p className="text-xs font-semibold text-slate-400">{item.originalWord}</p>
+                      <p className="mt-1 text-sm font-extrabold text-emerald-700">{item.suggestedWord}</p>
+                      {item.exampleSentence && <p className="mt-2 text-xs leading-relaxed text-slate-500">{item.exampleSentence}</p>}
+                    </div>
+                  )) : (
+                    <p className="p-5 text-sm text-slate-500">No vocabulary suggestions were returned.</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
+                <div className="flex items-center justify-between border-b border-slate-50 px-5 py-4">
+                  <div className="flex items-center gap-2">
+                    <SplitSquareHorizontal className="h-4 w-4 text-blue-500" />
+                    <h3 className="text-sm font-extrabold text-slate-900">Rewrite suggestions</h3>
+                    <span className="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-bold text-blue-600">{feedback.restructuringSuggestions?.length ?? 0}</span>
+                  </div>
+                </div>
+                <div className="divide-y divide-slate-50">
+                  {feedback.restructuringSuggestions?.length ? feedback.restructuringSuggestions.map(item => (
+                    <div key={item.id} className="p-5">
+                      <p className="text-xs leading-relaxed text-slate-500">{item.originalSentence}</p>
+                      <p className="mt-2 text-sm font-bold text-blue-700">{item.suggestedRewrite}</p>
+                      {item.reason && <p className="mt-2 text-xs leading-relaxed text-slate-500">{item.reason}</p>}
+                    </div>
+                  )) : (
+                    <p className="p-5 text-sm text-slate-500">No rewrite suggestions were returned.</p>
+                  )}
+                </div>
               </div>
             </div>
 

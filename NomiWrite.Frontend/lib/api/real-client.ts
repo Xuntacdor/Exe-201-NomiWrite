@@ -1,21 +1,32 @@
 import type {
   ApiClient,
+  AuthResult,
   AuthResponse,
   CheckoutRequest,
   CheckoutResponse,
   DashboardSummary,
+  FeedbackComparison,
+  FeedbackFlagConfirmation,
+  FlagFeedbackRequest,
+  GradingHistoryItem,
   GenerateQuizRequest,
   LoginRequest,
+  PaymentHistoryItem,
   Quiz,
   QuizAttempt,
   RegisterRequest,
+  RefundRequest,
+  RestructuringSuggestion,
   SubmitQuizAttemptRequest,
   Submission,
+  SubmissionTimeRemaining,
   SubscriptionPlan,
   SubscriptionStatus,
   SubmitSubmissionRequest,
+  TutorReviewRequest,
   UpdateVocabularyMasteredRequest,
   User,
+  UserProgress,
   VocabSuggestion,
   WritingFeedback,
   WritingPrompt,
@@ -41,6 +52,7 @@ interface BackendPaymentResponse {
   paymentUrl?: string;
   createdAt?: string;
   updatedAt?: string;
+  appliedDiscountPercent?: number;
 }
 
 interface BackendUserProfile {
@@ -69,6 +81,7 @@ interface BackendWritingPrompt {
   writingTypeName: string;
   title: string;
   instructions?: string;
+  imageUrl?: string | null;
   difficulty: string;
 }
 
@@ -90,7 +103,47 @@ interface BackendGradingResult {
   criterionScores: { criterionName: string; score: number; comment: string }[];
   overallFeedback: string;
   grammarErrors: { originalText: string; suggestion: string; explanation: string }[];
+  vocabularySuggestions?: { originalWord: string; suggestedAlternatives: string[]; context: string }[];
+  restructuringSuggestions?: { originalSentence: string; suggestedRewrite: string; reason: string }[];
   status: "Pending" | "Completed" | "Failed" | string;
+}
+
+interface BackendUserProgress {
+  bandHistory: { date: string; band: number }[];
+  strengthsWeaknesses?: string | null;
+  currentStreak: number;
+  totalSubmissions: number;
+  badges: { name: string; achieved: boolean }[];
+  targetExam?: string | null;
+  targetBand?: number | null;
+  targetExamDate?: string | null;
+}
+
+interface BackendPaymentHistoryItem {
+  id: string;
+  amount: number;
+  currency: string;
+  provider: string;
+  status: string;
+  planId?: string | null;
+  createdAt: string;
+}
+
+interface BackendRefundRequest {
+  id: string;
+  paymentOrderId: string;
+  reason: string;
+  status: string;
+  requestedAt: string;
+  createdAt: string;
+}
+
+interface BackendSubscriptionStatus {
+  planName: string;
+  status: string;
+  startDate: string;
+  endDate: string;
+  daysRemaining: number;
 }
 
 interface BackendApiEnvelope<T> {
@@ -146,6 +199,7 @@ function toCheckoutResponse(response: BackendPaymentResponse): CheckoutResponse 
     checkoutUrl: response.paymentUrl,
     createdAt: response.createdAt,
     updatedAt: response.updatedAt,
+    appliedDiscountPercent: response.appliedDiscountPercent,
   };
 }
 
@@ -202,12 +256,18 @@ function toWritingPrompt(item: BackendWritingPrompt): WritingPrompt {
     writingType: item.writingTypeName,
     topic: item.title,
     prompt: item.instructions ?? item.title,
+    imageUrl: item.imageUrl ?? undefined,
     difficulty: item.difficulty,
   };
 }
 
 function toSubmission(item: BackendSubmission, userId = ""): Submission {
   const isSubmitted = item.status === "Submitted";
+  const status: Submission["status"] =
+    item.status === "Graded" ? "graded" :
+    item.status === "Failed" ? "failed" :
+    isSubmitted ? "submitted" : "draft";
+
   return {
     id: item.id,
     userId,
@@ -217,7 +277,7 @@ function toSubmission(item: BackendSubmission, userId = ""): Submission {
     content: item.content,
     wordCount: item.wordCount,
     submittedAt: item.submittedAt ?? item.startedAt,
-    status: isSubmitted ? "submitted" : "draft",
+    status,
   };
 }
 
@@ -237,6 +297,7 @@ function toWritingFeedback(result: BackendGradingResult, submission?: Submission
   };
 
   return {
+    id: result.id,
     submission: {
       ...fallbackSubmission,
       overallScore: result.overallBand,
@@ -259,7 +320,51 @@ function toWritingFeedback(result: BackendGradingResult, submission?: Submission
       suggestion: error.suggestion,
       explanation: error.explanation,
     })),
-    vocabSuggestions: [],
+    vocabSuggestions: (result.vocabularySuggestions ?? []).flatMap((suggestion, index) => {
+      const alternatives = suggestion.suggestedAlternatives.length
+        ? suggestion.suggestedAlternatives
+        : ["Review word choice"];
+
+      return alternatives.map((alternative, altIndex) => ({
+        id: `${result.id}-vocab-${index}-${altIndex}`,
+        submissionId: result.submissionId,
+        userId: fallbackSubmission.userId,
+        topic: "AI feedback",
+        originalWord: suggestion.originalWord,
+        suggestedWord: alternative,
+        exampleSentence: suggestion.context,
+        isMastered: false,
+      }));
+    }),
+    restructuringSuggestions: (result.restructuringSuggestions ?? []).map((suggestion, index): RestructuringSuggestion => ({
+      id: `${result.id}-rewrite-${index}`,
+      submissionId: result.submissionId,
+      originalSentence: suggestion.originalSentence,
+      suggestedRewrite: suggestion.suggestedRewrite,
+      reason: suggestion.reason,
+    })),
+  };
+}
+
+function toUserProgress(progress: BackendUserProgress): UserProgress {
+  return progress;
+}
+
+function toPaymentHistory(item: BackendPaymentHistoryItem): PaymentHistoryItem {
+  return {
+    ...item,
+    status: toCheckoutStatus(item.status as BackendPaymentResponse["status"]),
+  };
+}
+
+function toRefundRequest(item: BackendRefundRequest): RefundRequest {
+  return item;
+}
+
+function toSubscriptionStatus(status: BackendSubscriptionStatus | null): SubscriptionStatus {
+  return {
+    hasSubscription: Boolean(status),
+    status,
   };
 }
 
@@ -313,6 +418,38 @@ export const realClient: ApiClient = {
     }, true);
   },
 
+  verifyEmail(requestBody) {
+    return request<AuthResult>(apiRoutes.auth.verifyEmail, {
+      method: "POST",
+      body: JSON.stringify(requestBody),
+    });
+  },
+
+  resendVerificationEmail(requestBody) {
+    return request<AuthResult>(apiRoutes.auth.resendVerificationEmail, {
+      method: "POST",
+      body: JSON.stringify(requestBody),
+    });
+  },
+
+  forgotPassword(requestBody) {
+    return request<AuthResult>(apiRoutes.auth.forgotPassword, {
+      method: "POST",
+      body: JSON.stringify(requestBody),
+    });
+  },
+
+  resetPassword(requestBody) {
+    return request<AuthResult>(apiRoutes.auth.resetPassword, {
+      method: "POST",
+      body: JSON.stringify(requestBody),
+    });
+  },
+
+  deactivateAccount() {
+    return request<AuthResult>(apiRoutes.auth.deactivate, { method: "POST" }, true);
+  },
+
   getMe() {
     return request<BackendUserProfile>(apiRoutes.users.me, { method: "GET" }, true).then(toUser);
   },
@@ -328,6 +465,10 @@ export const realClient: ApiClient = {
     return request<BackendUserProfile>(apiRoutes.users.account, { method: "GET" }, true).then(toUser);
   },
 
+  getUserProgress() {
+    return request<BackendUserProgress>(apiRoutes.users.progress, { method: "GET" }, true).then(toUserProgress);
+  },
+
   listWritingTypes() {
     return request<BackendWritingType[]>(apiRoutes.writing.types, { method: "GET" }).then(items => items.map(toWritingType));
   },
@@ -339,6 +480,15 @@ export const realClient: ApiClient = {
     const query = params.toString();
     return request<BackendWritingPrompt[]>(`${apiRoutes.writing.prompts}${query ? `?${query}` : ""}`, { method: "GET" })
       .then(items => items.map(toWritingPrompt));
+  },
+
+  getWritingPrompt(id: string) {
+    return request<BackendWritingPrompt>(apiRoutes.writing.promptDetail(id), { method: "GET" }).then(toWritingPrompt);
+  },
+
+  getPromptSampleAnswer(id: string) {
+    return request<{ sampleAnswer?: string | null }>(apiRoutes.writing.sampleAnswer(id), { method: "GET" })
+      .then(result => result.sampleAnswer ?? null);
   },
 
   async submitSubmission(requestBody: SubmitSubmissionRequest) {
@@ -371,6 +521,10 @@ export const realClient: ApiClient = {
     return request<BackendSubmission>(apiRoutes.submissions.detail(id), { method: "GET" }, true).then(toSubmission);
   },
 
+  getSubmissionTimeRemaining(id: string): Promise<SubmissionTimeRemaining> {
+    return request<SubmissionTimeRemaining>(apiRoutes.submissions.timeRemaining(id), { method: "GET" }, true);
+  },
+
   async gradeSubmission(id: string) {
     const [submission, envelope] = await Promise.all([
       realClient.getSubmission(id).catch(() => undefined),
@@ -385,6 +539,45 @@ export const realClient: ApiClient = {
       request<BackendApiEnvelope<BackendGradingResult>>(apiRoutes.feedback.detail(submissionId), { method: "GET" }, true),
     ]);
     return toWritingFeedback(envelope.data, submission);
+  },
+
+  listGradingHistory() {
+    return request<BackendApiEnvelope<GradingHistoryItem[]>>(apiRoutes.feedback.history, { method: "GET" }, true)
+      .then(envelope => envelope.data);
+  },
+
+  async compareSubmissionFeedback(submissionId: string): Promise<FeedbackComparison> {
+    const [submission, envelope] = await Promise.all([
+      realClient.getSubmission(submissionId).catch(() => undefined),
+      request<BackendApiEnvelope<{
+        current: BackendGradingResult;
+        previous?: BackendGradingResult | null;
+        bandDifference?: number | null;
+      }>>(apiRoutes.feedback.compare(submissionId), { method: "GET" }, true),
+    ]);
+
+    return {
+      current: toWritingFeedback(envelope.data.current, submission),
+      previous: envelope.data.previous ? toWritingFeedback(envelope.data.previous) : null,
+      bandDifference: envelope.data.bandDifference,
+    };
+  },
+
+  requestTutorReview(submissionId: string) {
+    return request<BackendApiEnvelope<TutorReviewRequest>>(apiRoutes.feedback.requestTutorReview(submissionId), { method: "POST" }, true)
+      .then(envelope => envelope.data);
+  },
+
+  listTutorReviewRequests() {
+    return request<BackendApiEnvelope<TutorReviewRequest[]>>(apiRoutes.feedback.tutorReviewRequests, { method: "GET" }, true)
+      .then(envelope => envelope.data);
+  },
+
+  flagFeedback(gradingResultId: string, requestBody: FlagFeedbackRequest) {
+    return request<BackendApiEnvelope<FeedbackFlagConfirmation>>(apiRoutes.feedback.flag(gradingResultId), {
+      method: "POST",
+      body: JSON.stringify(requestBody),
+    }, true).then(envelope => envelope.data);
   },
 
   getDashboardSummary() {
@@ -430,6 +623,7 @@ export const realClient: ApiClient = {
         currency: requestBody.currency ?? "VND",
         provider: toPaymentProvider(requestBody.paymentMethod),
         planId: requestBody.planId,
+        promoCode: requestBody.promoCode,
       }),
     }, true).then(toCheckoutResponse);
   },
@@ -439,11 +633,42 @@ export const realClient: ApiClient = {
       .then(toCheckoutResponse);
   },
 
+  listPaymentHistory() {
+    return request<BackendPaymentHistoryItem[]>(apiRoutes.payments.history, { method: "GET" }, true)
+      .then(items => items.map(toPaymentHistory));
+  },
+
+  createRefundRequest(paymentOrderId: string, reason: string) {
+    return request<BackendRefundRequest>(apiRoutes.payments.refundRequest(paymentOrderId), {
+      method: "POST",
+      body: JSON.stringify({ reason }),
+    }, true).then(toRefundRequest);
+  },
+
+  listRefundRequests() {
+    return request<BackendRefundRequest[]>(apiRoutes.payments.refundRequests, { method: "GET" }, true)
+      .then(items => items.map(toRefundRequest));
+  },
+
   listSubscriptionPlans() {
     return request<SubscriptionPlan[]>(apiRoutes.subscriptions.plans, { method: "GET" });
   },
 
   getCurrentSubscription() {
-    return request<SubscriptionStatus>(apiRoutes.subscriptions.me, { method: "GET" }, true);
+    return request<BackendSubscriptionStatus | null>(apiRoutes.subscriptions.me, { method: "GET" }, true)
+      .then(toSubscriptionStatus);
+  },
+
+  cancelSubscription() {
+    return request<BackendSubscriptionStatus | null>(apiRoutes.subscriptions.cancel, { method: "POST" }, true)
+      .then(toSubscriptionStatus);
+  },
+
+  validatePromoCode(code: string) {
+    return request<{ valid: boolean; discountPercent?: number | null }>(
+      apiRoutes.subscriptions.validatePromoCode(code),
+      { method: "GET" },
+      true,
+    );
   },
 };

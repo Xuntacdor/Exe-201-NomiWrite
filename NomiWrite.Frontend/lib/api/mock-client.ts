@@ -2,10 +2,13 @@ import type {
   ApiClient,
   AuthResponse,
   CheckoutResponse,
+  GradingHistoryItem,
   LoginRequest,
   RegisterRequest,
   SubmitSubmissionRequest,
+  SubmissionTimeRemaining,
   UpdateVocabularyMasteredRequest,
+  UserProgress,
 } from "../types";
 import {
   mockDashboardSummary,
@@ -50,6 +53,31 @@ export const mockClient: ApiClient = {
     await delay(150);
   },
 
+  async verifyEmail() {
+    await delay();
+    return { success: true, message: "Email verified in mock mode." };
+  },
+
+  async resendVerificationEmail(request) {
+    await delay();
+    return { success: true, message: `Verification email queued for ${request.email}.` };
+  },
+
+  async forgotPassword(request) {
+    await delay();
+    return { success: true, message: `Password reset instructions queued for ${request.email}.` };
+  },
+
+  async resetPassword() {
+    await delay();
+    return { success: true, message: "Password reset in mock mode." };
+  },
+
+  async deactivateAccount() {
+    await delay();
+    return { success: true, message: "Account deactivation requested in mock mode." };
+  },
+
   async getMe() {
     await delay();
     return mockUser;
@@ -65,6 +93,27 @@ export const mockClient: ApiClient = {
     return mockUser;
   },
 
+  async getUserProgress(): Promise<UserProgress> {
+    await delay();
+    return {
+      bandHistory: mockDashboardSummary.scoreTrend.map((band, index) => ({
+        date: new Date(Date.UTC(2026, 8, 1 + index)).toISOString(),
+        band,
+      })),
+      strengthsWeaknesses: "Strong idea control; keep building lexical range.",
+      currentStreak: 3,
+      totalSubmissions: mockSubmissions.length,
+      badges: [
+        { name: "First submission", achieved: true },
+        { name: "Three-day streak", achieved: true },
+        { name: "Band 7", achieved: false },
+      ],
+      targetExam: mockUser.targetType ?? "IELTS",
+      targetBand: mockUser.targetBand ?? 7,
+      targetExamDate: null,
+    };
+  },
+
   async listWritingTypes() {
     await delay();
     return mockWritingTypes;
@@ -77,6 +126,20 @@ export const mockClient: ApiClient = {
       if (topic && prompt.topic !== topic) return false;
       return true;
     });
+  },
+
+  async getWritingPrompt(id: string) {
+    await delay();
+    const prompt = mockWritingPrompts.find(item => item.id === id);
+    if (!prompt) throw new Error("Prompt not found.");
+    return prompt;
+  },
+
+  async getPromptSampleAnswer(id: string) {
+    await delay();
+    const prompt = mockWritingPrompts.find(item => item.id === id);
+    if (!prompt) return null;
+    return "A clear response should state a position, develop two main ideas, and close with a concise conclusion.";
   },
 
   async submitSubmission(request: SubmitSubmissionRequest) {
@@ -107,6 +170,15 @@ export const mockClient: ApiClient = {
     return submission;
   },
 
+  async getSubmissionTimeRemaining(): Promise<SubmissionTimeRemaining> {
+    await delay();
+    return {
+      deadlineAt: null,
+      secondsRemaining: 0,
+      isTimed: false,
+    };
+  },
+
   async gradeSubmission() {
     await delay();
     return mockFeedback;
@@ -115,6 +187,52 @@ export const mockClient: ApiClient = {
   async getFeedback() {
     await delay();
     return mockFeedback;
+  },
+
+  async listGradingHistory(): Promise<GradingHistoryItem[]> {
+    await delay();
+    return mockSubmissions
+      .filter(item => typeof item.overallScore === "number")
+      .map(item => ({
+        id: `grade_${item.id}`,
+        submissionId: item.id,
+        overallBand: item.overallScore ?? 0,
+        createdAt: item.submittedAt,
+      }));
+  },
+
+  async compareSubmissionFeedback() {
+    await delay();
+    return {
+      current: mockFeedback,
+      previous: null,
+      bandDifference: null,
+    };
+  },
+
+  async requestTutorReview(submissionId: string) {
+    await delay();
+    return {
+      id: `tutor_${Date.now()}`,
+      submissionId,
+      status: "Pending",
+      requestedAt: new Date().toISOString(),
+    };
+  },
+
+  async listTutorReviewRequests() {
+    await delay();
+    return [];
+  },
+
+  async flagFeedback(gradingResultId: string, request) {
+    await delay();
+    return {
+      id: `flag_${Date.now()}`,
+      gradingResultId,
+      reason: request.reason,
+      createdAt: new Date().toISOString(),
+    };
   },
 
   async getDashboardSummary() {
@@ -172,6 +290,28 @@ export const mockClient: ApiClient = {
     };
   },
 
+  async listPaymentHistory() {
+    await delay();
+    return [];
+  },
+
+  async createRefundRequest(paymentOrderId: string, reason: string) {
+    await delay();
+    return {
+      id: `refund_${Date.now()}`,
+      paymentOrderId,
+      reason,
+      status: "Pending",
+      requestedAt: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
+    };
+  },
+
+  async listRefundRequests() {
+    await delay();
+    return [];
+  },
+
   async listSubscriptionPlans() {
     await delay();
     return [
@@ -199,5 +339,18 @@ export const mockClient: ApiClient = {
   async getCurrentSubscription() {
     await delay();
     return { hasSubscription: false, status: null };
+  },
+
+  async cancelSubscription() {
+    await delay();
+    return { hasSubscription: false, status: null };
+  },
+
+  async validatePromoCode(code: string) {
+    await delay();
+    return {
+      valid: code.trim().toUpperCase() === "NOMI20",
+      discountPercent: code.trim().toUpperCase() === "NOMI20" ? 20 : null,
+    };
   },
 };
