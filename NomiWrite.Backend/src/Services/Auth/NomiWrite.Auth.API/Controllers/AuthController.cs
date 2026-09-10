@@ -87,6 +87,14 @@ public class AuthController : ControllerBase
         return Ok(result);
     }
 
+    [HttpPost("google")]
+    [AllowAnonymous]
+    public async Task<ActionResult<AuthResponseDto>> GoogleLogin([FromBody] GoogleLoginRequestDto request)
+    {
+        var result = await _authService.GoogleLoginAsync(request);
+        return Ok(result);
+    }
+
     [HttpPost("deactivate")]
     [Authorize]
     public async Task<ActionResult<AuthResultDto>> Deactivate()
