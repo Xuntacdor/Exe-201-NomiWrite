@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using FluentValidation;
+using Google.Apis.Auth;
 using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -36,6 +37,7 @@ public class AuthService : IAuthService
     private readonly IValidator<ResetPasswordRequestDto> _resetPasswordValidator;
     private readonly IEmailSender _emailSender;
     private readonly IOptions<AppSettings> _appSettings;
+    private readonly IOptions<GoogleAuthSettings> _googleAuthSettings;
     private readonly IPublishEndpoint _publishEndpoint;
     private readonly ILogger<AuthService> _logger;
 
@@ -51,6 +53,7 @@ public class AuthService : IAuthService
         IValidator<ResetPasswordRequestDto> resetPasswordValidator,
         IEmailSender emailSender,
         IOptions<AppSettings> appSettings,
+        IOptions<GoogleAuthSettings> googleAuthSettings,
         IPublishEndpoint publishEndpoint,
         ILogger<AuthService> logger)
     {
@@ -65,6 +68,7 @@ public class AuthService : IAuthService
         _resetPasswordValidator = resetPasswordValidator;
         _emailSender = emailSender;
         _appSettings = appSettings;
+        _googleAuthSettings = googleAuthSettings;
         _publishEndpoint = publishEndpoint;
         _logger = logger;
     }
@@ -344,6 +348,81 @@ public class AuthService : IAuthService
         await _dbContext.SaveChangesAsync();
 
         return Success("Account deactivated successfully.");
+    }
+
+    public async Task<AuthResponseDto> GoogleLoginAsync(GoogleLoginRequestDto request)
+    {
+        if (string.IsNullOrWhiteSpace(request.IdToken))
+            throw new InvalidGoogleTokenException("The Google ID token is required.");
+
+        GoogleJsonWebSignature.Payload payload;
+        try
+        {
+            var settings = new GoogleJsonWebSignature.ValidationSettings
+            {
+                Audience = new[] { _googleAuthSettings.Value.ClientId }
+            };
+
+            payload = await GoogleJsonWebSignature.ValidateAsync(request.IdToken, settings);
+        }
+        catch (InvalidJwtException ex)
+        {
+            _logger.LogWarning(ex, "Google ID token validation failed");
+            throw new InvalidGoogleTokenException("The Google authentication token is invalid or has expired.");
+        }
+
+        var email = payload.Email.Trim().ToLowerInvariant();
+        var googleId = payload.Subject;
+        var now = DateTime.UtcNow;
+
+        var user = await _dbContext.Users
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(u => u.Email == email);
+
+        bool isNewUser = false;
+
+        if (user is not null)
+        {
+            if (user.IsDeleted)
+                throw new AccountDeactivatedException();
+
+            if (user.GoogleId is null)
+                user.GoogleId = googleId;
+
+            if (user.AvatarUrl is null && !string.IsNullOrWhiteSpace(payload.Picture))
+                user.AvatarUrl = payload.Picture;
+
+            if (!user.IsEmailVerified)
+                user.IsEmailVerified = true;
+        }
+        else
+        {
+            isNewUser = true;
+            user = new User
+            {
+                Id = Guid.NewGuid(),
+                Email = email,
+                FullName = string.IsNullOrWhiteSpace(payload.Name) ? email : payload.Name.Trim(),
+                PasswordHash = _passwordHasher.HashPassword(Guid.NewGuid().ToString("N")),
+                GoogleId = googleId,
+                AvatarUrl = payload.Picture,
+                Role = UserRole.Student,
+                IsEmailVerified = true
+            };
+
+            _dbContext.Users.Add(user);
+        }
+
+        var (accessToken, accessTokenExpiresAt) = _jwtTokenService.GenerateAccessToken(user);
+        var refreshToken = CreateRefreshToken(user.Id, now);
+
+        _dbContext.RefreshTokens.Add(refreshToken);
+        await _dbContext.SaveChangesAsync();
+
+        if (isNewUser)
+            await _publishEndpoint.Publish(new UserRegisteredEvent(user.Id, user.Email, user.FullName));
+
+        return ToResponse(user, accessToken, refreshToken, accessTokenExpiresAt);
     }
 
     private async Task RevokeTokenFamilyAsync(Guid userId)
