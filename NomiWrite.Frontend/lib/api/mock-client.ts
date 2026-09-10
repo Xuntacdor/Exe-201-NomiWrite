@@ -2,6 +2,7 @@ import type {
   ApiClient,
   AuthResponse,
   CheckoutResponse,
+  GoogleLoginRequest,
   GradingHistoryItem,
   LoginRequest,
   RegisterRequest,
@@ -42,6 +43,16 @@ export const mockClient: ApiClient = {
     }
 
     return createMockAuthResponse(request.email);
+  },
+
+  async googleLogin(request: GoogleLoginRequest): Promise<AuthResponse> {
+    await delay();
+
+    if (!request.idToken) {
+      throw new Error("Google id token is required.");
+    }
+
+    return createMockAuthResponse("google.user@nomiwrite.local");
   },
 
   async refresh(refreshToken: string): Promise<AuthResponse> {

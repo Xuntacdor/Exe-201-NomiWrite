@@ -16,6 +16,7 @@ import {
   Loader2,
   Lock,
   Percent,
+  RefreshCw,
   ShieldCheck,
   Sparkles,
   Wallet,
@@ -23,7 +24,7 @@ import {
 } from "lucide-react";
 import { apiClient } from "@/lib/api/client";
 import { getSession } from "@/lib/auth/session";
-import type { PaymentHistoryItem, SubscriptionPlan } from "@/lib/types";
+import type { CheckoutResponse, PaymentHistoryItem, RefundRequest, SubscriptionPlan } from "@/lib/types";
 
 type PaymentMethod = "vnpay" | "vietqr" | "momo";
 
@@ -80,10 +81,14 @@ export default function UpgradePage() {
   const [error, setError] = useState("");
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [paymentHistory, setPaymentHistory] = useState<PaymentHistoryItem[]>([]);
+  const [refundRequests, setRefundRequests] = useState<RefundRequest[]>([]);
+  const [checkoutResult, setCheckoutResult] = useState<CheckoutResponse | null>(null);
   const [promoCode, setPromoCode] = useState("");
   const [promoDiscount, setPromoDiscount] = useState<number | null>(null);
   const [promoMessage, setPromoMessage] = useState("");
   const [checkingPromo, setCheckingPromo] = useState(false);
+  const [checkingPaymentId, setCheckingPaymentId] = useState("");
+  const [requestingRefundId, setRequestingRefundId] = useState("");
 
   const fallbackMonthly = 199_000;
   const fallbackYearlyTotal = 1_908_000;
@@ -113,6 +118,14 @@ export default function UpgradePage() {
       })
       .catch(() => {
         if (!ignore) setPaymentHistory([]);
+      });
+
+    apiClient.listRefundRequests()
+      .then(items => {
+        if (!ignore) setRefundRequests(items.slice(0, 3));
+      })
+      .catch(() => {
+        if (!ignore) setRefundRequests([]);
       });
 
     return () => {
@@ -188,11 +201,44 @@ export default function UpgradePage() {
         return;
       }
 
+      setCheckoutResult(checkout);
       setDone(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not create payment. Please try again.");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleStatusCheck(paymentId: string) {
+    setCheckingPaymentId(paymentId);
+    setError("");
+    try {
+      const status = await apiClient.getPaymentStatus(paymentId);
+      setCheckoutResult(status);
+      setPaymentHistory(items => items.map(item => (
+        item.id === paymentId ? { ...item, status: status.status } : item
+      )));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not refresh payment status.");
+    } finally {
+      setCheckingPaymentId("");
+    }
+  }
+
+  async function handleRefundRequest(paymentOrderId: string) {
+    const reason = window.prompt("Reason for refund request");
+    if (!reason?.trim()) return;
+
+    setRequestingRefundId(paymentOrderId);
+    setError("");
+    try {
+      const refund = await apiClient.createRefundRequest(paymentOrderId, reason.trim());
+      setRefundRequests(items => [refund, ...items.filter(item => item.id !== refund.id)].slice(0, 3));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not create refund request.");
+    } finally {
+      setRequestingRefundId("");
     }
   }
 
@@ -208,6 +254,27 @@ export default function UpgradePage() {
             <p className="mb-8 text-sm leading-relaxed text-slate-500">
               The backend returned a pending payment without a redirect URL. Check payment status from the backend service.
             </p>
+            {checkoutResult && (
+              <div className="mb-6 rounded-2xl border border-slate-100 bg-slate-50 p-4 text-left">
+                <div className="mb-2 flex items-center justify-between gap-3">
+                  <span className="text-xs font-bold text-slate-500">Order</span>
+                  <span className="truncate text-xs font-extrabold text-slate-800">{checkoutResult.orderReference}</span>
+                </div>
+                <div className="mb-4 flex items-center justify-between gap-3">
+                  <span className="text-xs font-bold text-slate-500">Status</span>
+                  <span className="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-extrabold text-blue-700">{checkoutResult.status}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleStatusCheck(checkoutResult.id)}
+                  disabled={checkingPaymentId === checkoutResult.id}
+                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-slate-900 py-2.5 text-xs font-bold text-white transition-colors hover:bg-slate-700 disabled:opacity-60"
+                >
+                  {checkingPaymentId === checkoutResult.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+                  Refresh status
+                </button>
+              </div>
+            )}
             <Link href="/dashboard" className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-blue-600 to-violet-600 py-4 text-sm font-extrabold text-white shadow-lg shadow-blue-200 transition-all hover:opacity-90">
               Go to Dashboard <ChevronRight className="h-4 w-4" />
             </Link>
@@ -327,17 +394,62 @@ export default function UpgradePage() {
                   {paymentHistory.length ? (
                     <div className="space-y-2">
                       {paymentHistory.map(item => (
-                        <div key={item.id} className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2">
+                        <div key={item.id} className="rounded-xl bg-slate-50 px-3 py-2">
+                          <div className="flex items-center justify-between gap-3">
                           <div className="min-w-0">
                             <p className="truncate text-xs font-bold text-slate-700">{item.provider}</p>
                             <p className="text-[11px] text-slate-400">{item.status}</p>
                           </div>
                           <span className="text-xs font-extrabold text-slate-800">{fmt(item.amount)}</span>
+                          </div>
+                          <div className="mt-2 flex gap-2">
+                            <button
+                              type="button"
+                              onClick={() => handleStatusCheck(item.id)}
+                              disabled={checkingPaymentId === item.id}
+                              className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-[11px] font-bold text-slate-600 transition-colors hover:border-blue-200 hover:text-blue-700 disabled:opacity-60"
+                            >
+                              {checkingPaymentId === item.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+                              Status
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleRefundRequest(item.id)}
+                              disabled={requestingRefundId === item.id}
+                              className="flex-1 rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-[11px] font-bold text-slate-600 transition-colors hover:border-amber-200 hover:text-amber-700 disabled:opacity-60"
+                            >
+                              {requestingRefundId === item.id ? "Sending" : "Refund"}
+                            </button>
+                          </div>
                         </div>
                       ))}
                     </div>
                   ) : (
                     <p className="text-xs leading-relaxed text-slate-500">No payment records returned yet.</p>
+                  )}
+                </div>
+              )}
+
+              {signedIn && (
+                <div className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
+                  <div className="mb-3 flex items-center gap-2">
+                    <RefreshCw className="h-4 w-4 text-slate-400" />
+                    <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Refund requests</p>
+                  </div>
+                  {refundRequests.length ? (
+                    <div className="space-y-2">
+                      {refundRequests.map(item => (
+                        <div key={item.id} className="rounded-xl bg-slate-50 px-3 py-2">
+                          <div className="mb-1 flex items-center justify-between gap-3">
+                            <p className="truncate text-xs font-bold text-slate-700">{item.reason}</p>
+                            <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-bold text-amber-700">{item.status}</span>
+                          </div>
+                          <p className="text-[11px] text-slate-400">{new Date(item.requestedAt).toLocaleString()}</p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs leading-relaxed text-slate-500">No refund requests returned yet.</p>
                   )}
                 </div>
               )}
