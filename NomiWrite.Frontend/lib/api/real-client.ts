@@ -10,6 +10,7 @@ import type {
   FlagFeedbackRequest,
   GradingHistoryItem,
   GenerateQuizRequest,
+  GoogleLoginRequest,
   LoginRequest,
   PaymentHistoryItem,
   Quiz,
@@ -400,6 +401,13 @@ export const realClient: ApiClient = {
 
   register(requestBody: RegisterRequest) {
     return request<AuthResponse>(apiRoutes.auth.register, {
+      method: "POST",
+      body: JSON.stringify(requestBody),
+    });
+  },
+
+  googleLogin(requestBody: GoogleLoginRequest) {
+    return request<AuthResponse>(apiRoutes.auth.google, {
       method: "POST",
       body: JSON.stringify(requestBody),
     });

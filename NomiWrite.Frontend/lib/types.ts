@@ -27,6 +27,10 @@ export interface RegisterRequest {
   fullName: string;
 }
 
+export interface GoogleLoginRequest {
+  idToken: string;
+}
+
 export interface AuthResult {
   success: boolean;
   message: string;
@@ -299,6 +303,7 @@ export interface PromoCodeValidation {
 export interface ApiClient {
   login(request: LoginRequest): Promise<AuthResponse>;
   register(request: RegisterRequest): Promise<AuthResponse>;
+  googleLogin(request: GoogleLoginRequest): Promise<AuthResponse>;
   refresh(refreshToken: string): Promise<AuthResponse>;
   logout(): Promise<void>;
   verifyEmail(request: VerifyEmailRequest): Promise<AuthResult>;

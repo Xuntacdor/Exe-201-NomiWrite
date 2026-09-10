@@ -4,6 +4,7 @@ export const apiRoutes = {
   auth: {
     login: `${auth}/login`,
     register: `${auth}/register`,
+    google: `${auth}/google`,
     refresh: `${auth}/refresh`,
     logout: `${auth}/logout`,
     verifyEmail: `${auth}/verify-email`,

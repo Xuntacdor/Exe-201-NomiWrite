@@ -3,10 +3,11 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
-import { PenLine, Mail, Lock, User, ArrowRight, Globe2, Check } from "lucide-react";
+import { PenLine, Mail, Lock, User, ArrowRight, Check } from "lucide-react";
 import { apiClient, apiMode } from "@/lib/api/client";
 import { saveSession } from "@/lib/auth/session";
 import { levelOptions, writingGoalOptions } from "@/lib/constants/profile-options";
+import GoogleSignInButton from "../components/GoogleSignInButton";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -74,13 +75,7 @@ export default function RegisterPage() {
         </div>
 
         <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-8 shadow-2xl">
-          <button
-            type="button"
-            className="w-full flex items-center justify-center gap-3 py-3 rounded-xl bg-white text-slate-700 text-sm font-semibold hover:bg-slate-50 transition-colors shadow-sm mb-6"
-          >
-            <Globe2 className="w-4 h-4 text-blue-500" />
-            Sign up with Google
-          </button>
+          <GoogleSignInButton mode="register" />
 
           <div className="flex items-center gap-3 mb-6">
             <div className="flex-1 h-px bg-white/10" />

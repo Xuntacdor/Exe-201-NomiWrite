@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import { apiClient, apiMode } from "@/lib/api/client";
 import { getSession } from "@/lib/auth/session";
-import type { WritingFeedback } from "@/lib/types";
+import type { TutorReviewRequest, WritingFeedback } from "@/lib/types";
 
 function getExcerpt(content: string): string {
   if (!content) return "";
@@ -34,6 +34,7 @@ function ResultContent() {
   const [feedback, setFeedback] = useState<WritingFeedback | null>(null);
   const [comparisonMessage, setComparisonMessage] = useState("");
   const [actionMessage, setActionMessage] = useState("");
+  const [reviewRequests, setReviewRequests] = useState<TutorReviewRequest[]>([]);
   const [essayExpanded, setEssayExpanded] = useState(false);
   const [workingAction, setWorkingAction] = useState<"compare" | "tutor" | "flag" | "">("");
   const [loading, setLoading] = useState(true);
@@ -75,6 +76,23 @@ function ResultContent() {
     };
   }, [router, submissionId]);
 
+  useEffect(() => {
+    if (apiMode === "real" && !getSession()?.accessToken) return;
+
+    let ignore = false;
+    apiClient.listTutorReviewRequests()
+      .then(items => {
+        if (!ignore) setReviewRequests(items.slice(0, 4));
+      })
+      .catch(() => {
+        if (!ignore) setReviewRequests([]);
+      });
+
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
   const submission = feedback?.submission;
   const band = submission?.overallScore ?? 0;
   const criteriaScores = Object.entries(feedback?.criteriaScores ?? {}).filter(([, score]) => typeof score === "number");
@@ -110,6 +128,7 @@ function ResultContent() {
     try {
       const request = await apiClient.requestTutorReview(submissionId);
       setActionMessage(`Tutor review request created: ${request.status}.`);
+      setReviewRequests(items => [request, ...items.filter(item => item.id !== request.id)].slice(0, 4));
     } catch (err) {
       setActionMessage(err instanceof Error ? err.message : "Could not request tutor review.");
     } finally {
@@ -260,6 +279,34 @@ function ResultContent() {
                 {comparisonMessage || actionMessage}
               </div>
             )}
+
+            <div className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
+              <div className="flex items-center justify-between border-b border-slate-50 px-5 py-4">
+                <div className="flex items-center gap-2">
+                  <MessagesSquare className="h-4 w-4 text-violet-500" />
+                  <h3 className="text-sm font-extrabold text-slate-900">Tutor review requests</h3>
+                </div>
+              </div>
+              {reviewRequests.length ? (
+                <div className="divide-y divide-slate-50">
+                  {reviewRequests.map(request => (
+                    <div key={request.id} className="flex items-center justify-between gap-3 px-5 py-3">
+                      <div className="min-w-0">
+                        <p className="truncate text-xs font-bold text-slate-700">Submission {request.submissionId}</p>
+                        <p className="text-[11px] text-slate-400">
+                          {new Date(request.requestedAt).toLocaleString()}
+                        </p>
+                      </div>
+                      <span className="rounded-full bg-violet-50 px-2.5 py-1 text-[11px] font-bold text-violet-700">
+                        {request.status}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="p-5 text-sm text-slate-500">No tutor review requests were returned.</p>
+              )}
+            </div>
 
             {submission.content && (
               <div className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
