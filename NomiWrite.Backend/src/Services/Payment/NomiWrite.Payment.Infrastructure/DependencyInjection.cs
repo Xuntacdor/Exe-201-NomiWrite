@@ -44,6 +44,7 @@ public static class DependencyInjection
         services.AddScoped<VnPayGatewayService>();
         services.AddHttpClient<MomoGatewayService>();
         services.AddScoped<IPaymentService, PaymentService>();
+        services.AddScoped<IAdminPaymentService, AdminPaymentService>();
 
         services.AddMassTransit(x =>
         {
