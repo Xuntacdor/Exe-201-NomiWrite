@@ -12,6 +12,7 @@ public class GradingDbContext : DbContext, IGradingDbContext
     public DbSet<GradingResult> GradingResults => Set<GradingResult>();
     public DbSet<TutorReviewRequest> TutorReviewRequests => Set<TutorReviewRequest>();
     public DbSet<GradingFeedbackFlag> GradingFeedbackFlags => Set<GradingFeedbackFlag>();
+    public DbSet<AiGradingConfig> AiGradingConfigs => Set<AiGradingConfig>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

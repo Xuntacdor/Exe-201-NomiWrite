@@ -42,6 +42,7 @@ public class ExceptionHandlingMiddleware
 
             case GradingResultNotFoundException:
             case GradingResultByIdNotFoundException:
+            case AiGradingConfigNotFoundException:
                 statusCode = StatusCodes.Status404NotFound;
                 message = exception.Message;
                 errors = Array.Empty<string>();
