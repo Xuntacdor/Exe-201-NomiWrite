@@ -54,6 +54,17 @@ public class WritingPromptConfiguration : IEntityTypeConfiguration<WritingPrompt
             .HasColumnName("sample_answer")
             .HasMaxLength(20000);
 
+        builder.Property(p => p.MinWords)
+            .HasColumnName("min_words");
+
+        builder.Property(p => p.MaxWords)
+            .HasColumnName("max_words");
+
+        builder.Property(p => p.IsVipOnly)
+            .HasColumnName("is_vip_only")
+            .IsRequired()
+            .HasDefaultValue(false);
+
         builder.Property(p => p.CreatedAt)
             .HasColumnName("created_at")
             .IsRequired();

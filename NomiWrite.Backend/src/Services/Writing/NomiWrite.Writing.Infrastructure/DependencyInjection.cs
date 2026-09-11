@@ -8,6 +8,7 @@ using NomiWrite.Writing.Application.Interfaces;
 using NomiWrite.Writing.Application.Services;
 using NomiWrite.Writing.Application.Validation;
 using NomiWrite.Writing.Infrastructure.Clients;
+using NomiWrite.Writing.Infrastructure.Consumers;
 using NomiWrite.Writing.Infrastructure.Options;
 using NomiWrite.Writing.Infrastructure.Persistence;
 
@@ -16,6 +17,13 @@ namespace NomiWrite.Writing.Infrastructure;
 // To apply the new WritingPrompt (time_limit_minutes, image_url, sample_answer) and
 // WritingSubmission (deadline_at, submitted_late) columns, run (do not run — reference only):
 // dotnet ef migrations add AddTimingImageAndSampleAnswer --project NomiWrite.Writing.Infrastructure --startup-project NomiWrite.Writing.API --context WritingDbContext
+
+// UC72 — WritingPrompt word limits and IsVipOnly flag (do not run — reference only):
+// dotnet ef migrations add AddPromptWordLimitsAndVipFlag --project NomiWrite.Writing.Infrastructure --startup-project NomiWrite.Writing.API --context WritingDbContext
+
+// UC74 analytics — WritingSubmission.GradedAt column, filled by GradingCompletedEventConsumer (applied):
+// dotnet ef migrations add AddSubmissionGradedAt --project NomiWrite.Writing.Infrastructure --startup-project NomiWrite.Writing.API --context WritingDbContext
+// dotnet ef database update AddSubmissionGradedAt --project NomiWrite.Writing.Infrastructure --startup-project NomiWrite.Writing.API --context WritingDbContext
 
 public static class DependencyInjection
 {
@@ -42,10 +50,16 @@ public static class DependencyInjection
 
         services.AddScoped<IValidator<CreateSubmissionRequestDto>, CreateSubmissionRequestValidator>();
         services.AddScoped<IValidator<UpdateSubmissionRequestDto>, UpdateSubmissionRequestValidator>();
+        services.AddScoped<IValidator<CreatePromptRequestDto>, CreatePromptRequestValidator>();
+        services.AddScoped<IValidator<UpdatePromptRequestDto>, UpdatePromptRequestValidator>();
+        services.AddScoped<IAdminPromptService, AdminPromptService>();
+        services.AddScoped<IAdminSubmissionService, AdminSubmissionService>();
         services.AddScoped<IWritingService, WritingService>();
 
         services.AddMassTransit(x =>
         {
+            x.AddConsumer<GradingCompletedEventConsumer>();
+
             x.UsingRabbitMq((context, cfg) =>
             {
                 cfg.Host(configuration["RabbitMQ:Host"] ?? "localhost", "/", host =>

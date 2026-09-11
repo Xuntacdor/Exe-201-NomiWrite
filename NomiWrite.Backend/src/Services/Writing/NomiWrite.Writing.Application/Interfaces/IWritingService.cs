@@ -10,7 +10,9 @@ public interface IWritingService
     Task<IReadOnlyList<WritingPromptListItemDto>> GetPromptsAsync(
         Guid? typeId,
         DifficultyLevel? difficulty,
-        bool random);
+        bool random,
+        Guid? userId = null,
+        string? accessToken = null);
 
     Task<WritingPromptDto> GetPromptByIdAsync(Guid id);
 

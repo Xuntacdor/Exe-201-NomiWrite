@@ -19,6 +19,10 @@ public class WritingPromptDto
     public string Instructions { get; set; } = string.Empty;
     public string? ImageUrl { get; set; }
     public DifficultyLevel Difficulty { get; set; }
+    public int? TimeLimitMinutes { get; set; }
+    public int? MinWords { get; set; }
+    public int? MaxWords { get; set; }
+    public bool IsVipOnly { get; set; }
 }
 
 public class WritingPromptListItemDto

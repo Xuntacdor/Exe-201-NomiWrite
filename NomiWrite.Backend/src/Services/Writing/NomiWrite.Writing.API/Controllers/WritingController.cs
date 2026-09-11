@@ -29,7 +29,9 @@ public class WritingController : ControllerBase
         [FromQuery] DifficultyLevel? difficulty,
         [FromQuery] bool random = false)
     {
-        var result = await _writingService.GetPromptsAsync(typeId, difficulty, random);
+        var userId = GetUserId();
+        var accessToken = GetBearerToken();
+        var result = await _writingService.GetPromptsAsync(typeId, difficulty, random, userId, accessToken);
         return Ok(result);
     }
 

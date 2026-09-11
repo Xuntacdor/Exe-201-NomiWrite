@@ -56,11 +56,23 @@ public class WritingService : IWritingService
     public async Task<IReadOnlyList<WritingPromptListItemDto>> GetPromptsAsync(
         Guid? typeId,
         DifficultyLevel? difficulty,
-        bool random)
+        bool random,
+        Guid? userId = null,
+        string? accessToken = null)
     {
         var query = _dbContext.WritingPrompts
             .AsNoTracking()
             .Where(p => p.IsActive);
+
+        // VIP prompts are only visible to subscribers (and never to anonymous visitors).
+        bool includeVip = false;
+        if (userId.HasValue)
+        {
+            var subscription = await GetSubscriptionStatusOrDefaultAsync(userId.Value, accessToken);
+            includeVip = subscription.HasActiveSubscription;
+        }
+
+        query = query.Where(p => !p.IsVipOnly || includeVip);
 
         if (typeId.HasValue)
             query = query.Where(p => p.WritingTypeId == typeId.Value);
@@ -115,7 +127,11 @@ public class WritingService : IWritingService
                 Title = p.Title,
                 Instructions = p.Instructions,
                 ImageUrl = p.ImageUrl,
-                Difficulty = p.Difficulty
+                Difficulty = p.Difficulty,
+                TimeLimitMinutes = p.TimeLimitMinutes,
+                MinWords = p.MinWords,
+                MaxWords = p.MaxWords,
+                IsVipOnly = p.IsVipOnly
             })
             .FirstOrDefaultAsync();
 
@@ -213,6 +229,35 @@ public class WritingService : IWritingService
                 new[] { new ValidationFailure("Content", "Content cannot be empty when submitting.") });
         }
 
+        var prompt = await _dbContext.WritingPrompts
+            .AsNoTracking()
+            .FirstOrDefaultAsync(p => p.Id == submission.WritingPromptId);
+
+        if (prompt is not null)
+        {
+            if (prompt.MinWords.HasValue && submission.WordCount < prompt.MinWords.Value)
+            {
+                throw new ValidationException(
+                    new[]
+                    {
+                        new ValidationFailure(
+                            "Content",
+                            $"Submission must contain at least {prompt.MinWords.Value} words (current: {submission.WordCount}).")
+                    });
+            }
+
+            if (prompt.MaxWords.HasValue && submission.WordCount > prompt.MaxWords.Value)
+            {
+                throw new ValidationException(
+                    new[]
+                    {
+                        new ValidationFailure(
+                            "Content",
+                            $"Submission cannot exceed {prompt.MaxWords.Value} words (current: {submission.WordCount}).")
+                    });
+            }
+        }
+
         var now = DateTime.UtcNow;
 
         // Late submissions still go through (grading proceeds); flag the lateness so
@@ -268,7 +313,8 @@ public class WritingService : IWritingService
         var secondsRemaining = 0;
         if (submission.IsTimed && submission.DeadlineAt.HasValue)
         {
-            secondsRemaining = (int)Math.Ceiling((submission.DeadlineAt.Value - DateTime.UtcNow).TotalSeconds);
+            var remaining = (submission.DeadlineAt.Value - DateTime.UtcNow).TotalSeconds;
+            secondsRemaining = remaining > 0 ? (int)Math.Ceiling(remaining) : 0;
         }
 
         return new SubmissionTimeRemainingDto
