@@ -6,6 +6,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using NomiWrite.Subscription.API.Middleware;
 using NomiWrite.Subscription.Infrastructure;
+using NomiWrite.Subscription.Infrastructure.Jobs;
 using NomiWrite.Subscription.Infrastructure.Options;
 using NomiWrite.Subscription.Infrastructure.Persistence;
 
@@ -73,6 +74,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 builder.Services.AddAuthorization();
 
+builder.Services.AddHostedService<SubscriptionExpirySweepJob>();
+
 builder.Services.AddHealthChecks()
     .AddDbContextCheck<SubscriptionDbContext>("subscription_db");
 builder.Services.AddControllers()
@@ -102,6 +105,11 @@ app.Run();
 // EF Core migration commands (run from NomiWrite.Backend):
 //
 //   dotnet ef migrations add InitialCreate \
+//     --project src/Services/Subscription/NomiWrite.Subscription.Infrastructure \
+//     --startup-project src/Services/Subscription/NomiWrite.Subscription.API \
+//     --context SubscriptionDbContext
+//
+//   dotnet ef migrations add AddExpirySweepTracking \
 //     --project src/Services/Subscription/NomiWrite.Subscription.Infrastructure \
 //     --startup-project src/Services/Subscription/NomiWrite.Subscription.API \
 //     --context SubscriptionDbContext
