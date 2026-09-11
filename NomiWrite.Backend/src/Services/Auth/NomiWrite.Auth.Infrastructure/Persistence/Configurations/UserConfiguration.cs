@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using NomiWrite.Auth.Domain.Entities;
+using NomiWrite.Auth.Domain.Enums;
 
 namespace NomiWrite.Auth.Infrastructure.Persistence.Configurations;
 
@@ -39,6 +40,13 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
             .IsRequired()
             .HasConversion<string>()
             .HasMaxLength(20);
+
+        builder.Property(u => u.AccountStatus)
+            .HasColumnName("account_status")
+            .IsRequired()
+            .HasConversion<string>()
+            .HasMaxLength(20)
+            .HasDefaultValue(AccountStatus.Active);
 
         builder.Property(u => u.IsEmailVerified)
             .HasColumnName("is_email_verified")

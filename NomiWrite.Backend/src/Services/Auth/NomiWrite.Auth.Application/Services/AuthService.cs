@@ -131,6 +131,13 @@ public class AuthService : IAuthService
         if (user.IsDeleted)
             throw new AccountDeactivatedException();
 
+        if (user.AccountStatus != AccountStatus.Active)
+        {
+            if (user.AccountStatus == AccountStatus.Banned)
+                throw new AccountBannedException();
+            throw new AccountDeactivatedException();
+        }
+
         var passwordVerified = _passwordHasher.VerifyPassword(request.Password, user.PasswordHash);
         if (!passwordVerified)
             throw new InvalidCredentialsException();
@@ -385,6 +392,9 @@ public class AuthService : IAuthService
         {
             if (user.IsDeleted)
                 throw new AccountDeactivatedException();
+
+            if (user.AccountStatus == AccountStatus.Banned)
+                throw new AccountBannedException();
 
             if (user.GoogleId is null)
                 user.GoogleId = googleId;
