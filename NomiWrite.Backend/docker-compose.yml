@@ -41,6 +41,7 @@ services:
       - ReverseProxy__Clusters__writing-cluster__Destinations__writing-service__Address=http://writing-service:8080
       - ReverseProxy__Clusters__grading-cluster__Destinations__grading-service__Address=http://aicoordinator-service:8080
       - ReverseProxy__Clusters__subscription-cluster__Destinations__subscription-service__Address=http://subscription-service:8080
+      - ReverseProxy__Clusters__notification-cluster__Destinations__notification-service__Address=http://notification-service:8080
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -197,6 +198,29 @@ services:
     environment:
       - ASPNETCORE_URLS=http://+:8080
       - ConnectionStrings__SubscriptionDb=${ConnectionStrings__SubscriptionDb}
+      - RabbitMQ__Host=rabbitmq
+      - RabbitMQ__Username=${RabbitMQ__Username}
+      - RabbitMQ__Password=${RabbitMQ__Password}
+      - JwtSettings__Secret=${JwtSettings__Secret}
+      - JwtSettings__Issuer=${JwtSettings__Issuer}
+      - JwtSettings__Audience=${JwtSettings__Audience}
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - nomiwrite
+
+  # ── Notification API ─────────────────────────────────────────────
+  notification-service:
+    build:
+      context: .
+      dockerfile: src/Services/Notification/NomiWrite.Notification.API/Dockerfile
+    container_name: nomiwrite-notification
+    ports:
+      - "5170:8080"
+    environment:
+      - ASPNETCORE_URLS=http://+:8080
+      - ConnectionStrings__NotificationDb=${ConnectionStrings__NotificationDb}
       - RabbitMQ__Host=rabbitmq
       - RabbitMQ__Username=${RabbitMQ__Username}
       - RabbitMQ__Password=${RabbitMQ__Password}
