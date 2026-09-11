@@ -16,7 +16,7 @@ public class NotificationService : INotificationService
     public async Task<PagedResultDto<NotificationDto>> GetNotificationsAsync(Guid userId, bool? unreadOnly, int page, int pageSize)
     {
         var query = _dbContext.Notifications
-            .Where(n => n.UserId == userId);
+            .Where(n => n.UserId == userId || n.UserId == null);
 
         if (unreadOnly == true)
             query = query.Where(n => !n.IsRead);

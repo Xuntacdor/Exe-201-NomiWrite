@@ -10,6 +10,12 @@ using NomiWrite.Notification.Infrastructure.Persistence;
 
 namespace NomiWrite.Notification.Infrastructure;
 
+// UC78 — AllowNullableUserIdForBroadcast (do not run — reference only):
+//   dotnet ef migrations add AllowNullableUserIdForBroadcast \
+//     --project src/Services/Notification/NomiWrite.Notification.Infrastructure \
+//     --startup-project src/Services/Notification/NomiWrite.Notification.API \
+//     --context NotificationDbContext
+
 public static class DependencyInjection
 {
     public static IServiceCollection AddNotificationInfrastructure(this IServiceCollection services, IConfiguration configuration)
@@ -36,6 +42,7 @@ public static class DependencyInjection
             x.AddConsumer<PostLikedEventConsumer>();
             x.AddConsumer<SubscriptionExpiringEventConsumer>();
             x.AddConsumer<SubscriptionExpiredEventConsumer>();
+            x.AddConsumer<SystemAnnouncementCreatedEventConsumer>();
 
             x.UsingRabbitMq((context, cfg) =>
             {
