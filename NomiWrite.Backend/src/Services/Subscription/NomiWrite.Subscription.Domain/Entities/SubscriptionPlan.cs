@@ -12,6 +12,7 @@ public class SubscriptionPlan : BaseEntity
     public BillingCycle BillingCycle { get; set; }
     public int DurationDays { get; set; }
     public bool IsActive { get; set; } = true;
+    public string FeaturesJson { get; set; } = "[]";
 
     public ICollection<UserSubscription> UserSubscriptions { get; set; } = new List<UserSubscription>();
 }
