@@ -48,6 +48,11 @@ public class UserSubscriptionConfiguration : IEntityTypeConfiguration<UserSubscr
             .HasConversion<string>()
             .HasMaxLength(20);
 
+        builder.Property(s => s.ExpiryWarningsSent)
+            .HasColumnName("expiry_warnings_sent")
+            .IsRequired()
+            .HasDefaultValue(false);
+
         builder.Property(s => s.CreatedAt)
             .HasColumnName("created_at")
             .IsRequired();

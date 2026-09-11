@@ -11,6 +11,7 @@ public class UserSubscription : BaseEntity
     public DateTime StartDate { get; set; }
     public DateTime EndDate { get; set; }
     public SubscriptionStatus Status { get; set; } = SubscriptionStatus.Active;
+    public bool ExpiryWarningsSent { get; set; }
 
     public SubscriptionPlan? Plan { get; set; }
 }
