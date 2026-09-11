@@ -11,6 +11,7 @@ public class User : BaseEntity
     public string? GoogleId { get; set; }
     public string? AvatarUrl { get; set; }
     public UserRole Role { get; set; } = UserRole.Student;
+    public AccountStatus AccountStatus { get; set; } = AccountStatus.Active;
     public bool IsEmailVerified { get; set; }
 
     public ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();

@@ -1,3 +1,4 @@
+using FluentValidation;
 using NomiWrite.Subscription.Application.Exceptions;
 
 namespace NomiWrite.Subscription.API.Middleware;
@@ -33,6 +34,12 @@ public class ExceptionHandlingMiddleware
 
         switch (exception)
         {
+            case ValidationException validationException:
+                statusCode = StatusCodes.Status400BadRequest;
+                message = "Validation failed.";
+                errors = validationException.Errors.Select(e => e.ErrorMessage).ToArray();
+                break;
+
             case PlanNotFoundException:
                 statusCode = StatusCodes.Status404NotFound;
                 message = exception.Message;

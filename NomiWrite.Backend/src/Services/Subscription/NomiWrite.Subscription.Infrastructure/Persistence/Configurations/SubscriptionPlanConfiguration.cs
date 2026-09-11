@@ -54,6 +54,11 @@ public class SubscriptionPlanConfiguration : IEntityTypeConfiguration<Subscripti
             .IsRequired()
             .HasDefaultValue(true);
 
+        builder.Property(p => p.FeaturesJson)
+            .HasColumnName("features_json")
+            .HasColumnType("jsonb")
+            .HasDefaultValue("[]");
+
         builder.Property(p => p.CreatedAt)
             .HasColumnName("created_at")
             .IsRequired();
@@ -72,6 +77,7 @@ public class SubscriptionPlanConfiguration : IEntityTypeConfiguration<Subscripti
                 BillingCycle = BillingCycle.Monthly,
                 DurationDays = 30,
                 IsActive = true,
+                FeaturesJson = "[\"VIP Sample Answers\",\"Priority Support\"]",
                 CreatedAt = SeedCreatedAt
             },
             new SubscriptionPlan
@@ -84,6 +90,7 @@ public class SubscriptionPlanConfiguration : IEntityTypeConfiguration<Subscripti
                 BillingCycle = BillingCycle.Yearly,
                 DurationDays = 365,
                 IsActive = true,
+                FeaturesJson = "[\"VIP Sample Answers\",\"Priority Support\"]",
                 CreatedAt = SeedCreatedAt
             });
     }

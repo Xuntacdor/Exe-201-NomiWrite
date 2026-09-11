@@ -188,6 +188,14 @@ namespace NomiWrite.Auth.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<string>("AccountStatus")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasDefaultValue("Active")
+                        .HasColumnName("account_status");
+
                     b.Property<string>("AvatarUrl")
                         .HasColumnType("text");
 

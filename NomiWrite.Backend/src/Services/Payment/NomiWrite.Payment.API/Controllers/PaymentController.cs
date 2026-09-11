@@ -82,7 +82,11 @@ public class PaymentController : ControllerBase
     [Authorize]
     public async Task<ActionResult<PaymentStatusResponseDto>> GetPaymentStatus(Guid paymentId)
     {
-        var result = await _paymentService.GetPaymentStatusAsync(paymentId);
+        var userId = GetUserId();
+        if (userId is null)
+            return Unauthorized();
+
+        var result = await _paymentService.GetPaymentStatusAsync(userId.Value, paymentId);
         return Ok(result);
     }
 

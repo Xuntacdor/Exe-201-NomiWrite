@@ -56,6 +56,20 @@ namespace NomiWrite.Writing.Infrastructure.Migrations
                         .HasDefaultValue(true)
                         .HasColumnName("is_active");
 
+                    b.Property<bool>("IsVipOnly")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_vip_only");
+
+                    b.Property<int?>("MaxWords")
+                        .HasColumnType("integer")
+                        .HasColumnName("max_words");
+
+                    b.Property<int?>("MinWords")
+                        .HasColumnType("integer")
+                        .HasColumnName("min_words");
+
                     b.Property<string>("SampleAnswer")
                         .HasMaxLength(20000)
                         .HasColumnType("character varying(20000)")
@@ -107,6 +121,9 @@ namespace NomiWrite.Writing.Infrastructure.Migrations
                     b.Property<DateTime?>("DeadlineAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("deadline_at");
+
+                    b.Property<DateTime?>("GradedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<bool>("IsTimed")
                         .ValueGeneratedOnAdd()

@@ -122,6 +122,13 @@ namespace NomiWrite.Subscription.Infrastructure.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("duration_days");
 
+                    b.Property<string>("FeaturesJson")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("jsonb")
+                        .HasDefaultValue("[]")
+                        .HasColumnName("features_json");
+
                     b.Property<bool>("IsActive")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")
@@ -155,6 +162,7 @@ namespace NomiWrite.Subscription.Infrastructure.Migrations
                             Currency = "VND",
                             Description = "Monthly VIP subscription for NomiWrite premium features.",
                             DurationDays = 30,
+                            FeaturesJson = "[\"VIP Sample Answers\",\"Priority Support\"]",
                             IsActive = true,
                             Name = "VIP Monthly",
                             Price = 99000m
@@ -167,6 +175,7 @@ namespace NomiWrite.Subscription.Infrastructure.Migrations
                             Currency = "VND",
                             Description = "Yearly VIP subscription for NomiWrite premium features.",
                             DurationDays = 365,
+                            FeaturesJson = "[\"VIP Sample Answers\",\"Priority Support\"]",
                             IsActive = true,
                             Name = "VIP Yearly",
                             Price = 990000m
