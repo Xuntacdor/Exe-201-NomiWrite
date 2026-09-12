@@ -153,6 +153,14 @@ interface BackendApiEnvelope<T> {
   message?: string;
 }
 
+interface BackendVocabularyPage {
+  items: VocabSuggestion[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
+
 function getAuthHeaders(): HeadersInit {
   if (typeof window === "undefined") return {};
 
@@ -593,32 +601,34 @@ export const realClient: ApiClient = {
   },
 
   listVocabulary() {
-    return request<VocabSuggestion[]>(apiRoutes.vocabulary.list, { method: "GET" });
+    return request<BackendApiEnvelope<BackendVocabularyPage>>(apiRoutes.vocabulary.list, { method: "GET" }, true)
+      .then(envelope => envelope.data.items);
   },
 
   updateVocabularyMastered(id: string, requestBody: UpdateVocabularyMasteredRequest) {
-    return request<VocabSuggestion>(apiRoutes.vocabulary.mastered(id), {
+    return request<BackendApiEnvelope<VocabSuggestion>>(apiRoutes.vocabulary.mastered(id), {
       method: "PATCH",
       body: JSON.stringify(requestBody),
-    });
+    }, true).then(envelope => envelope.data);
   },
 
   generateQuiz(requestBody: GenerateQuizRequest) {
-    return request<Quiz>(apiRoutes.quizzes.generate, {
+    return request<BackendApiEnvelope<Quiz>>(apiRoutes.quizzes.generate, {
       method: "POST",
       body: JSON.stringify(requestBody),
-    });
+    }, true).then(envelope => envelope.data);
   },
 
   getQuiz(id: string) {
-    return request<Quiz>(apiRoutes.quizzes.detail(id), { method: "GET" });
+    return request<BackendApiEnvelope<Quiz>>(apiRoutes.quizzes.detail(id), { method: "GET" }, true)
+      .then(envelope => envelope.data);
   },
 
   submitQuizAttempt(requestBody: SubmitQuizAttemptRequest) {
-    return request<QuizAttempt>(apiRoutes.quizAttempts.create, {
+    return request<BackendApiEnvelope<QuizAttempt>>(apiRoutes.quizAttempts.create, {
       method: "POST",
       body: JSON.stringify(requestBody),
-    });
+    }, true).then(envelope => envelope.data);
   },
 
   createCheckout(requestBody: CheckoutRequest) {

@@ -50,7 +50,7 @@ export const apiRoutes = {
     detail: (id: string) => `/api/quizzes/${id}`,
   },
   quizAttempts: {
-    create: "/api/quiz-attempts",
+    create: "/api/quizzes/attempts",
   },
   payments: {
     checkout: "/api/payment",
