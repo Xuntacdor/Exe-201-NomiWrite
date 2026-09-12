@@ -83,7 +83,16 @@ public class GradingService : IGradingService
                 submissionId,
                 userId,
                 gradingResult.OverallBand,
-                gradingResult.CompletedAt.Value));
+                gradingResult.CompletedAt.Value,
+                aiResponse.GrammarErrors
+                    .Select(e => new GradingGrammarErrorEventItem(e.OriginalText, e.Suggestion, e.Explanation))
+                    .ToList(),
+                aiResponse.VocabularySuggestions
+                    .Select(v => new GradingVocabularySuggestionEventItem(
+                        v.OriginalWord,
+                        v.SuggestedAlternatives,
+                        v.Context))
+                    .ToList()));
         }
         catch (Exception ex)
         {
