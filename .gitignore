@@ -6,6 +6,11 @@
 # dotenv files
 .env
 
+# Production secrets (never commit)
+.env.production
+.env.production.local
+.env.*.local
+
 # User-specific files
 *.rsuser
 *.suo
@@ -484,5 +489,11 @@ $RECYCLE.BIN/
 *.swp
 # ASP.NET appsettings with secrets (use env vars instead)
 **/appsettings.json
+
+# Database backups
+backups/
+*.sql.gz
+*.dump
+*.backup
 #opencode.json
 opencode.json
