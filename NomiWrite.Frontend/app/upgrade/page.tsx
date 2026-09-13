@@ -2,6 +2,7 @@
 
 import { FormEvent, type ElementType, ReactNode, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import AppDialog from "../components/AppDialog";
 import AppShell from "../components/AppShell";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
@@ -69,10 +70,7 @@ function PageFrame({ signedIn, children }: { signedIn: boolean; children: ReactN
 }
 
 export default function UpgradePage() {
-  const [signedIn] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return Boolean(getSession()?.accessToken);
-  });
+  const [signedIn, setSignedIn] = useState(false);
   const [method, setMethod] = useState<PaymentMethod>("vnpay");
   const [billing, setBilling] = useState<"monthly" | "yearly">("monthly");
   const [agreed, setAgreed] = useState(false);
@@ -89,9 +87,18 @@ export default function UpgradePage() {
   const [checkingPromo, setCheckingPromo] = useState(false);
   const [checkingPaymentId, setCheckingPaymentId] = useState("");
   const [requestingRefundId, setRequestingRefundId] = useState("");
+  const [refundPaymentId, setRefundPaymentId] = useState("");
 
   const fallbackMonthly = 199_000;
   const fallbackYearlyTotal = 1_908_000;
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSignedIn(Boolean(getSession()?.accessToken));
+    }, 0);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     let ignore = false;
@@ -226,14 +233,17 @@ export default function UpgradePage() {
     }
   }
 
-  async function handleRefundRequest(paymentOrderId: string) {
-    const reason = window.prompt("Reason for refund request");
-    if (!reason?.trim()) return;
+  async function handleRefundRequest(paymentOrderId: string, reason: string) {
+    if (!reason.trim()) {
+      setError("Please enter a reason before creating a refund request.");
+      return;
+    }
 
     setRequestingRefundId(paymentOrderId);
     setError("");
     try {
       const refund = await apiClient.createRefundRequest(paymentOrderId, reason.trim());
+      setRefundPaymentId("");
       setRefundRequests(items => [refund, ...items.filter(item => item.id !== refund.id)].slice(0, 3));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not create refund request.");
@@ -286,6 +296,16 @@ export default function UpgradePage() {
 
   return (
     <PageFrame signedIn={signedIn}>
+      <AppDialog
+        open={Boolean(refundPaymentId)}
+        title="Request refund"
+        description="Send a refund request to the backend payment service for this payment order."
+        confirmLabel="Send request"
+        promptLabel="Reason"
+        promptPlaceholder="Example: I chose the wrong billing cycle."
+        onCancel={() => setRefundPaymentId("")}
+        onConfirm={value => handleRefundRequest(refundPaymentId, value ?? "")}
+      />
       <main className={`min-h-screen bg-slate-50 ${signedIn ? "" : "pt-16"}`}>
         <div className="sticky top-0 z-10 flex h-14 items-center justify-between border-b border-slate-100 bg-white/90 px-6 backdrop-blur">
           <div className="flex items-center gap-2">
@@ -414,7 +434,7 @@ export default function UpgradePage() {
                             </button>
                             <button
                               type="button"
-                              onClick={() => handleRefundRequest(item.id)}
+                              onClick={() => setRefundPaymentId(item.id)}
                               disabled={requestingRefundId === item.id}
                               className="flex-1 rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-[11px] font-bold text-slate-600 transition-colors hover:border-amber-200 hover:text-amber-700 disabled:opacity-60"
                             >

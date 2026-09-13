@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import AppDialog from "../components/AppDialog";
 import AppShell from "../components/AppShell";
 import {
   Award,
@@ -46,6 +47,7 @@ export default function ProfilePage() {
   const [loadingProgress, setLoadingProgress] = useState(false);
   const [saving, setSaving] = useState(false);
   const [accountAction, setAccountAction] = useState<"cancel" | "deactivate" | "">("");
+  const [confirmAction, setConfirmAction] = useState<"cancel" | "deactivate" | "">("");
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -116,8 +118,6 @@ export default function ProfilePage() {
   const planLabel = profile?.plan === "premium" ? "Premium" : "Free";
 
   async function handleCancelSubscription() {
-    if (!window.confirm("Cancel your current subscription?")) return;
-
     setAccountAction("cancel");
     setError("");
     try {
@@ -135,8 +135,6 @@ export default function ProfilePage() {
   }
 
   async function handleDeactivateAccount() {
-    if (!window.confirm("Deactivate this account? You will be signed out after the request succeeds.")) return;
-
     setAccountAction("deactivate");
     setError("");
     try {
@@ -150,8 +148,39 @@ export default function ProfilePage() {
     }
   }
 
+  function handleConfirmAccountAction() {
+    const action = confirmAction;
+    setConfirmAction("");
+
+    if (action === "cancel") {
+      void handleCancelSubscription();
+    }
+
+    if (action === "deactivate") {
+      void handleDeactivateAccount();
+    }
+  }
+
   return (
     <AppShell activePath="/profile">
+      <AppDialog
+        open={confirmAction === "cancel"}
+        title="Cancel subscription?"
+        description="Your current subscription will be cancelled through the backend subscription service."
+        confirmLabel="Cancel subscription"
+        tone="danger"
+        onCancel={() => setConfirmAction("")}
+        onConfirm={handleConfirmAccountAction}
+      />
+      <AppDialog
+        open={confirmAction === "deactivate"}
+        title="Deactivate account?"
+        description="You will be signed out after the account deactivation request succeeds."
+        confirmLabel="Deactivate account"
+        tone="danger"
+        onCancel={() => setConfirmAction("")}
+        onConfirm={handleConfirmAccountAction}
+      />
       <div className="sticky top-0 z-10 flex h-14 items-center justify-between border-b border-slate-100 bg-white/90 px-6 backdrop-blur">
         <div className="flex items-center gap-2">
           <UserIcon className="h-4 w-4 text-slate-500" />
@@ -227,7 +256,7 @@ export default function ProfilePage() {
                 {profile.plan === "premium" && (
                   <button
                     type="button"
-                    onClick={handleCancelSubscription}
+                    onClick={() => setConfirmAction("cancel")}
                     disabled={accountAction === "cancel"}
                     className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl border border-amber-200 bg-amber-50 py-2.5 text-xs font-bold text-amber-700 transition-colors hover:bg-amber-100 disabled:opacity-60"
                   >
@@ -244,7 +273,7 @@ export default function ProfilePage() {
                 </p>
                 <button
                   type="button"
-                  onClick={handleDeactivateAccount}
+                  onClick={() => setConfirmAction("deactivate")}
                   disabled={accountAction === "deactivate"}
                   className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 py-2.5 text-xs font-bold text-red-700 transition-colors hover:bg-red-100 disabled:opacity-60"
                 >
