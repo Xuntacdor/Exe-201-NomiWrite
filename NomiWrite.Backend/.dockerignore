@@ -8,3 +8,7 @@
 docker-compose.yml
 .env
 .env.*
+# Never bake appsettings files (they carry local credentials) into image layers;
+# all runtime config is injected via compose environment / .env.production.
+**/appsettings.json
+**/appsettings.Production.json

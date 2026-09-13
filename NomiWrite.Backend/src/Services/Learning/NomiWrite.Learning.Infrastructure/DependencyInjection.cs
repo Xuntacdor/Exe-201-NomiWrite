@@ -17,7 +17,9 @@ public static class DependencyInjection
         IConfiguration configuration)
     {
         services.AddDbContext<LearningDbContext>(options =>
-            options.UseNpgsql(configuration.GetConnectionString("LearningDb")));
+            options.UseNpgsql(
+                configuration.GetConnectionString("LearningDb"),
+                npgsql => npgsql.EnableRetryOnFailure(maxRetryCount: 3)));
 
         services.AddScoped<ILearningDbContext>(sp => sp.GetRequiredService<LearningDbContext>());
 
