@@ -42,6 +42,7 @@ services:
       - ReverseProxy__Clusters__grading-cluster__Destinations__grading-service__Address=http://aicoordinator-service:8080
       - ReverseProxy__Clusters__subscription-cluster__Destinations__subscription-service__Address=http://subscription-service:8080
       - ReverseProxy__Clusters__notification-cluster__Destinations__notification-service__Address=http://notification-service:8080
+      - ReverseProxy__Clusters__admin-cluster__Destinations__admin-service__Address=http://admin-service:8080
       - ReverseProxy__Clusters__learning-cluster__Destinations__learning-service__Address=http://learning-service:8080
     depends_on:
       rabbitmq:
@@ -228,6 +229,33 @@ services:
       - JwtSettings__Secret=${JwtSettings__Secret}
       - JwtSettings__Issuer=${JwtSettings__Issuer}
       - JwtSettings__Audience=${JwtSettings__Audience}
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - nomiwrite
+
+  # -- Admin API ---------------------------------------------------------------
+  admin-service:
+    build:
+      context: .
+      dockerfile: src/Services/Admin/NomiWrite.Admin.API/Dockerfile
+    container_name: nomiwrite-admin
+    ports:
+      - "5180:8080"
+    environment:
+      - ASPNETCORE_URLS=http://+:8080
+      - ConnectionStrings__AdminDb=${ConnectionStrings__AdminDb}
+      - RabbitMQ__Host=rabbitmq
+      - RabbitMQ__Username=${RabbitMQ__Username}
+      - RabbitMQ__Password=${RabbitMQ__Password}
+      - JwtSettings__Secret=${JwtSettings__Secret}
+      - JwtSettings__Issuer=${JwtSettings__Issuer}
+      - JwtSettings__Audience=${JwtSettings__Audience}
+      - ServiceUrls__AuthService=http://auth-service:8080
+      - ServiceUrls__WritingService=http://writing-service:8080
+      - ServiceUrls__PaymentService=http://payment-service:8080
+      - ServiceUrls__SubscriptionService=http://subscription-service:8080
     depends_on:
       rabbitmq:
         condition: service_healthy

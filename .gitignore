@@ -489,6 +489,7 @@ $RECYCLE.BIN/
 *.swp
 # ASP.NET appsettings with secrets (use env vars instead)
 **/appsettings.json
+!NomiWrite.Backend/src/Gateway/NomiWrite.Gateway/appsettings.json
 
 # Database backups
 backups/
