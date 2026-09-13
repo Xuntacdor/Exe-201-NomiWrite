@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import AppDialog from "../components/AppDialog";
 import AppShell from "../components/AppShell";
 import {
   AlertCircle,
@@ -35,6 +36,7 @@ function ResultContent() {
   const [comparisonMessage, setComparisonMessage] = useState("");
   const [actionMessage, setActionMessage] = useState("");
   const [reviewRequests, setReviewRequests] = useState<TutorReviewRequest[]>([]);
+  const [flagDialogOpen, setFlagDialogOpen] = useState(false);
   const [essayExpanded, setEssayExpanded] = useState(false);
   const [workingAction, setWorkingAction] = useState<"compare" | "tutor" | "flag" | "">("");
   const [loading, setLoading] = useState(true);
@@ -136,19 +138,22 @@ function ResultContent() {
     }
   }
 
-  async function handleFlag() {
+  async function submitFlag(reason: string) {
     if (!gradingResultId) {
       setActionMessage("This result cannot be flagged because the grading result id is missing.");
       return;
     }
 
-    const reason = window.prompt("Reason for flagging this AI feedback");
-    if (!reason?.trim()) return;
+    if (!reason.trim()) {
+      setActionMessage("Please enter a reason before flagging feedback.");
+      return;
+    }
 
     setWorkingAction("flag");
     setActionMessage("");
     try {
       await apiClient.flagFeedback(gradingResultId, { reason: reason.trim() });
+      setFlagDialogOpen(false);
       setActionMessage("Feedback flag submitted.");
     } catch (err) {
       setActionMessage(err instanceof Error ? err.message : "Could not flag feedback.");
@@ -159,6 +164,16 @@ function ResultContent() {
 
   return (
     <AppShell activePath="/write">
+      <AppDialog
+        open={flagDialogOpen}
+        title="Flag AI feedback"
+        description="Tell the team what looks wrong so the grading result can be reviewed."
+        confirmLabel="Submit flag"
+        promptLabel="Reason"
+        promptPlaceholder="Example: The grammar correction changes my intended meaning."
+        onCancel={() => setFlagDialogOpen(false)}
+        onConfirm={value => submitFlag(value ?? "")}
+      />
       <div className="sticky top-0 z-10 flex h-14 items-center justify-between border-b border-slate-100 bg-white/90 px-6 backdrop-blur">
         <div className="flex items-center gap-2 text-sm">
           <Link href="/dashboard" className="text-slate-400 hover:text-slate-600">Dashboard</Link>
@@ -259,7 +274,7 @@ function ResultContent() {
               {[
                 { label: "Compare", icon: SplitSquareHorizontal, action: handleCompare, key: "compare" as const },
                 { label: "Tutor review", icon: MessagesSquare, action: handleTutorReview, key: "tutor" as const },
-                { label: "Flag feedback", icon: Flag, action: handleFlag, key: "flag" as const },
+                { label: "Flag feedback", icon: Flag, action: () => setFlagDialogOpen(true), key: "flag" as const },
               ].map(({ label, icon: Icon, action, key }) => (
                 <button
                   key={label}
