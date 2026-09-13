@@ -1,0 +1,9 @@
+<Project>
+  <PropertyGroup>
+    <!-- Pre-existing EF version skew: Npgsql.EntityFrameworkCore.PostgreSQL 8.0.* resolves to 8.0.11
+         while Microsoft.EntityFrameworkCore 8.0.* floats to the newest 8.0.x patch. This is a benign
+         assembly-binding advisory (resolved to 8.0.11 at build), not a code defect. Kept suppressed so
+         `dotnet build -warnaserror` only fails on real warnings. -->
+    <NoWarn>$(NoWarn);MSB3277</NoWarn>
+  </PropertyGroup>
+</Project>

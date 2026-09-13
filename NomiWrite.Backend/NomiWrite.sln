@@ -105,6 +105,26 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NomiWrite.Learning.Infrastr
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NomiWrite.Learning.API", "src\Services\Learning\NomiWrite.Learning.API\NomiWrite.Learning.API.csproj", "{A66B5397-C604-49C6-BCC1-F124E1B8009C}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{3D0ABDD9-FA80-43D1-B88D-1C62CFB13314}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NomiWrite.Auth.Application.UnitTests", "tests\NomiWrite.Auth.Application.UnitTests\NomiWrite.Auth.Application.UnitTests.csproj", "{375976A5-1F54-4381-98CE-CF50FCD2ECA2}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NomiWrite.Payment.Application.UnitTests", "tests\NomiWrite.Payment.Application.UnitTests\NomiWrite.Payment.Application.UnitTests.csproj", "{FADA51F9-2559-4D47-BE62-878BA7F9BF8E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NomiWrite.AICoordinator.Application.UnitTests", "tests\NomiWrite.AICoordinator.Application.UnitTests\NomiWrite.AICoordinator.Application.UnitTests.csproj", "{34061F28-0D9D-40D5-B75A-DCF3CDEF2F97}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NomiWrite.Learning.Application.UnitTests", "tests\NomiWrite.Learning.Application.UnitTests\NomiWrite.Learning.Application.UnitTests.csproj", "{21E6F181-710F-44BC-8F09-F0AE3A235F36}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NomiWrite.Writing.Application.UnitTests", "tests\NomiWrite.Writing.Application.UnitTests\NomiWrite.Writing.Application.UnitTests.csproj", "{F70DDB90-D313-4C81-96B1-7FA91E9A8907}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NomiWrite.Subscription.Application.UnitTests", "tests\NomiWrite.Subscription.Application.UnitTests\NomiWrite.Subscription.Application.UnitTests.csproj", "{87C1436D-B9FE-439F-A7F9-711DA6EFD77C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NomiWrite.User.Application.UnitTests", "tests\NomiWrite.User.Application.UnitTests\NomiWrite.User.Application.UnitTests.csproj", "{9CDDF27C-CDAA-48E7-AE54-D0030BED8354}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NomiWrite.Admin.Application.UnitTests", "tests\NomiWrite.Admin.Application.UnitTests\NomiWrite.Admin.Application.UnitTests.csproj", "{859B2DC7-5D7F-4C99-B6F6-9A17ADD484C2}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NomiWrite.Notification.Application.UnitTests", "tests\NomiWrite.Notification.Application.UnitTests\NomiWrite.Notification.Application.UnitTests.csproj", "{05A77A53-B210-429F-9BAA-48C0C8112645}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -266,6 +286,42 @@ Global
 		{A66B5397-C604-49C6-BCC1-F124E1B8009C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A66B5397-C604-49C6-BCC1-F124E1B8009C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A66B5397-C604-49C6-BCC1-F124E1B8009C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{375976A5-1F54-4381-98CE-CF50FCD2ECA2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{375976A5-1F54-4381-98CE-CF50FCD2ECA2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{375976A5-1F54-4381-98CE-CF50FCD2ECA2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{375976A5-1F54-4381-98CE-CF50FCD2ECA2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FADA51F9-2559-4D47-BE62-878BA7F9BF8E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FADA51F9-2559-4D47-BE62-878BA7F9BF8E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FADA51F9-2559-4D47-BE62-878BA7F9BF8E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FADA51F9-2559-4D47-BE62-878BA7F9BF8E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{34061F28-0D9D-40D5-B75A-DCF3CDEF2F97}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{34061F28-0D9D-40D5-B75A-DCF3CDEF2F97}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{34061F28-0D9D-40D5-B75A-DCF3CDEF2F97}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{34061F28-0D9D-40D5-B75A-DCF3CDEF2F97}.Release|Any CPU.Build.0 = Release|Any CPU
+		{21E6F181-710F-44BC-8F09-F0AE3A235F36}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{21E6F181-710F-44BC-8F09-F0AE3A235F36}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{21E6F181-710F-44BC-8F09-F0AE3A235F36}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{21E6F181-710F-44BC-8F09-F0AE3A235F36}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F70DDB90-D313-4C81-96B1-7FA91E9A8907}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F70DDB90-D313-4C81-96B1-7FA91E9A8907}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F70DDB90-D313-4C81-96B1-7FA91E9A8907}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F70DDB90-D313-4C81-96B1-7FA91E9A8907}.Release|Any CPU.Build.0 = Release|Any CPU
+		{87C1436D-B9FE-439F-A7F9-711DA6EFD77C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{87C1436D-B9FE-439F-A7F9-711DA6EFD77C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{87C1436D-B9FE-439F-A7F9-711DA6EFD77C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{87C1436D-B9FE-439F-A7F9-711DA6EFD77C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9CDDF27C-CDAA-48E7-AE54-D0030BED8354}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9CDDF27C-CDAA-48E7-AE54-D0030BED8354}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9CDDF27C-CDAA-48E7-AE54-D0030BED8354}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9CDDF27C-CDAA-48E7-AE54-D0030BED8354}.Release|Any CPU.Build.0 = Release|Any CPU
+		{859B2DC7-5D7F-4C99-B6F6-9A17ADD484C2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{859B2DC7-5D7F-4C99-B6F6-9A17ADD484C2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{859B2DC7-5D7F-4C99-B6F6-9A17ADD484C2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{859B2DC7-5D7F-4C99-B6F6-9A17ADD484C2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{05A77A53-B210-429F-9BAA-48C0C8112645}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{05A77A53-B210-429F-9BAA-48C0C8112645}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{05A77A53-B210-429F-9BAA-48C0C8112645}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{05A77A53-B210-429F-9BAA-48C0C8112645}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{1A726FDE-06EE-4406-AF5B-5AE2147F5A81} = {E9D2EA91-0FA4-45D4-BA74-8F30631A2DD6}
@@ -318,5 +374,14 @@ Global
 		{BA6FD9E7-EF4B-4C51-90F2-F481C0637B2D} = {F5A96708-CC39-42B8-8249-B77884739984}
 		{3C441591-3E42-4566-B6F0-92428C85DCBE} = {F5A96708-CC39-42B8-8249-B77884739984}
 		{A66B5397-C604-49C6-BCC1-F124E1B8009C} = {F5A96708-CC39-42B8-8249-B77884739984}
+		{375976A5-1F54-4381-98CE-CF50FCD2ECA2} = {3D0ABDD9-FA80-43D1-B88D-1C62CFB13314}
+		{FADA51F9-2559-4D47-BE62-878BA7F9BF8E} = {3D0ABDD9-FA80-43D1-B88D-1C62CFB13314}
+		{34061F28-0D9D-40D5-B75A-DCF3CDEF2F97} = {3D0ABDD9-FA80-43D1-B88D-1C62CFB13314}
+		{21E6F181-710F-44BC-8F09-F0AE3A235F36} = {3D0ABDD9-FA80-43D1-B88D-1C62CFB13314}
+		{F70DDB90-D313-4C81-96B1-7FA91E9A8907} = {3D0ABDD9-FA80-43D1-B88D-1C62CFB13314}
+		{87C1436D-B9FE-439F-A7F9-711DA6EFD77C} = {3D0ABDD9-FA80-43D1-B88D-1C62CFB13314}
+		{9CDDF27C-CDAA-48E7-AE54-D0030BED8354} = {3D0ABDD9-FA80-43D1-B88D-1C62CFB13314}
+		{859B2DC7-5D7F-4C99-B6F6-9A17ADD484C2} = {3D0ABDD9-FA80-43D1-B88D-1C62CFB13314}
+		{05A77A53-B210-429F-9BAA-48C0C8112645} = {3D0ABDD9-FA80-43D1-B88D-1C62CFB13314}
 	EndGlobalSection
 EndGlobal

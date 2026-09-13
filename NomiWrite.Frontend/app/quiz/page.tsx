@@ -3,9 +3,9 @@
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import AppShell from "../components/AppShell";
-import { apiClient, apiMode } from "@/lib/api/client";
+import { apiClient } from "@/lib/api/client";
 import type { Quiz, QuizAttempt } from "@/lib/types";
-import { ArrowRight, BrainCircuit, Check, Home, Loader2, RotateCcw, Sparkles, Trophy, X, Zap } from "lucide-react";
+import { ArrowRight, BrainCircuit, Check, Home, Loader2, RotateCcw, Trophy, X, Zap } from "lucide-react";
 
 function QuizContent() {
   const params = useSearchParams();
@@ -14,14 +14,10 @@ function QuizContent() {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [submittedAttempt, setSubmittedAttempt] = useState<QuizAttempt | null>(null);
   const [current, setCurrent] = useState(0);
-  const [loading, setLoading] = useState(apiMode === "mock");
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (apiMode === "real") {
-      return;
-    }
-
     let ignore = false;
     apiClient.generateQuiz({ sourceSubmissionId: submissionId })
       .then(result => {
@@ -43,10 +39,6 @@ function QuizContent() {
   const question = questions[current];
   const selected = question ? answers[question.id] : undefined;
   const isAnswered = Boolean(selected);
-  const score = useMemo(
-    () => questions.filter(item => answers[item.id] === item.correctAnswer).length,
-    [answers, questions],
-  );
 
   function handleSelect(answer: string) {
     if (!question || isAnswered) return;
@@ -71,30 +63,10 @@ function QuizContent() {
     setError("");
   }
 
-  if (apiMode === "real") {
-    return (
-      <AppShell activePath="/quiz">
-        <div className="sticky top-0 z-10 flex h-14 items-center gap-2 border-b border-slate-100 bg-white/90 px-6 backdrop-blur">
-          <BrainCircuit className="h-4 w-4 text-violet-500" />
-          <h1 className="text-sm font-extrabold text-slate-900">Quiz practice</h1>
-        </div>
-        <div className="w-full p-6">
-          <div className="rounded-2xl border border-violet-100 bg-violet-50 p-6">
-            <div className="mb-3 flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-violet-600" />
-              <h2 className="text-base font-extrabold text-violet-900">Quiz API pending</h2>
-            </div>
-            <p className="max-w-2xl text-sm leading-relaxed text-violet-700">
-              This frontend flow is ready, but the pulled backend does not expose quiz generation or quiz attempt endpoints yet. Plan status stays 1/2 until those APIs arrive.
-            </p>
-          </div>
-        </div>
-      </AppShell>
-    );
-  }
-
   if (submittedAttempt) {
-    const pct = questions.length ? Math.round((score / questions.length) * 100) : 0;
+    const total = submittedAttempt.totalQuestions ?? questions.length;
+    const score = submittedAttempt.score;
+    const pct = total ? Math.round((score / total) * 100) : 0;
     return (
       <AppShell activePath="/quiz">
         <div className="sticky top-0 z-10 flex h-14 items-center gap-2 border-b border-slate-100 bg-white/90 px-6 backdrop-blur">
@@ -176,7 +148,7 @@ function QuizContent() {
               })}
             </div>
 
-            {isAnswered && (
+            {isAnswered && question.explanation && (
               <div className="rounded-xl border border-blue-100 bg-blue-50 p-4">
                 <p className="text-xs font-bold text-blue-800">{question.explanation}</p>
               </div>

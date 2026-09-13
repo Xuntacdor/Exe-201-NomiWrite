@@ -2,21 +2,17 @@
 
 import { useEffect, useMemo, useState } from "react";
 import AppShell from "../components/AppShell";
-import { apiClient, apiMode } from "@/lib/api/client";
+import { apiClient } from "@/lib/api/client";
 import type { VocabSuggestion } from "@/lib/types";
-import { BookOpen, CheckCircle2, Circle, Loader2, Search, Sparkles } from "lucide-react";
+import { BookOpen, CheckCircle2, Circle, Loader2, Search } from "lucide-react";
 
 export default function VocabularyPage() {
   const [words, setWords] = useState<VocabSuggestion[]>([]);
   const [search, setSearch] = useState("");
-  const [loading, setLoading] = useState(apiMode === "mock");
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (apiMode === "real") {
-      return;
-    }
-
     let ignore = false;
     apiClient.listVocabulary()
       .then(items => {
@@ -72,80 +68,66 @@ export default function VocabularyPage() {
       </div>
 
       <div className="w-full space-y-5 p-6">
-        {apiMode === "real" ? (
-          <div className="rounded-2xl border border-blue-100 bg-blue-50 p-6">
-            <div className="mb-3 flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-blue-600" />
-              <h2 className="text-base font-extrabold text-blue-900">Vocabulary API pending</h2>
+        <div className="grid grid-cols-3 gap-3">
+          {[
+            { label: "Total", value: words.length, color: "text-slate-900" },
+            { label: "Learning", value: words.length - masteredCount, color: "text-blue-600" },
+            { label: "Mastered", value: masteredCount, color: "text-emerald-600" },
+          ].map(item => (
+            <div key={item.label} className="rounded-2xl border border-slate-100 bg-white p-4 text-center shadow-sm">
+              <p className={`text-2xl font-extrabold ${item.color}`}>{item.value}</p>
+              <p className="mt-0.5 text-xs text-slate-500">{item.label}</p>
             </div>
-            <p className="max-w-2xl text-sm leading-relaxed text-blue-700">
-              The frontend page is ready, but the pulled backend does not expose a dedicated vocabulary module yet. Vocabulary suggestions are available inside grading results and this page will switch to real data when the backend adds list/update endpoints.
-            </p>
+          ))}
+        </div>
+
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <input
+            value={search}
+            onChange={event => setSearch(event.target.value)}
+            placeholder="Search original word, suggestion, or topic"
+            className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm text-slate-700 placeholder:text-slate-400 focus:border-blue-400 focus:outline-none"
+          />
+        </div>
+
+        {loading && (
+          <div className="flex items-center justify-center gap-2 rounded-2xl border border-slate-100 bg-white p-8 text-sm font-semibold text-slate-500 shadow-sm">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Loading vocabulary
           </div>
-        ) : (
-          <>
-            <div className="grid grid-cols-3 gap-3">
-              {[
-                { label: "Total", value: words.length, color: "text-slate-900" },
-                { label: "Learning", value: words.length - masteredCount, color: "text-blue-600" },
-                { label: "Mastered", value: masteredCount, color: "text-emerald-600" },
-              ].map(item => (
-                <div key={item.label} className="rounded-2xl border border-slate-100 bg-white p-4 text-center shadow-sm">
-                  <p className={`text-2xl font-extrabold ${item.color}`}>{item.value}</p>
-                  <p className="mt-0.5 text-xs text-slate-500">{item.label}</p>
-                </div>
-              ))}
-            </div>
-
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-              <input
-                value={search}
-                onChange={event => setSearch(event.target.value)}
-                placeholder="Search original word, suggestion, or topic"
-                className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm text-slate-700 placeholder:text-slate-400 focus:border-blue-400 focus:outline-none"
-              />
-            </div>
-
-            {loading && (
-              <div className="flex items-center justify-center gap-2 rounded-2xl border border-slate-100 bg-white p-8 text-sm font-semibold text-slate-500 shadow-sm">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Loading vocabulary
-              </div>
-            )}
-
-            {error && <p className="rounded-2xl border border-red-100 bg-red-50 p-4 text-sm font-semibold text-red-600">{error}</p>}
-
-            {!loading && filtered.length === 0 && (
-              <div className="rounded-2xl border border-slate-100 bg-white p-8 text-center shadow-sm">
-                <BookOpen className="mx-auto mb-3 h-8 w-8 text-slate-300" />
-                <p className="text-sm font-bold text-slate-800">No vocabulary found</p>
-                <p className="mt-1 text-xs text-slate-500">Suggestions appear after grading returns vocabulary feedback.</p>
-              </div>
-            )}
-
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              {filtered.map(word => (
-                <div key={word.id} className={`rounded-2xl border p-5 shadow-sm ${word.isMastered ? "border-emerald-200 bg-emerald-50" : "border-slate-100 bg-white"}`}>
-                  <div className="mb-3 flex items-center gap-2">
-                    <span className="text-sm font-medium text-slate-400 line-through">{word.originalWord}</span>
-                    <span className="text-slate-300">-&gt;</span>
-                    <span className="text-base font-extrabold text-slate-900">{word.suggestedWord}</span>
-                  </div>
-                  <p className="mb-4 text-xs leading-relaxed text-slate-500">{word.exampleSentence}</p>
-                  <button
-                    type="button"
-                    onClick={() => toggleMastered(word)}
-                    className={`flex items-center gap-2 text-xs font-bold ${word.isMastered ? "text-emerald-700" : "text-blue-600"}`}
-                  >
-                    {word.isMastered ? <CheckCircle2 className="h-4 w-4" /> : <Circle className="h-4 w-4" />}
-                    {word.isMastered ? "Mastered" : "Mark as mastered"}
-                  </button>
-                </div>
-              ))}
-            </div>
-          </>
         )}
+
+        {error && <p className="rounded-2xl border border-red-100 bg-red-50 p-4 text-sm font-semibold text-red-600">{error}</p>}
+
+        {!loading && filtered.length === 0 && (
+          <div className="rounded-2xl border border-slate-100 bg-white p-8 text-center shadow-sm">
+            <BookOpen className="mx-auto mb-3 h-8 w-8 text-slate-300" />
+            <p className="text-sm font-bold text-slate-800">No vocabulary found</p>
+            <p className="mt-1 text-xs text-slate-500">Suggestions appear after grading returns vocabulary feedback.</p>
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {filtered.map(word => (
+            <div key={word.id} className={`rounded-2xl border p-5 shadow-sm ${word.isMastered ? "border-emerald-200 bg-emerald-50" : "border-slate-100 bg-white"}`}>
+              <div className="mb-3 flex items-center gap-2">
+                <span className="text-sm font-medium text-slate-400 line-through">{word.originalWord}</span>
+                <span className="text-slate-300">-&gt;</span>
+                <span className="text-base font-extrabold text-slate-900">{word.suggestedWord}</span>
+              </div>
+              <p className="mb-4 text-xs leading-relaxed text-slate-500">{word.exampleSentence}</p>
+              <button
+                type="button"
+                onClick={() => toggleMastered(word)}
+                className={`flex items-center gap-2 text-xs font-bold ${word.isMastered ? "text-emerald-700" : "text-blue-600"}`}
+              >
+                {word.isMastered ? <CheckCircle2 className="h-4 w-4" /> : <Circle className="h-4 w-4" />}
+                {word.isMastered ? "Mastered" : "Mark as mastered"}
+              </button>
+            </div>
+          ))}
+        </div>
       </div>
     </AppShell>
   );
