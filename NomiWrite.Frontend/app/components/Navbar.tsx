@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Menu, PenLine, X } from "lucide-react";
-import { getSession } from "@/lib/auth/session";
 
 const navLinks = [
   { label: "How it works", href: "/#how-it-works" },
@@ -14,10 +13,6 @@ const navLinks = [
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [signedIn] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return Boolean(getSession()?.accessToken);
-  });
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
@@ -32,7 +27,7 @@ export default function Navbar() {
       }`}
     >
       <nav className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
-        <Link href={signedIn ? "/dashboard" : "/"} className="flex items-center gap-2">
+        <Link href="/" className="flex items-center gap-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600">
             <PenLine className="h-4 w-4 text-white" strokeWidth={2.5} />
           </div>
@@ -49,16 +44,16 @@ export default function Navbar() {
 
         <div className="hidden items-center gap-3 md:flex">
           <Link
-            href={signedIn ? "/dashboard" : "/login"}
+            href="/login"
             className="text-sm font-medium text-slate-600 transition-colors hover:text-slate-900"
           >
-            {signedIn ? "Dashboard" : "Login"}
+            Login
           </Link>
           <Link
-            href={signedIn ? "/write" : "/register"}
+            href="/register"
             className="rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-blue-200 transition-colors hover:bg-blue-700"
           >
-            {signedIn ? "Write" : "Start free"}
+            Start free
           </Link>
         </div>
 
@@ -86,18 +81,18 @@ export default function Navbar() {
           ))}
           <div className="flex flex-col gap-2 pt-2">
             <Link
-              href={signedIn ? "/dashboard" : "/login"}
+              href="/login"
               className="block py-2 text-center text-sm font-medium text-slate-600"
               onClick={() => setMobileOpen(false)}
             >
-              {signedIn ? "Dashboard" : "Login"}
+              Login
             </Link>
             <Link
-              href={signedIn ? "/write" : "/register"}
+              href="/register"
               className="block rounded-full bg-blue-600 py-2.5 text-center text-sm font-semibold text-white transition-colors hover:bg-blue-700"
               onClick={() => setMobileOpen(false)}
             >
-              {signedIn ? "Write" : "Start free"}
+              Start free
             </Link>
           </div>
         </div>

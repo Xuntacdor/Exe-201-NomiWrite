@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import AppShell from "../components/AppShell";
 import {
@@ -286,15 +286,21 @@ const tabDefs: { key: Tab; icon: typeof AlignLeft; label: string }[] = [
 ];
 
 export default function GuidePage() {
-  const [selected, setSelected] = useState<string | null>(() => {
-    if (typeof window === "undefined") return null;
-
-    const params = new URLSearchParams(window.location.search);
-    const openParam = params.get("open");
-    return openParam && types.find(t => t.id === openParam) ? openParam : null;
-  });
+  const [selected, setSelected] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>("structure");
   const [copied, setCopied] = useState<string | null>(null);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const params = new URLSearchParams(window.location.search);
+      const openParam = params.get("open");
+      if (openParam && types.find(t => t.id === openParam)) {
+        setSelected(openParam);
+      }
+    }, 0);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   const openType = types.find(t => t.id === selected);
   const open = (id: string) => { setSelected(id); setActiveTab("structure"); };

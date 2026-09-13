@@ -34,22 +34,24 @@ function formatDate(value: string) {
 
 export default function DashboardPage() {
   const router = useRouter();
-  const [showOnboarding, setShowOnboarding] = useState(() => {
-    if (typeof window === "undefined") return false;
-    try {
-      return !localStorage.getItem("nomiwrite_onboarded");
-    } catch {
-      return false;
-    }
-  });
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
+    const onboardingTimer = setTimeout(() => {
+      try {
+        setShowOnboarding(!localStorage.getItem("nomiwrite_onboarded"));
+      } catch {
+        setShowOnboarding(false);
+      }
+    }, 0);
+
     if (apiMode === "real" && !getSession()?.accessToken) {
       router.replace("/login");
+      clearTimeout(onboardingTimer);
       return;
     }
 
@@ -75,6 +77,7 @@ export default function DashboardPage() {
 
     return () => {
       ignore = true;
+      clearTimeout(onboardingTimer);
       clearTimeout(loadTimer);
     };
   }, [router]);

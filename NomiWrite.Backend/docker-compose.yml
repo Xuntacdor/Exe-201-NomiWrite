@@ -69,6 +69,7 @@ services:
       - SmtpSettings__Username=${SmtpSettings__Username}
       - SmtpSettings__Password=${SmtpSettings__Password}
       - SmtpSettings__FromEmail=${SmtpSettings__FromEmail}
+      - GoogleAuth__ClientId=${GoogleAuth__ClientId}
     depends_on:
       rabbitmq:
         condition: service_healthy
