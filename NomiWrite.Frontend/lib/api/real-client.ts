@@ -601,7 +601,7 @@ export const realClient: ApiClient = {
   },
 
   listVocabulary() {
-    return request<BackendApiEnvelope<BackendVocabularyPage>>(apiRoutes.vocabulary.list, { method: "GET" }, true)
+    return request<BackendApiEnvelope<BackendVocabularyPage>>(`${apiRoutes.vocabulary.list}?page=1&pageSize=200`, { method: "GET" }, true)
       .then(envelope => envelope.data.items);
   },
 
