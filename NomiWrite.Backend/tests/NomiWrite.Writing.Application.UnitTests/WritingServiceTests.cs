@@ -58,7 +58,8 @@ public class WritingServiceTests
     }
 
     private static WritingPrompt SeedPrompt(TestWritingDbContext db, WritingType type,
-        bool isVipOnly = false, int? minWords = null, int? maxWords = null, int? timeLimit = null)
+        bool isVipOnly = false, int? minWords = null, int? maxWords = null, int? timeLimit = null,
+        DifficultyLevel difficulty = DifficultyLevel.Intermediate, string? imageUrl = null)
     {
         var prompt = new WritingPrompt
         {
@@ -66,12 +67,13 @@ public class WritingServiceTests
             WritingType = type,
             Title = $"Prompt {Guid.NewGuid():N}",
             Instructions = "Write an essay.",
-            Difficulty = DifficultyLevel.Intermediate,
+            Difficulty = difficulty,
             IsActive = true,
             IsVipOnly = isVipOnly,
             MinWords = minWords,
             MaxWords = maxWords,
             TimeLimitMinutes = timeLimit,
+            ImageUrl = imageUrl,
             SampleAnswer = "Sample answer text.",
             CreatedAt = DateTime.UtcNow
         };
@@ -135,6 +137,8 @@ public class WritingServiceTests
         var stored = db.WritingSubmissions.Single();
         stored.IsTimed.Should().BeTrue();
         stored.DeadlineAt.Should().NotBeNull();
+        result.IsTimed.Should().BeTrue();
+        result.DeadlineAt.Should().NotBeNull();
         stored.DeadlineAt.Should().BeOnOrAfter(before.AddMinutes(25));
         stored.DeadlineAt.Should().BeOnOrBefore(after.AddMinutes(25));
     }
@@ -168,6 +172,40 @@ public class WritingServiceTests
         result.SubmittedAt.Should().NotBeNull();
         db.WritingSubmissions.Single().Status.Should().Be(SubmissionStatus.Submitted);
         db.WritingSubmissions.Single().WritingPromptId.Should().Be(db.WritingPrompts.Single().Id);
+    }
+
+    [Fact]
+    public async Task GetSubmissionByIdAsync_Draft_ReturnsCurrentContentForResume()
+    {
+        var db = TestWritingDbContext.Create();
+        var sut = await BuildWithDraftAsync(db, UserA);
+        var id = db.WritingSubmissions.Single().Id;
+        await sut.UpdateSubmissionAsync(UserA, id, new UpdateSubmissionRequestDto { Content = "resume this draft later" });
+
+        var result = await sut.GetSubmissionByIdAsync(UserA, id);
+
+        result.Status.Should().Be(SubmissionStatus.Draft);
+        result.Content.Should().Be("resume this draft later");
+        result.WordCount.Should().Be(4);
+    }
+
+    [Fact]
+    public async Task CreateSubmissionAsync_SamePromptAfterSubmit_AllowsRewriteAttempt()
+    {
+        var db = TestWritingDbContext.Create();
+        var type = SeedType(db);
+        var prompt = SeedPrompt(db, type);
+        var sut = Build(db);
+
+        var first = await sut.CreateSubmissionAsync(UserA, new CreateSubmissionRequestDto { WritingPromptId = prompt.Id });
+        await sut.UpdateSubmissionAsync(UserA, first.Id, new UpdateSubmissionRequestDto { Content = "first attempt content" });
+        await sut.SubmitSubmissionAsync(UserA, first.Id);
+        var second = await sut.CreateSubmissionAsync(UserA, new CreateSubmissionRequestDto { WritingPromptId = prompt.Id });
+
+        second.Id.Should().NotBe(first.Id);
+        second.WritingPromptId.Should().Be(prompt.Id);
+        second.Status.Should().Be(SubmissionStatus.Draft);
+        db.WritingSubmissions.Where(s => s.UserId == UserA && s.WritingPromptId == prompt.Id).Should().HaveCount(2);
     }
 
     [Fact]
@@ -328,6 +366,32 @@ public class WritingServiceTests
         items.Should().ContainSingle(s => s.Id == id);
     }
 
+    [Fact]
+    public async Task GetUserSubmissionsAsync_IncludesTimingAndLateMetadata()
+    {
+        var db = TestWritingDbContext.Create();
+        var type = SeedType(db);
+        var prompt = SeedPrompt(db, type, timeLimit: 20);
+        var sut = Build(db);
+        var draft = await sut.CreateSubmissionAsync(UserA, new CreateSubmissionRequestDto
+        {
+            WritingPromptId = prompt.Id,
+            IsTimed = true
+        });
+        var stored = db.WritingSubmissions.Single();
+        stored.DeadlineAt = DateTime.UtcNow.AddMinutes(-1);
+        db.SaveChanges();
+        await sut.UpdateSubmissionAsync(UserA, draft.Id, new UpdateSubmissionRequestDto { Content = "late timed submission" });
+        await sut.SubmitSubmissionAsync(UserA, draft.Id);
+
+        var items = await sut.GetUserSubmissionsAsync(UserA);
+
+        var item = items.Single();
+        item.IsTimed.Should().BeTrue();
+        item.DeadlineAt.Should().NotBeNull();
+        item.SubmittedLate.Should().BeTrue();
+    }
+
     #endregion
 
     #region U-W3 — WritingSubmittedEvent publication
@@ -460,6 +524,39 @@ public class WritingServiceTests
     }
 
     [Fact]
+    public async Task CreateSubmissionAsync_FreeUserCannotStartVipPromptById()
+    {
+        var db = TestWritingDbContext.Create();
+        var type = SeedType(db);
+        var vip = SeedPrompt(db, type, isVipOnly: true);
+
+        var sut = Build(db);
+        var act = () => sut.CreateSubmissionAsync(UserA, new CreateSubmissionRequestDto { WritingPromptId = vip.Id });
+
+        await act.Should().ThrowAsync<SubscriptionRequiredException>();
+    }
+
+    [Fact]
+    public async Task CreateSubmissionAsync_VipUserCanStartVipPrompt()
+    {
+        var db = TestWritingDbContext.Create();
+        var type = SeedType(db);
+        var vip = SeedPrompt(db, type, isVipOnly: true);
+        var sub = Substitute.For<ISubscriptionStatusClient>();
+        sub.GetCurrentSubscriptionAsync(Arg.Any<Guid>(), Arg.Any<string?>())
+            .Returns(new SubscriptionStatusResult(true, "premium", DateTime.UtcNow.AddDays(30)));
+
+        var sut = Build(db, subClient: sub);
+        var result = await sut.CreateSubmissionAsync(
+            UserA,
+            new CreateSubmissionRequestDto { WritingPromptId = vip.Id },
+            "token");
+
+        result.WritingPromptId.Should().Be(vip.Id);
+        result.Status.Should().Be(SubmissionStatus.Draft);
+    }
+
+    [Fact]
     public async Task GetPromptsAsync_AnonymousVisitor_NeverSeesVipPrompts()
     {
         var db = TestWritingDbContext.Create();
@@ -478,15 +575,39 @@ public class WritingServiceTests
         var db = TestWritingDbContext.Create();
         var type = SeedType(db, "Part 1");
         var beginner = SeedPrompt(db, type);
-        var advanced = SeedPrompt(db, type);
-        var advancedPrompt = db.WritingPrompts.Single(p => p.Id == advanced.Id);
-        advancedPrompt.Difficulty = DifficultyLevel.Advanced;
-        db.SaveChanges();
+        var advanced = SeedPrompt(db, type, difficulty: DifficultyLevel.Advanced);
 
         var sut = Build(db);
         var prompts = await sut.GetPromptsAsync(type.Id, DifficultyLevel.Advanced, random: false, userId: UserA);
 
         prompts.Should().ContainSingle(p => p.Id == advanced.Id);
+    }
+
+    [Fact]
+    public async Task GetPromptsAsync_Random_ReturnsSinglePromptFromFilteredSet()
+    {
+        var db = TestWritingDbContext.Create();
+        var type = SeedType(db);
+        SeedPrompt(db, type, difficulty: DifficultyLevel.Beginner);
+        var advanced = SeedPrompt(db, type, difficulty: DifficultyLevel.Advanced);
+
+        var sut = Build(db);
+        var prompts = await sut.GetPromptsAsync(type.Id, DifficultyLevel.Advanced, random: true, userId: UserA);
+
+        prompts.Should().ContainSingle(p => p.Id == advanced.Id);
+    }
+
+    [Fact]
+    public async Task GetPromptByIdAsync_ImagePrompt_ReturnsImageUrl()
+    {
+        var db = TestWritingDbContext.Create();
+        var type = SeedType(db);
+        var prompt = SeedPrompt(db, type, imageUrl: "https://example.com/chart.png");
+
+        var sut = Build(db);
+        var result = await sut.GetPromptByIdAsync(prompt.Id);
+
+        result.ImageUrl.Should().Be("https://example.com/chart.png");
     }
 
     #endregion

@@ -48,6 +48,7 @@ function WriteContent() {
   const [loadingPrompts, setLoadingPrompts] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [userSelectedType, setUserSelectedType] = useState(Boolean(initialType));
 
   useEffect(() => {
     if (apiMode === "real" && !getSession()?.accessToken) {
@@ -109,6 +110,29 @@ function WriteContent() {
   }, [selectedTypeId]);
 
   useEffect(() => {
+    if (userSelectedType || !selectedTypeId || loadingPrompts || prompts.length > 0 || loadingTypes) return;
+    if (initialType && selectedTypeId === initialType) return;
+
+    let ignore = false;
+    const loadTimer = setTimeout(() => {
+      apiClient.listWritingPrompts()
+        .then(items => {
+          if (ignore) return;
+          const firstAvailable = types.find(type => items.some(prompt => prompt.writingTypeId === type.id));
+          if (firstAvailable && firstAvailable.id !== selectedTypeId) {
+            setSelectedTypeId(firstAvailable.id);
+          }
+        })
+        .catch(() => {});
+    }, 0);
+
+    return () => {
+      ignore = true;
+      clearTimeout(loadTimer);
+    };
+  }, [initialType, loadingPrompts, loadingTypes, prompts.length, selectedTypeId, types, userSelectedType]);
+
+  useEffect(() => {
     if (!selectedPromptId) {
       const clearTimer = setTimeout(() => setSampleAnswer(null), 0);
       return () => clearTimeout(clearTimer);
@@ -130,9 +154,10 @@ function WriteContent() {
 
   const currentType = types.find(type => type.id === selectedTypeId) ?? fallbackType;
   const currentPrompt = prompts.find(prompt => prompt.id === selectedPromptId);
+  const minimumWords = currentPrompt?.minWords ?? currentType.minWords;
   const wordCount = countWords(content);
-  const progress = Math.min((wordCount / currentType.minWords) * 100, 100);
-  const shortContent = wordCount > 0 && wordCount < currentType.minWords;
+  const progress = Math.min((wordCount / minimumWords) * 100, 100);
+  const shortContent = wordCount > 0 && wordCount < minimumWords;
   const canSubmit = Boolean(currentPrompt && content.trim()) && !submitting;
 
   const draftKey = useMemo(
@@ -217,7 +242,10 @@ function WriteContent() {
             <div className="relative">
               <select
                 value={selectedTypeId}
-                onChange={event => setSelectedTypeId(event.target.value)}
+                onChange={event => {
+                  setUserSelectedType(true);
+                  setSelectedTypeId(event.target.value);
+                }}
                 disabled={loadingTypes}
                 className="w-full cursor-pointer appearance-none rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 pr-8 text-sm font-semibold text-slate-800 focus:border-blue-400 focus:outline-none"
               >
@@ -288,10 +316,10 @@ function WriteContent() {
               <span className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400">Your essay</span>
               <div className="flex items-center gap-2">
                 <div className="h-1.5 w-20 overflow-hidden rounded-full bg-slate-100">
-                  <div className={wordCount >= currentType.minWords ? "h-full rounded-full bg-emerald-500" : "h-full rounded-full bg-blue-500"} style={{ width: `${progress}%` }} />
+                  <div className={wordCount >= minimumWords ? "h-full rounded-full bg-emerald-500" : "h-full rounded-full bg-blue-500"} style={{ width: `${progress}%` }} />
                 </div>
-                <span className={`text-xs font-bold ${wordCount >= currentType.minWords ? "text-emerald-600" : "text-slate-500"}`}>
-                  {wordCount}/{currentType.minWords}
+                <span className={`text-xs font-bold ${wordCount >= minimumWords ? "text-emerald-600" : "text-slate-500"}`}>
+                  {wordCount}/{minimumWords}
                 </span>
               </div>
             </div>
@@ -311,7 +339,7 @@ function WriteContent() {
 
           <div className="flex items-center justify-between rounded-2xl border border-slate-100 bg-white px-4 py-3 shadow-sm">
             <p className={`text-xs ${shortContent ? "text-amber-600" : "text-slate-500"}`}>
-              {wordCount === 0 ? "No content yet" : shortContent ? `${currentType.minWords - wordCount} more words recommended` : "Ready to submit"}
+              {wordCount === 0 ? "No content yet" : shortContent ? `${minimumWords - wordCount} more words recommended` : "Ready to submit"}
             </p>
             <button
               type="button"
@@ -342,7 +370,7 @@ function WriteContent() {
               </button>
             </div>
             <p className="text-sm font-bold">{currentType.label}</p>
-            <p className="mt-0.5 text-[11px] text-blue-200">Recommended minimum: {currentType.minWords} words</p>
+            <p className="mt-0.5 text-[11px] text-blue-200">Recommended minimum: {minimumWords} words</p>
           </div>
 
           <div className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">

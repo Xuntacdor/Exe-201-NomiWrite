@@ -79,6 +79,8 @@ export interface WritingPrompt {
   prompt: string;
   imageUrl?: string;
   difficulty?: "Beginner" | "Intermediate" | "Advanced" | string;
+  minWords?: number;
+  maxWords?: number;
 }
 
 export interface SubmissionTimeRemaining {
@@ -104,6 +106,9 @@ export interface Submission {
   overallScore?: number;
   overallFeedback?: string;
   submittedAt: string;
+  deadlineAt?: string | null;
+  isTimed?: boolean;
+  submittedLate?: boolean;
   status: "draft" | "submitted" | "grading" | "graded" | "failed";
 }
 

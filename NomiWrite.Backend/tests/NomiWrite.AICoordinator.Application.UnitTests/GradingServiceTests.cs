@@ -235,6 +235,27 @@ public class GradingServiceTests
     }
 
     [Fact]
+    public async Task GetGradingHistoryAsync_CompletedResults_ReturnsCriteriaScores()
+    {
+        var db = TestGradingDbContext.Create();
+        var completed = SeedCompleted(db, band: 6.5m, createdAt: DateTime.UtcNow);
+        completed.CriterionScores = new List<CriterionScore>
+        {
+            new() { CriterionName = "Task Achievement", Score = 6.0m, Comment = "Clear position." },
+            new() { CriterionName = "Lexical Resource", Score = 7.0m, Comment = "Good vocabulary." }
+        };
+        db.SaveChanges();
+
+        var sut = Build(db);
+        var history = await sut.GetGradingHistoryAsync(UserId);
+
+        history.Should().ContainSingle();
+        history[0].SubmissionId.Should().Be(completed.SubmissionId);
+        history[0].CriteriaScores.Should().Contain("Task Achievement", 6.0m);
+        history[0].CriteriaScores.Should().Contain("Lexical Resource", 7.0m);
+    }
+
+    [Fact]
     public async Task CompareWithPreviousAttemptAsync_NoPreviousAttempt_NullDifference()
     {
         var db = TestGradingDbContext.Create();

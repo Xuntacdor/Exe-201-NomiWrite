@@ -53,8 +53,7 @@ public class UserProfileService : IUserProfileService
 
     public async Task<UserProfileDto> GetProfileAsync(Guid userId)
     {
-        var profile = await _dbContext.UserProfiles.FirstOrDefaultAsync(p => p.UserId == userId)
-            ?? throw new ProfileNotFoundException(userId);
+        var profile = await GetOrCreateProfileAsync(userId);
 
         return ToProfileDto(profile);
     }
@@ -65,8 +64,7 @@ public class UserProfileService : IUserProfileService
         if (!validationResult.IsValid)
             throw new ValidationException(validationResult.Errors);
 
-        var profile = await _dbContext.UserProfiles.FirstOrDefaultAsync(p => p.UserId == userId)
-            ?? throw new ProfileNotFoundException(userId);
+        var profile = await GetOrCreateProfileAsync(userId);
 
         if (dto.DisplayName is not null)
             profile.DisplayName = dto.DisplayName;
@@ -98,8 +96,7 @@ public class UserProfileService : IUserProfileService
 
     public async Task<MyAccountDto> GetMyAccountAsync(Guid userId, string? accessToken)
     {
-        var profile = await _dbContext.UserProfiles.FirstOrDefaultAsync(p => p.UserId == userId)
-            ?? throw new ProfileNotFoundException(userId);
+        var profile = await GetOrCreateProfileAsync(userId);
 
         bool hasActiveSubscription = false;
         string? subscriptionPlanName = null;
@@ -138,8 +135,7 @@ public class UserProfileService : IUserProfileService
 
     public async Task<ProgressResponseDto> GetProgressAsync(Guid userId, string? accessToken)
     {
-        var profile = await _dbContext.UserProfiles.FirstOrDefaultAsync(p => p.UserId == userId)
-            ?? throw new ProfileNotFoundException(userId);
+        var profile = await GetOrCreateProfileAsync(userId);
 
         IReadOnlyList<WritingSubmissionSummary> submissions = Array.Empty<WritingSubmissionSummary>();
         IReadOnlyList<GradingHistoryEntry> gradingHistory = Array.Empty<GradingHistoryEntry>();
@@ -278,6 +274,31 @@ public class UserProfileService : IUserProfileService
             new() { Name = "Band 7 Achiever", Achieved = highestBand >= 7.0m },
             new() { Name = "Band 8 Achiever", Achieved = highestBand >= 8.0m }
         };
+    }
+
+    private async Task<UserProfile> GetOrCreateProfileAsync(Guid userId)
+    {
+        var profile = await _dbContext.UserProfiles.FirstOrDefaultAsync(p => p.UserId == userId);
+        if (profile is not null)
+            return profile;
+
+        _logger.LogWarning(
+            "User profile for user {UserId} was missing; creating a default profile.",
+            userId);
+
+        var now = DateTime.UtcNow;
+        profile = new UserProfile
+        {
+            UserId = userId,
+            DisplayName = "Writer",
+            CreatedAt = now,
+            UpdatedAt = now
+        };
+
+        _dbContext.UserProfiles.Add(profile);
+        await _dbContext.SaveChangesAsync();
+
+        return profile;
     }
 
     private static UserProfileDto ToProfileDto(UserProfile profile)

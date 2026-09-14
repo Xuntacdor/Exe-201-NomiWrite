@@ -95,6 +95,7 @@ public class WritingPromptConfiguration : IEntityTypeConfiguration<WritingPrompt
                 Difficulty = DifficultyLevel.Intermediate,
                 IsActive = true,
                 TimeLimitMinutes = 20,
+                ImageUrl = "https://nomiwrite.example/assets/prompts/urban-transport-modes.png",
                 SampleAnswer = "The chart compares commuter transport choices across three cities. Overall, public transport is the most common option in the largest city, while private cars dominate in the suburban city. Cycling remains the least used mode in all three locations.",
                 MinWords = 150,
                 MaxWords = 220,
@@ -208,6 +209,36 @@ public class WritingPromptConfiguration : IEntityTypeConfiguration<WritingPrompt
             },
             new WritingPrompt
             {
+                Id = new Guid("10000000-0000-0000-0000-000000000013"),
+                WritingTypeId = new Guid("99999999-9999-9999-9999-999999999999"),
+                Title = "Benefits Of Peer Feedback",
+                Instructions = "Write one well-structured academic paragraph explaining how peer feedback can improve student writing.",
+                Difficulty = DifficultyLevel.Beginner,
+                IsActive = true,
+                TimeLimitMinutes = 15,
+                SampleAnswer = "Peer feedback can improve student writing because it helps learners notice unclear ideas and weak organization before final submission. By reading a classmate's comments, students can revise with a clearer sense of audience and purpose.",
+                MinWords = 90,
+                MaxWords = 160,
+                IsVipOnly = false,
+                CreatedAt = SeedCreatedAt
+            },
+            new WritingPrompt
+            {
+                Id = new Guid("10000000-0000-0000-0000-000000000014"),
+                WritingTypeId = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
+                Title = "Data Science Master's SOP",
+                Instructions = "Write a statement of purpose for a master's program in data science, focusing on academic background, project experience, and career goals.",
+                Difficulty = DifficultyLevel.Advanced,
+                IsActive = true,
+                TimeLimitMinutes = 45,
+                SampleAnswer = "My interest in data science began when I used statistical models to analyze student performance in a university project. Since then, I have developed programming, research, and communication skills that I hope to deepen through graduate study.",
+                MinWords = 400,
+                MaxWords = 650,
+                IsVipOnly = true,
+                CreatedAt = SeedCreatedAt
+            },
+            new WritingPrompt
+            {
                 Id = new Guid("10000000-0000-0000-0000-000000000009"),
                 WritingTypeId = new Guid("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"),
                 Title = "Digital Textbooks In Universities",
@@ -253,6 +284,21 @@ public class WritingPromptConfiguration : IEntityTypeConfiguration<WritingPrompt
             },
             new WritingPrompt
             {
+                Id = new Guid("10000000-0000-0000-0000-000000000015"),
+                WritingTypeId = new Guid("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee"),
+                Title = "Technology And Classroom Interaction",
+                Instructions = "Write a formal academic essay discussing whether digital tools improve or reduce meaningful interaction in university classrooms.",
+                Difficulty = DifficultyLevel.Advanced,
+                IsActive = true,
+                TimeLimitMinutes = 45,
+                SampleAnswer = "Digital tools can improve classroom interaction when they support collaborative research, quick feedback, and inclusive participation. However, their value depends on purposeful teaching design rather than the presence of technology alone.",
+                MinWords = 450,
+                MaxWords = 700,
+                IsVipOnly = true,
+                CreatedAt = SeedCreatedAt
+            },
+            new WritingPrompt
+            {
                 Id = new Guid("10000000-0000-0000-0000-000000000012"),
                 WritingTypeId = new Guid("ffffffff-ffff-ffff-ffff-ffffffffffff"),
                 Title = "Abstract For A Study On Mobile Learning",
@@ -264,6 +310,81 @@ public class WritingPromptConfiguration : IEntityTypeConfiguration<WritingPrompt
                 MinWords = 150,
                 MaxWords = 250,
                 IsVipOnly = true,
+                CreatedAt = SeedCreatedAt
+            },
+            new WritingPrompt
+            {
+                Id = new Guid("10000000-0000-0000-0000-000000000016"),
+                WritingTypeId = new Guid("44444444-4444-4444-4444-444444444444"),
+                Title = "Online Course Announcement",
+                Instructions = "Summarize the relationship between a reading passage about a new online course policy and a lecture that questions its benefits.",
+                Difficulty = DifficultyLevel.Intermediate,
+                IsActive = true,
+                TimeLimitMinutes = 20,
+                SampleAnswer = "The reading supports the new online course policy because it offers flexibility and helps students manage their schedules. The lecture challenges this view by arguing that online classes may reduce discussion quality and make it harder for some students to stay motivated.",
+                MinWords = 150,
+                MaxWords = 225,
+                IsVipOnly = false,
+                CreatedAt = SeedCreatedAt
+            },
+            new WritingPrompt
+            {
+                Id = new Guid("10000000-0000-0000-0000-000000000017"),
+                WritingTypeId = new Guid("88888888-8888-8888-8888-888888888888"),
+                Title = "Weekly Planning Meeting Minutes",
+                Instructions = "Write concise meeting minutes from notes about a weekly planning meeting, including decisions, owners, action items, and deadlines.",
+                Difficulty = DifficultyLevel.Beginner,
+                IsActive = true,
+                TimeLimitMinutes = 25,
+                SampleAnswer = "The weekly planning meeting reviewed current project progress, confirmed priority tasks, and assigned owners for design, testing, and client communication. The minutes should clearly record each decision and deadline so the team can follow up efficiently.",
+                MinWords = 180,
+                MaxWords = 320,
+                IsVipOnly = false,
+                CreatedAt = SeedCreatedAt
+            },
+            new WritingPrompt
+            {
+                Id = new Guid("10000000-0000-0000-0000-000000000018"),
+                WritingTypeId = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
+                Title = "Computer Science Scholarship Statement",
+                Instructions = "Write a personal statement for a computer science scholarship, focusing on motivation, relevant achievements, and future contribution.",
+                Difficulty = DifficultyLevel.Intermediate,
+                IsActive = true,
+                TimeLimitMinutes = 45,
+                SampleAnswer = "My interest in computer science grew from building small applications that solved everyday problems for classmates. A scholarship would help me continue developing technical skills and contribute to projects that make learning more accessible.",
+                MinWords = 350,
+                MaxWords = 600,
+                IsVipOnly = false,
+                CreatedAt = SeedCreatedAt
+            },
+            new WritingPrompt
+            {
+                Id = new Guid("10000000-0000-0000-0000-000000000019"),
+                WritingTypeId = new Guid("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee"),
+                Title = "Group Work In University Courses",
+                Instructions = "Write a formal academic essay discussing whether group work should be used more often in university courses.",
+                Difficulty = DifficultyLevel.Intermediate,
+                IsActive = true,
+                TimeLimitMinutes = 45,
+                SampleAnswer = "Group work can strengthen university learning because it encourages discussion, shared problem solving, and communication skills. However, instructors need clear assessment criteria to prevent unequal participation.",
+                MinWords = 350,
+                MaxWords = 600,
+                IsVipOnly = false,
+                CreatedAt = SeedCreatedAt
+            },
+            new WritingPrompt
+            {
+                Id = new Guid("10000000-0000-0000-0000-000000000020"),
+                WritingTypeId = new Guid("ffffffff-ffff-ffff-ffff-ffffffffffff"),
+                Title = "Abstract For A Study On Study Habits",
+                Instructions = "Write a research abstract for a small study investigating the relationship between study habits and exam performance among university students.",
+                Difficulty = DifficultyLevel.Intermediate,
+                IsActive = true,
+                TimeLimitMinutes = 30,
+                SampleAnswer = "This study examines the relationship between study habits and exam performance among university students. Survey responses and course results are analyzed to identify patterns in planning, review frequency, and academic outcomes.",
+                MinWords = 150,
+                MaxWords = 250,
+                IsVipOnly = false,
                 CreatedAt = SeedCreatedAt
             });
     }

@@ -120,10 +120,13 @@ public class GradingService : IGradingService
 
     public async Task<IReadOnlyList<GradingHistoryItemDto>> GetGradingHistoryAsync(Guid userId)
     {
-        return await _dbContext.GradingResults
+        var results = await _dbContext.GradingResults
             .AsNoTracking()
             .Where(r => r.UserId == userId && r.Status == GradingStatus.Completed)
             .OrderByDescending(r => r.CreatedAt)
+            .ToListAsync();
+
+        return results
             .Select(r => new GradingHistoryItemDto
             {
                 Id = r.Id,
@@ -132,7 +135,7 @@ public class GradingService : IGradingService
                 CreatedAt = r.CreatedAt,
                 CriteriaScores = r.CriterionScores.ToDictionary(c => c.CriterionName, c => c.Score)
             })
-            .ToListAsync();
+            .ToList();
     }
 
     public async Task<ComparisonDto> CompareWithPreviousAttemptAsync(Guid userId, Guid submissionId)

@@ -295,14 +295,15 @@ public class UserProfileServiceTests
     }
 
     [Fact]
-    public async Task GetProgress_UnknownUser_Throws()
+    public async Task GetProgress_MissingProfile_CreatesFallbackProfile()
     {
         var db = TestUserDbContext.Create();
 
         var sut = Build(db);
-        var act = () => sut.GetProgressAsync(UserA, null);
+        var result = await sut.GetProgressAsync(UserA, null);
 
-        await act.Should().ThrowAsync<ProfileNotFoundException>();
+        result.TotalSubmissions.Should().Be(0);
+        db.UserProfiles.Should().ContainSingle(p => p.UserId == UserA && p.DisplayName == "Writer");
     }
 
     #endregion
@@ -352,25 +353,28 @@ public class UserProfileServiceTests
     }
 
     [Fact]
-    public async Task UpdateProfile_UnknownUser_Throws()
+    public async Task UpdateProfile_MissingProfile_CreatesFallbackAndAppliesUpdate()
     {
         var db = TestUserDbContext.Create();
 
         var sut = Build(db);
-        var act = () => sut.UpdateProfileAsync(UserB, new UpdateProfileRequestDto { DisplayName = "X" });
+        var result = await sut.UpdateProfileAsync(UserB, new UpdateProfileRequestDto { DisplayName = "X" });
 
-        await act.Should().ThrowAsync<ProfileNotFoundException>();
+        result.DisplayName.Should().Be("X");
+        db.UserProfiles.Should().ContainSingle(p => p.UserId == UserB && p.DisplayName == "X");
     }
 
     [Fact]
-    public async Task GetProfile_UnknownUser_Throws()
+    public async Task GetProfile_MissingProfile_CreatesFallbackProfile()
     {
         var db = TestUserDbContext.Create();
 
         var sut = Build(db);
-        var act = () => sut.GetProfileAsync(UserA);
+        var result = await sut.GetProfileAsync(UserA);
 
-        await act.Should().ThrowAsync<ProfileNotFoundException>();
+        result.UserId.Should().Be(UserA);
+        result.DisplayName.Should().Be("Writer");
+        db.UserProfiles.Should().ContainSingle(p => p.UserId == UserA);
     }
 
     #endregion

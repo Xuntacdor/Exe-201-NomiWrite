@@ -84,17 +84,22 @@ interface BackendWritingPrompt {
   instructions?: string;
   imageUrl?: string | null;
   difficulty: string;
+  minWords?: number | null;
+  maxWords?: number | null;
 }
 
 interface BackendSubmission {
   id: string;
   writingPromptId: string;
   promptTitle: string;
-  content: string;
+  content?: string | null;
   wordCount: number;
   status: "Draft" | "Submitted" | string;
-  startedAt: string;
+  startedAt?: string | null;
   submittedAt?: string | null;
+  deadlineAt?: string | null;
+  isTimed?: boolean;
+  submittedLate?: boolean;
 }
 
 interface BackendGradingResult {
@@ -267,11 +272,14 @@ function toWritingPrompt(item: BackendWritingPrompt): WritingPrompt {
     prompt: item.instructions ?? item.title,
     imageUrl: item.imageUrl ?? undefined,
     difficulty: item.difficulty,
+    minWords: item.minWords ?? undefined,
+    maxWords: item.maxWords ?? undefined,
   };
 }
 
 function toSubmission(item: BackendSubmission, userId = ""): Submission {
   const isSubmitted = item.status === "Submitted";
+  const submittedAt = item.submittedAt ?? item.startedAt ?? new Date().toISOString();
   const status: Submission["status"] =
     item.status === "Graded" ? "graded" :
     item.status === "Failed" ? "failed" :
@@ -283,9 +291,12 @@ function toSubmission(item: BackendSubmission, userId = ""): Submission {
     writingType: "",
     topic: item.promptTitle,
     prompt: item.promptTitle,
-    content: item.content,
+    content: item.content ?? "",
     wordCount: item.wordCount,
-    submittedAt: item.submittedAt ?? item.startedAt,
+    submittedAt,
+    deadlineAt: item.deadlineAt,
+    isTimed: item.isTimed ?? false,
+    submittedLate: item.submittedLate ?? false,
     status,
   };
 }
