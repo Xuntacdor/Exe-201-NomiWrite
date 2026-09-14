@@ -8,6 +8,31 @@ Production-ready PostgreSQL backup tooling for the NomiWrite microservice fleet.
 
 ---
 
+## Migration runner
+
+From `NomiWrite.Backend`, preview all EF Core migration commands without touching a database:
+
+```powershell
+.\scripts\migrate-all.ps1 -DryRun
+```
+
+Apply all migrations using connection strings from `.env`:
+
+```powershell
+.\scripts\migrate-all.ps1
+```
+
+Apply only selected services:
+
+```powershell
+.\scripts\migrate-all.ps1 -Service Auth,User,Writing
+```
+
+See [`../docs/database-migration-readiness.md`](../docs/database-migration-readiness.md)
+for the full DbContext and migration inventory.
+
+---
+
 ## 1. Discovered database architecture
 
 **One separate PostgreSQL DATABASE per microservice — NOT shared schemas.**

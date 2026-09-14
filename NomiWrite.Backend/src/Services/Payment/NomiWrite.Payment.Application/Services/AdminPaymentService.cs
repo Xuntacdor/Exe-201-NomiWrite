@@ -73,11 +73,11 @@ public class AdminPaymentService : IAdminPaymentService
             .ToListAsync();
 
         var csv = new StringBuilder();
-        csv.AppendLine("Id,UserId,Amount,Currency,Provider,Status,PlanId,AppliedDiscountPercent,CreatedAt");
+        csv.Append("Id,UserId,Amount,Currency,Provider,Status,PlanId,AppliedDiscountPercent,CreatedAt\n");
 
         foreach (var p in payments)
         {
-            csv.AppendLine(string.Join(",",
+            csv.Append(string.Join(",",
                 p.Id,
                 p.UserId,
                 p.Amount.ToString(CultureInfo.InvariantCulture),
@@ -87,6 +87,7 @@ public class AdminPaymentService : IAdminPaymentService
                 p.PlanId?.ToString() ?? string.Empty,
                 p.AppliedDiscountPercent?.ToString(CultureInfo.InvariantCulture) ?? string.Empty,
                 p.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture)));
+            csv.Append('\n');
         }
 
         return Encoding.UTF8.GetBytes(csv.ToString());
