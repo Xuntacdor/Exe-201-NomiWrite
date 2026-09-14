@@ -141,6 +141,51 @@ public class WritingTypeConfiguration : IEntityTypeConfiguration<WritingType>
                 Description = "Write a personal statement or statement of purpose for university applications.",
                 IsActive = true,
                 CreatedAt = SeedCreatedAt
+            },
+            new WritingType
+            {
+                Id = new Guid("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"),
+                Name = "PTE Academic Summarize Written Text",
+                Category = WritingTypeCategory.ExamFormat,
+                Description = "Summarize an academic passage in one sentence for PTE Academic.",
+                IsActive = true,
+                CreatedAt = SeedCreatedAt
+            },
+            new WritingType
+            {
+                Id = new Guid("cccccccc-cccc-cccc-cccc-cccccccccccc"),
+                Name = "Cambridge B2 First Essay",
+                Category = WritingTypeCategory.ExamFormat,
+                Description = "Write a structured essay for Cambridge B2 First or similar Cambridge exams.",
+                IsActive = true,
+                CreatedAt = SeedCreatedAt
+            },
+            new WritingType
+            {
+                Id = new Guid("dddddddd-dddd-dddd-dddd-dddddddddddd"),
+                Name = "VSTEP Task 2 Essay",
+                Category = WritingTypeCategory.ExamFormat,
+                Description = "Write an opinion essay for the Vietnamese Standardized Test of English Proficiency.",
+                IsActive = true,
+                CreatedAt = SeedCreatedAt
+            },
+            new WritingType
+            {
+                Id = new Guid("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee"),
+                Name = "Academic Essay",
+                Category = WritingTypeCategory.Academic,
+                Description = "Write a formal academic essay with a clear thesis and supporting arguments.",
+                IsActive = true,
+                CreatedAt = SeedCreatedAt
+            },
+            new WritingType
+            {
+                Id = new Guid("ffffffff-ffff-ffff-ffff-ffffffffffff"),
+                Name = "Research Abstract",
+                Category = WritingTypeCategory.Academic,
+                Description = "Write a concise abstract summarizing research purpose, method, findings, and implication.",
+                IsActive = true,
+                CreatedAt = SeedCreatedAt
             });
     }
 }
