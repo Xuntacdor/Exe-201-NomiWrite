@@ -14,10 +14,14 @@ function QuizContent() {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [submittedAttempt, setSubmittedAttempt] = useState<QuizAttempt | null>(null);
   const [current, setCurrent] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(Boolean(submissionId));
   const [error, setError] = useState("");
 
   useEffect(() => {
+    if (!submissionId) {
+      return;
+    }
+
     let ignore = false;
     apiClient.generateQuiz({ sourceSubmissionId: submissionId })
       .then(result => {
@@ -113,6 +117,15 @@ function QuizContent() {
         )}
 
         {error && <p className="rounded-2xl border border-red-100 bg-red-50 p-4 text-sm font-semibold text-red-600">{error}</p>}
+
+        {!loading && !error && !submissionId && (
+          <div className="rounded-2xl border border-slate-100 bg-white p-8 text-center shadow-sm">
+            <p className="text-sm font-extrabold text-slate-900">Choose a graded writing first</p>
+            <p className="mt-1 text-xs leading-relaxed text-slate-500">
+              Personalized quizzes are generated from a submitted writing after AI feedback is ready.
+            </p>
+          </div>
+        )}
 
         {!loading && question && (
           <>

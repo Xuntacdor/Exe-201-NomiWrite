@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NomiWrite.Writing.Infrastructure.Persistence;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace NomiWrite.Writing.Infrastructure.Migrations
 {
     [DbContext(typeof(WritingDbContext))]
-    partial class WritingDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260914072200_ExpandWritingPracticeCatalog")]
+    partial class ExpandWritingPracticeCatalog
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -325,81 +328,6 @@ namespace NomiWrite.Writing.Infrastructure.Migrations
                             SampleAnswer = "This study investigates the effect of mobile learning applications on vocabulary retention among university students. Using pre- and post-tests, it compares app-supported practice with conventional review.",
                             TimeLimitMinutes = 30,
                             Title = "Abstract For A Study On Mobile Learning",
-                            WritingTypeId = new Guid("ffffffff-ffff-ffff-ffff-ffffffffffff")
-                        },
-                        new
-                        {
-                            Id = new Guid("10000000-0000-0000-0000-000000000016"),
-                            CreatedAt = new DateTime(2026, 9, 13, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Difficulty = "Intermediate",
-                            Instructions = "Summarize the relationship between a reading passage about a new online course policy and a lecture that questions its benefits.",
-                            IsActive = true,
-                            IsVipOnly = false,
-                            MaxWords = 225,
-                            MinWords = 150,
-                            SampleAnswer = "The reading supports the new online course policy because it offers flexibility and helps students manage their schedules. The lecture challenges this view by arguing that online classes may reduce discussion quality and make it harder for some students to stay motivated.",
-                            TimeLimitMinutes = 20,
-                            Title = "Online Course Announcement",
-                            WritingTypeId = new Guid("44444444-4444-4444-4444-444444444444")
-                        },
-                        new
-                        {
-                            Id = new Guid("10000000-0000-0000-0000-000000000017"),
-                            CreatedAt = new DateTime(2026, 9, 13, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Difficulty = "Beginner",
-                            Instructions = "Write concise meeting minutes from notes about a weekly planning meeting, including decisions, owners, action items, and deadlines.",
-                            IsActive = true,
-                            IsVipOnly = false,
-                            MaxWords = 320,
-                            MinWords = 180,
-                            SampleAnswer = "The weekly planning meeting reviewed current project progress, confirmed priority tasks, and assigned owners for design, testing, and client communication. The minutes should clearly record each decision and deadline so the team can follow up efficiently.",
-                            TimeLimitMinutes = 25,
-                            Title = "Weekly Planning Meeting Minutes",
-                            WritingTypeId = new Guid("88888888-8888-8888-8888-888888888888")
-                        },
-                        new
-                        {
-                            Id = new Guid("10000000-0000-0000-0000-000000000018"),
-                            CreatedAt = new DateTime(2026, 9, 13, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Difficulty = "Intermediate",
-                            Instructions = "Write a personal statement for a computer science scholarship, focusing on motivation, relevant achievements, and future contribution.",
-                            IsActive = true,
-                            IsVipOnly = false,
-                            MaxWords = 600,
-                            MinWords = 350,
-                            SampleAnswer = "My interest in computer science grew from building small applications that solved everyday problems for classmates. A scholarship would help me continue developing technical skills and contribute to projects that make learning more accessible.",
-                            TimeLimitMinutes = 45,
-                            Title = "Computer Science Scholarship Statement",
-                            WritingTypeId = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
-                        },
-                        new
-                        {
-                            Id = new Guid("10000000-0000-0000-0000-000000000019"),
-                            CreatedAt = new DateTime(2026, 9, 13, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Difficulty = "Intermediate",
-                            Instructions = "Write a formal academic essay discussing whether group work should be used more often in university courses.",
-                            IsActive = true,
-                            IsVipOnly = false,
-                            MaxWords = 600,
-                            MinWords = 350,
-                            SampleAnswer = "Group work can strengthen university learning because it encourages discussion, shared problem solving, and communication skills. However, instructors need clear assessment criteria to prevent unequal participation.",
-                            TimeLimitMinutes = 45,
-                            Title = "Group Work In University Courses",
-                            WritingTypeId = new Guid("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee")
-                        },
-                        new
-                        {
-                            Id = new Guid("10000000-0000-0000-0000-000000000020"),
-                            CreatedAt = new DateTime(2026, 9, 13, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Difficulty = "Intermediate",
-                            Instructions = "Write a research abstract for a small study investigating the relationship between study habits and exam performance among university students.",
-                            IsActive = true,
-                            IsVipOnly = false,
-                            MaxWords = 250,
-                            MinWords = 150,
-                            SampleAnswer = "This study examines the relationship between study habits and exam performance among university students. Survey responses and course results are analyzed to identify patterns in planning, review frequency, and academic outcomes.",
-                            TimeLimitMinutes = 30,
-                            Title = "Abstract For A Study On Study Habits",
                             WritingTypeId = new Guid("ffffffff-ffff-ffff-ffff-ffffffffffff")
                         });
                 });

@@ -41,6 +41,7 @@ function ResultContent() {
   const [workingAction, setWorkingAction] = useState<"compare" | "tutor" | "flag" | "">("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [pollAttempt, setPollAttempt] = useState(0);
 
   useEffect(() => {
     if (apiMode === "real" && !getSession()?.accessToken) {
@@ -62,10 +63,23 @@ function ResultContent() {
       setError("");
       apiClient.getFeedback(submissionId)
         .then(result => {
-          if (!ignore) setFeedback(result);
+          if (ignore) return;
+          setFeedback(result);
+          setPollAttempt(0);
         })
         .catch(err => {
-          if (!ignore) setError(err instanceof Error ? err.message : "Could not load grading result yet.");
+          if (ignore) return;
+
+          const message = err instanceof Error ? err.message : "Could not load grading result yet.";
+          if (message.toLowerCase().includes("pending") && pollAttempt < 24) {
+            setError("AI grading is still processing. This page will refresh automatically.");
+            window.setTimeout(() => {
+              if (!ignore) setPollAttempt(attempt => attempt + 1);
+            }, 5000);
+            return;
+          }
+
+          setError(message);
         })
         .finally(() => {
           if (!ignore) setLoading(false);
@@ -76,7 +90,7 @@ function ResultContent() {
       ignore = true;
       clearTimeout(loadTimer);
     };
-  }, [router, submissionId]);
+  }, [pollAttempt, router, submissionId]);
 
   useEffect(() => {
     if (apiMode === "real" && !getSession()?.accessToken) return;

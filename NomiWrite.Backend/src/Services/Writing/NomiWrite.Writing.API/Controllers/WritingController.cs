@@ -50,7 +50,7 @@ public class WritingController : ControllerBase
         if (userId is null)
             return Unauthorized();
 
-        var result = await _writingService.CreateSubmissionAsync(userId.Value, request);
+        var result = await _writingService.CreateSubmissionAsync(userId.Value, request, GetBearerToken());
         return Ok(result);
     }
 

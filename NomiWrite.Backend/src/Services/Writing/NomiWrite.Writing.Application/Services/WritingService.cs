@@ -91,7 +91,9 @@ public class WritingService : IWritingService
                     WritingTypeName = p.WritingType!.Name,
                     Title = p.Title,
                     ImageUrl = p.ImageUrl,
-                    Difficulty = p.Difficulty
+                    Difficulty = p.Difficulty,
+                    MinWords = p.MinWords,
+                    MaxWords = p.MaxWords
                 })
                 .FirstOrDefaultAsync();
 
@@ -109,7 +111,9 @@ public class WritingService : IWritingService
                 WritingTypeName = p.WritingType!.Name,
                 Title = p.Title,
                 ImageUrl = p.ImageUrl,
-                Difficulty = p.Difficulty
+                Difficulty = p.Difficulty,
+                MinWords = p.MinWords,
+                MaxWords = p.MaxWords
             })
             .ToListAsync();
     }
@@ -141,7 +145,10 @@ public class WritingService : IWritingService
         return prompt;
     }
 
-    public async Task<SubmissionResponseDto> CreateSubmissionAsync(Guid userId, CreateSubmissionRequestDto dto)
+    public async Task<SubmissionResponseDto> CreateSubmissionAsync(
+        Guid userId,
+        CreateSubmissionRequestDto dto,
+        string? accessToken = null)
     {
         var validationResult = await _createSubmissionValidator.ValidateAsync(dto);
         if (!validationResult.IsValid)
@@ -155,6 +162,13 @@ public class WritingService : IWritingService
 
         if (prompt is null)
             throw new PromptNotFoundException(dto.WritingPromptId);
+
+        if (prompt.IsVipOnly)
+        {
+            var subscription = await GetSubscriptionStatusOrDefaultAsync(userId, accessToken);
+            if (!subscription.HasActiveSubscription)
+                throw new SubscriptionRequiredException();
+        }
 
         var now = DateTime.UtcNow;
 
@@ -299,6 +313,9 @@ public class WritingService : IWritingService
                 WritingPromptId = s.WritingPromptId,
                 PromptTitle = s.WritingPrompt!.Title,
                 WordCount = s.WordCount,
+                IsTimed = s.IsTimed,
+                DeadlineAt = s.DeadlineAt,
+                SubmittedLate = s.SubmittedLate,
                 Status = s.Status,
                 StartedAt = s.StartedAt,
                 SubmittedAt = s.SubmittedAt
@@ -394,6 +411,8 @@ public class WritingService : IWritingService
             PromptTitle = promptTitle,
             Content = submission.Content,
             WordCount = submission.WordCount,
+            IsTimed = submission.IsTimed,
+            DeadlineAt = submission.DeadlineAt,
             Status = submission.Status,
             SubmittedLate = submission.SubmittedLate,
             StartedAt = submission.StartedAt,

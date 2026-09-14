@@ -16,7 +16,10 @@ public interface IWritingService
 
     Task<WritingPromptDto> GetPromptByIdAsync(Guid id);
 
-    Task<SubmissionResponseDto> CreateSubmissionAsync(Guid userId, CreateSubmissionRequestDto dto);
+    Task<SubmissionResponseDto> CreateSubmissionAsync(
+        Guid userId,
+        CreateSubmissionRequestDto dto,
+        string? accessToken = null);
 
     Task<SubmissionResponseDto> UpdateSubmissionAsync(Guid userId, Guid submissionId, UpdateSubmissionRequestDto dto);
 
