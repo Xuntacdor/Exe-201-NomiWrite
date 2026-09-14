@@ -188,6 +188,35 @@ public class AuthServiceTests
         db.RefreshTokens.Single(t => t.Token == sibling.Token).IsRevoked.Should().BeTrue();
     }
 
+    [Fact]
+    public async Task RefreshTokenAsync_BannedAccount_RevokesFamilyAndThrowsAccountBanned()
+    {
+        var db = TestAuthDbContext.Create();
+        var user = SeedUser(db, status: AccountStatus.Banned);
+        var refresh = SeedRefreshToken(db, user.Id, "refresh", Now.AddDays(7));
+        SeedRefreshToken(db, user.Id, "sibling", Now.AddDays(7));
+
+        var sut = Build(db);
+        var act = () => sut.RefreshTokenAsync(new RefreshTokenRequestDto { RefreshToken = refresh.Token });
+
+        await act.Should().ThrowAsync<AccountBannedException>();
+        db.RefreshTokens.Where(t => t.UserId == user.Id).Should().OnlyContain(t => t.IsRevoked);
+    }
+
+    [Fact]
+    public async Task RefreshTokenAsync_DeactivatedAccount_RevokesFamilyAndThrowsAccountDeactivated()
+    {
+        var db = TestAuthDbContext.Create();
+        var user = SeedUser(db, status: AccountStatus.Deactivated);
+        var refresh = SeedRefreshToken(db, user.Id, "refresh", Now.AddDays(7));
+
+        var sut = Build(db);
+        var act = () => sut.RefreshTokenAsync(new RefreshTokenRequestDto { RefreshToken = refresh.Token });
+
+        await act.Should().ThrowAsync<AccountDeactivatedException>();
+        db.RefreshTokens.Where(t => t.UserId == user.Id).Should().OnlyContain(t => t.IsRevoked);
+    }
+
     #endregion
 
     #region U-A3 — login account-state machine

@@ -36,6 +36,7 @@ public static class DependencyInjection
 
         services.AddMassTransit(x =>
         {
+            x.SetEndpointNameFormatter(new KebabCaseEndpointNameFormatter("notification", false));
             x.AddConsumer<UserRegisteredEventConsumer>();
             x.AddConsumer<GradingCompletedEventConsumer>();
             x.AddConsumer<ForumCommentCreatedEventConsumer>();
