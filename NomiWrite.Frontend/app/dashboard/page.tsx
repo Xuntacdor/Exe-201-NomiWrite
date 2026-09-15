@@ -5,17 +5,14 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import AppShell from "../components/AppShell";
 import {
-  AlertCircle,
   ArrowRight,
   Bell,
-  BrainCircuit,
   ChevronRight,
   Flame,
   Loader2,
   PenLine,
   Sparkles,
   TrendingUp,
-  X,
   BarChart,
   MessageSquare,
   Award,
@@ -34,24 +31,14 @@ function formatDate(value: string) {
 
 export default function DashboardPage() {
   const router = useRouter();
-  const [showOnboarding, setShowOnboarding] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    const onboardingTimer = setTimeout(() => {
-      try {
-        setShowOnboarding(!localStorage.getItem("nomiwrite_onboarded"));
-      } catch {
-        setShowOnboarding(false);
-      }
-    }, 0);
-
     if (apiMode === "real" && !getSession()?.accessToken) {
       router.replace("/login");
-      clearTimeout(onboardingTimer);
       return;
     }
 
@@ -77,7 +64,6 @@ export default function DashboardPage() {
 
     return () => {
       ignore = true;
-      clearTimeout(onboardingTimer);
       clearTimeout(loadTimer);
     };
   }, [router]);
@@ -224,7 +210,7 @@ export default function DashboardPage() {
                           <div>
                             <p className="line-clamp-1 font-bold text-slate-900 group-hover:text-blue-600 transition-colors">{submission.topic}</p>
                             <div className="mt-1 flex items-center gap-2 text-sm text-slate-500">
-                              <span className="font-medium text-slate-700">{submission.type === "task1" ? "Task 1" : "Task 2"}</span>
+                              <span className="font-medium text-slate-700">{submission.writingType}</span>
                               <span>•</span>
                               <span>{formatDate(submission.submittedAt)}</span>
                               <span>•</span>

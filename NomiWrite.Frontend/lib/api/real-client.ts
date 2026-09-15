@@ -37,6 +37,7 @@ import { getSession } from "../auth/session";
 import { apiRoutes } from "./routes";
 
 const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:5097";
+const promptCache = new Map<string, WritingPrompt>();
 
 interface ApiErrorBody {
   message?: string;
@@ -277,7 +278,7 @@ function toWritingPrompt(item: BackendWritingPrompt): WritingPrompt {
   };
 }
 
-function toSubmission(item: BackendSubmission, userId = ""): Submission {
+function toSubmission(item: BackendSubmission, userId = "", prompt?: WritingPrompt): Submission {
   const isSubmitted = item.status === "Submitted";
   const submittedAt = item.submittedAt ?? item.startedAt ?? new Date().toISOString();
   const status: Submission["status"] =
@@ -288,9 +289,9 @@ function toSubmission(item: BackendSubmission, userId = ""): Submission {
   return {
     id: item.id,
     userId,
-    writingType: "",
+    writingType: prompt?.writingType ?? "",
     topic: item.promptTitle,
-    prompt: item.promptTitle,
+    prompt: prompt?.prompt ?? item.promptTitle,
     content: item.content ?? "",
     wordCount: item.wordCount,
     submittedAt,
@@ -299,6 +300,19 @@ function toSubmission(item: BackendSubmission, userId = ""): Submission {
     submittedLate: item.submittedLate ?? false,
     status,
   };
+}
+
+async function getCachedPrompt(id: string): Promise<WritingPrompt | undefined> {
+  const cached = promptCache.get(id);
+  if (cached) return cached;
+
+  try {
+    const prompt = await request<BackendWritingPrompt>(apiRoutes.writing.promptDetail(id), { method: "GET" }).then(toWritingPrompt);
+    promptCache.set(id, prompt);
+    return prompt;
+  } catch {
+    return undefined;
+  }
 }
 
 function toWritingFeedback(result: BackendGradingResult, submission?: Submission): WritingFeedback {
@@ -510,7 +524,12 @@ export const realClient: ApiClient = {
   },
 
   getWritingPrompt(id: string) {
-    return request<BackendWritingPrompt>(apiRoutes.writing.promptDetail(id), { method: "GET" }).then(toWritingPrompt);
+    return request<BackendWritingPrompt>(apiRoutes.writing.promptDetail(id), { method: "GET" })
+      .then(item => {
+        const prompt = toWritingPrompt(item);
+        promptCache.set(prompt.id, prompt);
+        return prompt;
+      });
   },
 
   getPromptSampleAnswer(id: string) {
@@ -519,6 +538,7 @@ export const realClient: ApiClient = {
   },
 
   async submitSubmission(requestBody: SubmitSubmissionRequest) {
+    const prompt = await getCachedPrompt(requestBody.writingPromptId);
     const created = await request<BackendSubmission>(apiRoutes.submissions.list, {
       method: "POST",
       body: JSON.stringify({
@@ -536,16 +556,17 @@ export const realClient: ApiClient = {
       method: "POST",
     }, true);
 
-    return toSubmission({ ...updated, ...submitted });
+    return toSubmission({ ...updated, ...submitted }, "", prompt);
   },
 
   listSubmissions() {
     return request<BackendSubmission[]>(apiRoutes.submissions.list, { method: "GET" }, true)
-      .then(items => items.map(item => toSubmission(item)));
+      .then(items => Promise.all(items.map(async item => toSubmission(item, "", await getCachedPrompt(item.writingPromptId)))));
   },
 
   getSubmission(id: string) {
-    return request<BackendSubmission>(apiRoutes.submissions.detail(id), { method: "GET" }, true).then(toSubmission);
+    return request<BackendSubmission>(apiRoutes.submissions.detail(id), { method: "GET" }, true)
+      .then(async item => toSubmission(item, "", await getCachedPrompt(item.writingPromptId)));
   },
 
   getSubmissionTimeRemaining(id: string): Promise<SubmissionTimeRemaining> {

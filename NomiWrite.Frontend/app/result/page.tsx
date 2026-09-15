@@ -114,6 +114,7 @@ function ResultContent() {
   const criteriaScores = Object.entries(feedback?.criteriaScores ?? {}).filter(([, score]) => typeof score === "number");
   const excerpt = getExcerpt(submission?.content ?? "");
   const gradingResultId = feedback?.id;
+  const waitingForGrading = error.toLowerCase().includes("processing");
 
   async function handleCompare() {
     if (!submissionId) return;
@@ -211,7 +212,28 @@ function ResultContent() {
           </div>
         )}
 
-        {!loading && error && (
+        {!loading && waitingForGrading && (
+          <div className="flex min-h-[calc(100vh-9rem)] items-center justify-center">
+            <div className="w-full max-w-xl rounded-3xl border border-blue-100 bg-white p-8 text-center shadow-sm">
+              <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
+                <BrainCircuit className="h-8 w-8" />
+              </div>
+              <h1 className="text-2xl font-extrabold text-slate-900">AI is grading your writing</h1>
+              <p className="mt-3 text-sm leading-relaxed text-slate-500">
+                Your submission is in the grading queue. This page refreshes automatically while NomiWrite prepares feedback.
+              </p>
+              <div className="mt-6 flex items-center justify-center gap-2 text-sm font-bold text-blue-600">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Checking result...
+              </div>
+              <Link href="/history" className="mt-6 inline-flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-slate-900">
+                View history <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+          </div>
+        )}
+
+        {!loading && error && !waitingForGrading && (
           <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5">
             <div className="mb-2 flex items-center gap-2">
               <AlertCircle className="h-4 w-4 text-amber-600" />

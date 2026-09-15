@@ -1,17 +1,14 @@
 "use client";
 
-import Link from "next/link";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import AppShell from "../components/AppShell";
-import GuideModal from "../components/GuideModal";
 import {
   AlertCircle,
   AlignLeft,
   BookOpen,
   ChevronDown,
   Clock,
-  ExternalLink,
   Loader2,
   PenLine,
   Send,
@@ -44,7 +41,6 @@ function WriteContent() {
   const [content, setContent] = useState("");
   const [sampleAnswer, setSampleAnswer] = useState<string | null>(null);
   const [timerOn, setTimerOn] = useState(false);
-  const [guideOpen, setGuideOpen] = useState(false);
   const [loadingTypes, setLoadingTypes] = useState(true);
   const [loadingPrompts, setLoadingPrompts] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -382,7 +378,7 @@ Remember to:
           <div className="flex items-center justify-between border-t border-slate-200 bg-slate-50 px-8 py-4 z-10">
             <div className="flex items-center gap-4">
               <div>
-                <span className={`text-2xl font-extrabold ${wordCount >= currentType.minWords ? "text-emerald-600" : "text-slate-700"}`}>
+                <span className={`text-2xl font-extrabold ${wordCount >= minimumWords ? "text-emerald-600" : "text-slate-700"}`}>
                   {wordCount}
                 </span>
                 <span className="ml-1.5 text-xs font-bold uppercase tracking-wide text-slate-500">Words</span>
@@ -393,12 +389,12 @@ Remember to:
                   {wordCount === 0 
                     ? "Start writing to track progress" 
                     : shortContent 
-                      ? `${currentType.minWords - wordCount} more words to reach target (${currentType.minWords})` 
-                      : `Target of ${currentType.minWords} words reached!`}
+                      ? `${minimumWords - wordCount} more words to reach target (${minimumWords})` 
+                      : `Target of ${minimumWords} words reached!`}
                 </p>
                 <div className="mt-1.5 h-1.5 w-48 overflow-hidden rounded-full bg-slate-200">
                   <div 
-                    className={`h-full rounded-full transition-all duration-300 ${wordCount >= currentType.minWords ? "bg-emerald-500" : "bg-blue-500"}`} 
+                    className={`h-full rounded-full transition-all duration-300 ${wordCount >= minimumWords ? "bg-emerald-500" : "bg-blue-500"}`} 
                     style={{ width: `${progress}%` }} 
                   />
                 </div>
