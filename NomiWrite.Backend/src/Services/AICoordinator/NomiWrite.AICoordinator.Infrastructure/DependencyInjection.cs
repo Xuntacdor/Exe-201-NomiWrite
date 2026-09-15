@@ -21,6 +21,12 @@ namespace NomiWrite.AICoordinator.Infrastructure;
 //     --startup-project src/Services/AICoordinator/NomiWrite.AICoordinator.API \
 //     --context GradingDbContext
 
+// UC76 — AiGradingConfig table (do not run — reference only):
+//   dotnet ef migrations add AddAiGradingConfig \
+//     --project src/Services/AICoordinator/NomiWrite.AICoordinator.Infrastructure \
+//     --startup-project src/Services/AICoordinator/NomiWrite.AICoordinator.API \
+//     --context GradingDbContext
+
 public static class DependencyInjection
 {
     public static IServiceCollection AddAICoordinatorInfrastructure(this IServiceCollection services, IConfiguration configuration)
@@ -46,6 +52,10 @@ public static class DependencyInjection
         });
 
         services.AddScoped<IValidator<FlagGradingResultRequestDto>, FlagFeedbackRequestValidator>();
+        services.AddScoped<IValidator<UpdateAiGradingConfigRequestDto>, UpdateAiGradingConfigRequestValidator>();
+        services.AddScoped<IAdminAiConfigService, AdminAiConfigService>();
+
+        services.AddMemoryCache();
 
         services.AddHttpClient<IAiGradingProvider, GeminiGradingProvider>();
 

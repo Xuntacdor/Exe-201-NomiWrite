@@ -1,6 +1,6 @@
 # NomiWrite Frontend Plan
 
-Last updated: 2026-09-09
+Last updated: 2026-09-10
 
 ## Location
 
@@ -13,10 +13,10 @@ Legacy frontend prototype source: `D:\FPT_Uni\FALL26\EXE201\NomiWrite\nomiwrite`
 Git repo info:
 
 - Base branch: `develop`
-- Current work branch for this plan update: `PhmHai0702/fe/frontend-plan-tracking`
+- Current work branch for this plan update: `PhmHai0702/fe/api-boundary-real-first`
 - Remote: `git@github.com:Xuntacdor/Exe-201-NomiWrite.git`
 - The active project repository is `FALL26\EXE201\NomiWrite\Exe-201-NomiWrite`.
-- This active repository currently contains backend code only; the Next.js MVP lives in the legacy frontend prototype source above.
+- This active repository now contains both backend code and the migrated Next.js frontend in `NomiWrite.Frontend/`.
 
 Project naming note:
 
@@ -44,28 +44,32 @@ Active development must use `D:\FPT_Uni\FALL26\EXE201\NomiWrite\Exe-201-NomiWrit
 
 ## Current Repo Snapshot
 
-Tracked files in the active repo are backend solution and service files only:
+Tracked files in the active repo now include the backend solution, service files, migrated frontend, and this plan:
 
 - `NomiWrite.Backend/NomiWrite.sln`
 - `NomiWrite.Backend/src/Gateway/NomiWrite.Gateway/**`
 - `NomiWrite.Backend/src/Services/Auth/**`
 - `NomiWrite.Backend/src/Services/User/**`
+- `NomiWrite.Backend/src/Services/Writing/**`
 - `NomiWrite.Backend/src/Services/Payment/**`
 - `NomiWrite.Backend/src/Services/AICoordinator/**`
+- `NomiWrite.Backend/src/Services/Subscription/**`
 - `NomiWrite.Backend/src/Shared/NomiWrite.Shared.Contracts/**`
+- `NomiWrite.Frontend/**`
+- `FRONTEND_PLAN.md`
 - `.gitignore`
 
-Current `git status --short` in the active repo before moving this plan:
+Current `git status --short --branch` after pulling/reading latest `develop`:
 
-- clean on `develop`
+- `PhmHai0702/fe/api-boundary-real-first...origin/PhmHai0702/fe/api-boundary-real-first [ahead 8]`
+- Working tree is clean before this plan update.
+- Local branch HEAD is currently at `0757b0e`, the same commit as `origin/develop`.
 
-After moving this plan, `FRONTEND_PLAN.md` should be the only frontend-tracking file added until the frontend app location is agreed.
+Important implications:
 
-Important implication:
-
-- The active repo currently has no Next.js frontend folder.
-- Decide whether the frontend should be added as `NomiWrite.Frontend/`, `frontend/`, or another team-approved folder inside this repo.
-- The legacy Next.js MVP can be copied/migrated into that frontend folder after the target location is agreed.
+- The frontend folder decision is settled as `NomiWrite.Frontend/`.
+- The old legacy prototype remains useful only as historical reference.
+- Continue feature work in the active repo, not the legacy `nomiwrite` folder.
 - Keep mobile source separate unless the team explicitly decides otherwise.
 
 ## Git Workflow
@@ -106,7 +110,7 @@ Per-branch workflow:
 
 ## Current MVP Summary
 
-The existing Next.js MVP already has static UI for:
+The migrated Next.js MVP now has API-aware UI for:
 
 - Landing page
 - Login and register
@@ -118,7 +122,7 @@ The existing Next.js MVP already has static UI for:
 - Vocabulary book
 - Writing history
 - Profile
-- Upgrade/payment stub
+- Upgrade/payment checkout boundary
 
 Main tech stack from `package.json`:
 
@@ -134,30 +138,33 @@ Main tech stack from `package.json`:
 
 Active repo status:
 
-- The active `Exe-201-NomiWrite` repo currently contains backend code only.
-- Gateway is implemented with YARP reverse proxy.
-- Gateway routes are configured for `/api/auth/**`, `/api/payment/**`, `/api/users/**`, and `/api/ai/**`.
-- Auth service has real controller endpoints: `POST /api/auth/register`, `POST /api/auth/login`, `POST /api/auth/refresh`, and `POST /api/auth/logout/{userId}`.
-- Auth DTOs currently include email, password, fullName, accessToken, refreshToken, expiresAt, userId, and email.
-- User, Payment, and AI Coordinator services are still default/template minimal APIs with `/weatherforecast`, so frontend should keep those parts mocked until real contracts arrive.
+- The active `Exe-201-NomiWrite` repo contains the .NET backend and `NomiWrite.Frontend/` Next.js app.
+- Gateway is implemented with YARP reverse proxy and loads routes/clusters from the `ReverseProxy` config section.
+- Tracked gateway config currently lacks `ReverseProxy`; `NomiWrite.Gateway/appsettings.Development.json` only contains logging. Local real-mode smoke testing needs a restored local proxy config.
+- Auth service has real endpoints: register, login, refresh, authorized logout, verify email, resend verification email, forgot password, reset password, and deactivate account.
+- User service has real profile/account/progress endpoints under `/api/users/me`.
+- Writing service is now real: writing types, prompts, prompt detail, sample answer, submission create/update/submit/list/detail, and timed-submission remaining time under `/api/writing`.
+- AI Coordinator grading service is now real for grading result by submission, grading history, compare with previous attempt, tutor review request/list, and feedback flagging under `/api/grading`.
+- Payment service is real for checkout/status/history/refund requests and VNPay/MoMo IPN/webhook boundaries under `/api/payment`.
+- Subscription service is real for plans, current subscription, cancel subscription, and promo-code validation under `/api/subscriptions`.
+- Google/OAuth backend endpoint is requested by the backend team as `POST /api/auth/google` with `{ idToken }`; current pulled backend code has not exposed it yet.
+- There are still no dedicated backend modules/endpoints for dashboard summary, vocabulary list/mastered state, quiz generation, quiz attempts, notifications, forum, or usage quota.
 
-Legacy Next.js MVP status:
+Frontend status:
 
-Frontend is currently a polished static prototype in the legacy `nomiwrite` folder, not an API-ready app yet.
-
-Main legacy frontend findings:
-
-- `app/login/page.tsx` and `app/register/page.tsx` are visual forms only. Submit is an `<a href="/dashboard">`, no validation/session/error state.
-- `app/write/page.tsx` owns writing types, topics, prompts, writing guide data, local essay state, basic word count, simple client-side AI Coach heuristics, and writes submission data to `localStorage`.
-- `app/result/page.tsx` reads `localStorage.nomiwrite_submission`, calculates fake score from word count, and renders hard-coded grammar/vocabulary feedback.
-- `app/dashboard/page.tsx`, `app/history/page.tsx`, `app/profile/page.tsx`, `app/vocabulary/page.tsx`, and `app/quiz/page.tsx` all contain local hard-coded data.
-- `app/guide/page.tsx` and `app/components/GuideModal.tsx` duplicate large writing guide data.
+- `NomiWrite.Frontend/lib/api/routes.ts`, `real-client.ts`, `mock-client.ts`, and `client.ts` are in place.
+- Login/register use controlled forms and save API-backed sessions.
+- Login/register include Google Identity Services buttons. Frontend receives Google `credential`/`id_token`, sends it to `apiClient.googleLogin()`, and only stores the NomiWrite JWT returned by backend.
+- Writing page uses the API client for types/prompts/sample answer and submission flow.
+- Result page loads by `submissionId` and renders API-shaped grading, grammar, vocabulary, rewrite, compare, tutor-review, and feedback-flag data.
+- Result page now also shows recent tutor review requests from the grading service.
+- Dashboard/history/profile/upgrade use API client data where backend contracts exist, with frontend-derived fallback where no dedicated endpoint exists.
+- Upgrade page now exposes subscription plans, promo validation, checkout, payment status refresh, payment history, refund request creation, and refund request history.
+- Vocabulary and quiz no longer keep page-level mock arrays; real mode shows pending states until backend contracts exist.
+- `app/guide/page.tsx` and `app/components/GuideModal.tsx` still duplicate large writing guide data.
 - `app/components/AppShell.tsx` and `AppSidebar.tsx` provide desktop app layout, but mobile navigation still needs attention.
-- `app/layout.tsx` uses `next/font/google` with Geist, which caused build failure in restricted network because Google Fonts could not be fetched.
-- `README.md` is still the default create-next-app README and should be rewritten for NomiWrite later.
-- Many Vietnamese UI strings appear mojibake/encoding-corrupted in file output, so UI text should be reviewed in browser and normalized while touching each feature.
-- `app/guide/page.tsx.bak` exists beside the active guide page; review/remove it when guide data is centralized.
-- `node_modules` is not part of the frontend source and should be installed locally when verifying the frontend.
+- Some Vietnamese UI strings/comments in backend and frontend still appear mojibake/encoding-corrupted in file output; review and normalize while touching each file.
+- Latest known frontend verification before this pull/read: `npm run lint` and `npm run build` passed.
 
 ## Product Direction From Docs
 
@@ -505,6 +512,7 @@ Backend must only return `grammar_category` values from this list, or `Khác`.
 - [x] Add email/password validation.
 - [x] Add loading and error states.
 - [x] Connect login/register to real `POST /api/auth/login` and `POST /api/auth/register` through the gateway.
+- [x] Add frontend Google Identity Services flow for `POST /api/auth/google` once backend exposes it.
 - [x] Store real access/refresh token response from backend; use mock session only when `NEXT_PUBLIC_API_MODE=mock`.
 - [x] Convert `app/register/page.tsx` to controlled form.
 - [x] Add frontend pages for email verification, resend verification email, forgot password, and reset password.
@@ -540,6 +548,7 @@ Backend must only return `grammar_category` values from this list, or `Khác`.
 - [x] Keep AI score disclaimer visible.
 - [x] Add CTA to generate quiz from current submission.
 - [x] Add frontend actions for compare with previous attempt, request tutor review, and flag feedback.
+- [x] Show recent tutor review requests from `GET /api/grading/tutor-review-requests`.
 
 ### Phase 5 - Dashboard And History
 
@@ -589,6 +598,8 @@ Backend must only return `grammar_category` values from this list, or `Khác`.
 - [x] Validate promo codes through `GET /api/subscriptions/promo-codes/{code}/validate` and pass `promoCode` into checkout.
 - [x] Load payment history through `GET /api/payment/history`.
 - [x] Add refund request API boundary for `POST /api/payment/{paymentOrderId}/refund-request`.
+- [x] Add refund request UI and refund request history from `GET /api/payment/refund-requests`.
+- [x] Add payment status refresh UI through `GET /api/payment/{paymentId}`.
 - [x] Submit checkout through real payment API when available; mock checkout only in local/demo mode.
 - [x] Show pending, success, and failure states.
 - [x] Prepare boundary for VNPay, VietQR, and MoMo.
@@ -705,16 +716,35 @@ Backend must only return `grammar_category` values from this list, or `Khác`.
 - [x] Reworked vocabulary and quiz pages so they no longer keep page-level mock arrays; real mode now shows 1/2 pending states instead of calling missing backend endpoints.
 - [x] Confirmed frontend `npm run lint` and `npm run build` pass.
 
+### 2026-09-10
+
+- [x] Confirmed local branch `PhmHai0702/fe/api-boundary-real-first` is clean and currently points at `0757b0e`, same as `origin/develop`.
+- [x] Re-read code after the latest `develop` pull/merge, including frontend API boundary files and backend Auth/User/Writing/Grading/Payment/Subscription controllers.
+- [x] Updated this plan's repo snapshot because the active repo now includes `NomiWrite.Frontend/`, not backend-only code.
+- [x] Confirmed backend Writing service is now merged into `develop` with real type/prompt/submission/sample-answer/time-remaining endpoints.
+- [x] Confirmed real backend contracts currently exist for Auth, User, Writing, Grading, Payment, and Subscription.
+- [x] Confirmed backend contracts still do not exist for dedicated dashboard summary, vocabulary list/mastered state, quiz generation, quiz attempts, notifications, forum, or usage quota.
+- [x] Confirmed gateway still depends on a `ReverseProxy` config section, but tracked development config currently only has logging.
+- [x] Updated next-work plan to prioritize gateway config, real-mode smoke testing, API mapper fixes discovered during smoke tests, and remaining frontend cleanup.
+- [x] Rechecked backend route list and confirmed pulled backend code still has no Google/OAuth login endpoint yet.
+- [x] Added frontend Google Identity Services integration: configured `NEXT_PUBLIC_GOOGLE_CLIENT_ID`, receives Google credential/id token, sends it to `POST /api/auth/google`, then saves backend-issued NomiWrite JWT.
+- [x] Added tutor review request list UI to the result page.
+- [x] Added payment status refresh, refund request creation, and refund request history UI to the upgrade page.
+- [x] Confirmed frontend `npm run lint` and `npm run build` pass after the added UI.
+
 ## Current Status For Next Session
 
-Next recommended task: run real-mode smoke testing against locally running backend services on `PhmHai0702/fe/api-boundary-real-first`.
+Next recommended task: prepare local gateway config and run real-mode smoke testing against backend services on `PhmHai0702/fe/api-boundary-real-first`.
 
 Concrete first commands/files to work on:
 
-1. Restore or create local Gateway `ReverseProxy` config because tracked `NomiWrite.Gateway/appsettings.json` was removed by backend changes.
-2. Move duplicated guide data out of `app/guide/page.tsx` and `app/components/GuideModal.tsx`.
-3. Add backend prompt seed data if `/api/writing/prompts` is empty after migrations.
-4. Add a cleanup check for page-level hard-coded API records.
-5. Keep vocabulary and quiz mocked until backend modules expose real endpoints.
-6. Run frontend `npm run lint` and `npm run build`.
-7. Update this Progress Log after finishing each backend integration slice.
+1. Restore or create local Gateway `ReverseProxy` config because tracked `NomiWrite.Gateway/appsettings.json` was removed and `appsettings.Development.json` currently has logging only.
+2. Start required backend services plus dependencies, then verify gateway routing for `/api/auth`, `/api/users`, `/api/writing`, `/api/grading`, `/api/payment`, and `/api/subscriptions`.
+3. Run frontend in `NEXT_PUBLIC_API_MODE=real` and smoke test login/register, current user, writing types/prompts, submission submit, grading result, history, profile, subscription plans, checkout, promo code, and payment history.
+4. Fix any frontend real-client mapper mismatches found during smoke tests, especially `MyAccountDto`, subscription cancel response shape, payment status response shape, grading history shape, and prompt/submission list DTO differences.
+5. Add backend prompt seed data if `/api/writing/prompts` is empty after migrations.
+6. Move duplicated guide data out of `app/guide/page.tsx` and `app/components/GuideModal.tsx`.
+7. Add a cleanup check for page-level hard-coded API records.
+8. Keep vocabulary and quiz mocked/pending in real mode until backend modules expose real endpoints.
+9. Run frontend `npm run lint` and `npm run build`.
+10. Update this Progress Log after finishing each backend integration slice.

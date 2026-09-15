@@ -1,0 +1,665 @@
+# ==============================================================================
+# NomiWrite — Production Docker Compose
+# ------------------------------------------------------------------------------
+# Secrets are NOT stored here. Every secret is read from .env.production via
+# `env_file` (see .env.production.example for the required variable list).
+#
+# Layout (based on the actual repository architecture):
+#   RabbitMQ           -> internal network only, consumed by ALL services (MassTransit)
+#   Gateway (YARP)     -> the ONLY publicly exposed service (host port 80)
+#   9 API microservices-> internal network only, NO host ports published
+#   backup-service     -> periodic pg_dump of the 9 external Supabase databases
+#   PostgreSQL         -> NOT containerized: external (Supabase), outside compose control
+#
+# Network segmentation:
+#   nomiwrite-public   -> only the gateway (host-published HTTP ingress)
+#   nomiwrite-internal -> gateway + all microservices + rabbitmq + backup sidecar
+#
+# Deploy:  docker compose -f docker-compose.prod.yml up -d --build
+# ==============================================================================
+
+name: nomiwrite
+
+services:
+  # ────────────────────────────────────────────────────────────────────────────
+  # RabbitMQ — message bus for all services (MassTransit 8.x).
+  # Management console (15672) is intentionally NOT published; bind it
+  # to 127.0.0.1 only when operations explicitly need it.
+  # ────────────────────────────────────────────────────────────────────────────
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: nomiwrite-rabbitmq
+    restart: unless-stopped
+    env_file:
+      - .env.production
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "check_running"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 45s
+    networks:
+      - nomiwrite-internal
+    deploy:
+      resources:
+        limits:
+          cpus: "1.00"
+          memory: 1024M
+        reservations:
+          cpus: "0.25"
+          memory: 512M
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "5"
+    # Wait: read_only is intentionally NOT applied to RabbitMQ because its
+    # entrypoint and log writer require writable /var/log/rabbitmq and
+    # /var/lib/rabbitmq beyond the data volume.
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # Gateway — YARP reverse proxy. The single public ingress.
+  # Only service with a host-published port (HTTP 80 -> container 8080).
+  # ────────────────────────────────────────────────────────────────────────────
+  gateway:
+    build:
+      context: .
+      dockerfile: src/Gateway/NomiWrite.Gateway/Dockerfile
+    container_name: nomiwrite-gateway
+    restart: unless-stopped
+    init: true
+    ports:
+      - "80:8080"
+    env_file:
+      - .env.production
+    environment:
+      # ASP.NET
+      ASPNETCORE_URLS: "http://+:8080"
+      ASPNETCORE_ENVIRONMENT: Production
+      # YARP clusters -> Docker DNS names (must match cluster/destination ids
+      # in src/Gateway/NomiWrite.Gateway/appsettings.json).
+      ReverseProxy__Clusters__auth-cluster__Destinations__auth-service__Address: http://auth-service:8080
+      ReverseProxy__Clusters__payment-cluster__Destinations__payment-service__Address: http://payment-service:8080
+      ReverseProxy__Clusters__user-cluster__Destinations__user-service__Address: http://user-service:8080
+      ReverseProxy__Clusters__writing-cluster__Destinations__writing-service__Address: http://writing-service:8080
+      ReverseProxy__Clusters__grading-cluster__Destinations__grading-service__Address: http://aicoordinator-service:8080
+      ReverseProxy__Clusters__subscription-cluster__Destinations__subscription-service__Address: http://subscription-service:8080
+      ReverseProxy__Clusters__notification-cluster__Destinations__notification-service__Address: http://notification-service:8080
+      ReverseProxy__Clusters__admin-cluster__Destinations__admin-service__Address: http://admin-service:8080
+      ReverseProxy__Clusters__learning-cluster__Destinations__learning-service__Address: http://learning-service:8080
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8080/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    networks:
+      - nomiwrite-public
+      - nomiwrite-internal
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 512M
+        reservations:
+          cpus: "0.10"
+          memory: 128M
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "5"
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # Auth API (port 5100 local) — DB: nomiwrite_auth, publishes UserRegisteredEvent
+  # ────────────────────────────────────────────────────────────────────────────
+  auth-service:
+    build:
+      context: .
+      dockerfile: src/Services/Auth/NomiWrite.Auth.API/Dockerfile
+    container_name: nomiwrite-auth
+    restart: unless-stopped
+    init: true
+    env_file:
+      - .env.production
+    environment:
+      ASPNETCORE_URLS: "http://+:8080"
+      ASPNETCORE_ENVIRONMENT: Production
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8080/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    networks:
+      - nomiwrite-internal
+    read_only: true
+    tmpfs:
+      - /tmp:size=128m,mode=1777
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - NET_RAW
+      - NET_ADMIN
+      - SYS_ADMIN
+      - SYS_TIME
+      - MKNOD
+      - SETPCAP
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 512M
+        reservations:
+          cpus: "0.10"
+          memory: 128M
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "5"
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # User API (port 5101 local) — DB: nomiwrite_user
+  # Consumes UserRegisteredEvent; calls Subscription/Writing/AICoordinator.
+  # ────────────────────────────────────────────────────────────────────────────
+  user-service:
+    build:
+      context: .
+      dockerfile: src/Services/User/NomiWrite.User.API/Dockerfile
+    container_name: nomiwrite-user
+    restart: unless-stopped
+    init: true
+    env_file:
+      - .env.production
+    environment:
+      ASPNETCORE_URLS: "http://+:8080"
+      ASPNETCORE_ENVIRONMENT: Production
+      ServiceUrls__SubscriptionService: http://subscription-service:8080
+      ServiceUrls__WritingService: http://writing-service:8080
+      ServiceUrls__AICoordinatorService: http://aicoordinator-service:8080
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8080/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    networks:
+      - nomiwrite-internal
+    read_only: true
+    tmpfs:
+      - /tmp:size=128m,mode=1777
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - NET_RAW
+      - NET_ADMIN
+      - SYS_ADMIN
+      - SYS_TIME
+      - MKNOD
+      - SETPCAP
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 512M
+        reservations:
+          cpus: "0.10"
+          memory: 128M
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "5"
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # Payment API (port 5132 local) — DB: nomiwrite_payment
+  # Publishes PaymentCreated/Completed/Failed; calls Subscription (promo code).
+  # ────────────────────────────────────────────────────────────────────────────
+  payment-service:
+    build:
+      context: .
+      dockerfile: src/Services/Payment/NomiWrite.Payment.API/Dockerfile
+    container_name: nomiwrite-payment
+    restart: unless-stopped
+    init: true
+    env_file:
+      - .env.production
+    environment:
+      ASPNETCORE_URLS: "http://+:8080"
+      ASPNETCORE_ENVIRONMENT: Production
+      ServiceUrls__SubscriptionService: http://subscription-service:8080
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8080/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    networks:
+      - nomiwrite-internal
+    read_only: true
+    tmpfs:
+      - /tmp:size=128m,mode=1777
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - NET_RAW
+      - NET_ADMIN
+      - SYS_ADMIN
+      - SYS_TIME
+      - MKNOD
+      - SETPCAP
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 512M
+        reservations:
+          cpus: "0.10"
+          memory: 128M
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "5"
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # Writing API (port 5133 local) — DB: nomiwrite_writing
+  # Publishes WritingSubmittedEvent; consumes GradingCompletedEvent; calls Subscription.
+  # ────────────────────────────────────────────────────────────────────────────
+  writing-service:
+    build:
+      context: .
+      dockerfile: src/Services/Writing/NomiWrite.Writing.API/Dockerfile
+    container_name: nomiwrite-writing
+    restart: unless-stopped
+    init: true
+    env_file:
+      - .env.production
+    environment:
+      ASPNETCORE_URLS: "http://+:8080"
+      ASPNETCORE_ENVIRONMENT: Production
+      ServiceUrls__SubscriptionService: http://subscription-service:8080
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8080/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    networks:
+      - nomiwrite-internal
+    read_only: true
+    tmpfs:
+      - /tmp:size=128m,mode=1777
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - NET_RAW
+      - NET_ADMIN
+      - SYS_ADMIN
+      - SYS_TIME
+      - MKNOD
+      - SETPCAP
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 512M
+        reservations:
+          cpus: "0.10"
+          memory: 128M
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "5"
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # AI Coordinator API (port 5150 local) — DB: nomiwrite_grading
+  # Consumes WritingSubmittedEvent -> publishes GradingCompletedEvent; calls
+  # Subscription and the Gemini API.
+  # ────────────────────────────────────────────────────────────────────────────
+  aicoordinator-service:
+    build:
+      context: .
+      dockerfile: src/Services/AICoordinator/NomiWrite.AICoordinator.API/Dockerfile
+    container_name: nomiwrite-aicoordinator
+    restart: unless-stopped
+    init: true
+    env_file:
+      - .env.production
+    environment:
+      ASPNETCORE_URLS: "http://+:8080"
+      ASPNETCORE_ENVIRONMENT: Production
+      ServiceUrls__SubscriptionService: http://subscription-service:8080
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8080/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    networks:
+      - nomiwrite-internal
+    read_only: true
+    tmpfs:
+      - /tmp:size=128m,mode=1777
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - NET_RAW
+      - NET_ADMIN
+      - SYS_ADMIN
+      - SYS_TIME
+      - MKNOD
+      - SETPCAP
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 512M
+        reservations:
+          cpus: "0.10"
+          memory: 128M
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "5"
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # Subscription API (port 5160 local) — DB: nomiwrite_subscription
+  # Consumes PaymentCompletedEvent; publishes Subscription*Event. Internal-only:
+  # it is reached by other services over the internal network, never from the host.
+  # ────────────────────────────────────────────────────────────────────────────
+  subscription-service:
+    build:
+      context: .
+      dockerfile: src/Services/Subscription/NomiWrite.Subscription.API/Dockerfile
+    container_name: nomiwrite-subscription
+    restart: unless-stopped
+    init: true
+    env_file:
+      - .env.production
+    environment:
+      ASPNETCORE_URLS: "http://+:8080"
+      ASPNETCORE_ENVIRONMENT: Production
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8080/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    networks:
+      - nomiwrite-internal
+    read_only: true
+    tmpfs:
+      - /tmp:size=128m,mode=1777
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - NET_RAW
+      - NET_ADMIN
+      - SYS_ADMIN
+      - SYS_TIME
+      - MKNOD
+      - SETPCAP
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 512M
+        reservations:
+          cpus: "0.10"
+          memory: 128M
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "5"
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # Notification API (port 5170 local) — DB: nomiwrite_notification
+  # Consumer hub: UserRegistered, GradingCompleted, Submission events, subscriptions.
+  # ────────────────────────────────────────────────────────────────────────────
+  notification-service:
+    build:
+      context: .
+      dockerfile: src/Services/Notification/NomiWrite.Notification.API/Dockerfile
+    container_name: nomiwrite-notification
+    restart: unless-stopped
+    init: true
+    env_file:
+      - .env.production
+    environment:
+      ASPNETCORE_URLS: "http://+:8080"
+      ASPNETCORE_ENVIRONMENT: Production
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8080/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    networks:
+      - nomiwrite-internal
+    read_only: true
+    tmpfs:
+      - /tmp:size=128m,mode=1777
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - NET_RAW
+      - NET_ADMIN
+      - SYS_ADMIN
+      - SYS_TIME
+      - MKNOD
+      - SETPCAP
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 512M
+        reservations:
+          cpus: "0.10"
+          memory: 128M
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "5"
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # Admin API (port 5180 local) — DB: nomiwrite_admin
+  # Was previously NOT containerized (gateway admin-cluster pointed at
+  # localhost:5180). Now containerized and reachable via Docker DNS.
+  # Calls Auth/Writing/Payment/Subscription for analytics aggregation.
+  # ────────────────────────────────────────────────────────────────────────────
+  admin-service:
+    build:
+      context: .
+      dockerfile: src/Services/Admin/NomiWrite.Admin.API/Dockerfile
+    container_name: nomiwrite-admin
+    restart: unless-stopped
+    init: true
+    env_file:
+      - .env.production
+    environment:
+      ASPNETCORE_URLS: "http://+:8080"
+      ASPNETCORE_ENVIRONMENT: Production
+      ServiceUrls__AuthService: http://auth-service:8080
+      ServiceUrls__WritingService: http://writing-service:8080
+      ServiceUrls__PaymentService: http://payment-service:8080
+      ServiceUrls__SubscriptionService: http://subscription-service:8080
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8080/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    networks:
+      - nomiwrite-internal
+    read_only: true
+    tmpfs:
+      - /tmp:size=128m,mode=1777
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - NET_RAW
+      - NET_ADMIN
+      - SYS_ADMIN
+      - SYS_TIME
+      - MKNOD
+      - SETPCAP
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 512M
+        reservations:
+          cpus: "0.10"
+          memory: 128M
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "5"
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # Learning API (port 5181 local) — DB: nomiwrite_learning
+  # Consumes GradingCompletedEvent (vocabulary/grammar feedback); calls Gemini.
+  # ────────────────────────────────────────────────────────────────────────────
+  learning-service:
+    build:
+      context: .
+      dockerfile: src/Services/Learning/NomiWrite.Learning.API/Dockerfile
+    container_name: nomiwrite-learning
+    restart: unless-stopped
+    init: true
+    env_file:
+      - .env.production
+    environment:
+      ASPNETCORE_URLS: "http://+:8080"
+      ASPNETCORE_ENVIRONMENT: Production
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8080/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    networks:
+      - nomiwrite-internal
+    read_only: true
+    tmpfs:
+      - /tmp:size=128m,mode=1777
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - NET_RAW
+      - NET_ADMIN
+      - SYS_ADMIN
+      - SYS_TIME
+      - MKNOD
+      - SETPCAP
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 512M
+        reservations:
+          cpus: "0.10"
+          memory: 128M
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "5"
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # backup-service — periodic PostgreSQL backup sidecar.
+  # Uses the official postgres:17-alpine image so pg_dump/psql/gzip are present.
+  # The backup scripts are mounted read-only from ./scripts and run in a loop
+  # (default every 24h — see BACKUP_INTERVAL_SECONDS in .env.production).
+  # Backups are written to the persistent `nomiwrite-backups` volume (/backups).
+  # NOT a disaster-recovery substitute: see scripts/README.md for off-host copy.
+  # ────────────────────────────────────────────────────────────────────────────
+  backup-service:
+    image: postgres:17-alpine
+    container_name: nomiwrite-backup
+    restart: unless-stopped
+    env_file:
+      - .env.production
+    environment:
+      BACKUP_DIR: /backups
+      BACKUP_INTERVAL_SECONDS: "86400"
+      # Backups run on the container's clock; keep the log timestamps
+      # unambiguous so they always carry an explicit UTC offset.
+      TZ: Asia/Ho_Chi_Minh
+    working_dir: /backups
+    entrypoint:
+      - /bin/sh
+      - -c
+      - >-
+        while true; do
+          /scripts/backup-db.sh || echo "[backup-service] backup run failed";
+          echo "[backup-service] next backup in $$BACKUP_INTERVAL_SECONDS seconds";
+          sleep "$$BACKUP_INTERVAL_SECONDS";
+        done
+    volumes:
+      - ./scripts:/scripts:ro
+      - nomiwrite-backups:/backups
+    networks:
+      - nomiwrite-internal
+    deploy:
+      resources:
+        limits:
+          cpus: "0.25"
+          memory: 256M
+        reservations:
+          cpus: "0.05"
+          memory: 64M
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "5"
+
+volumes:
+  rabbitmq_data:
+  nomiwrite-backups:
+
+networks:
+  nomiwrite-internal:
+    driver: bridge
+  nomiwrite-public:
+    driver: bridge

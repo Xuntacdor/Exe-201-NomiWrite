@@ -17,7 +17,7 @@ namespace NomiWrite.Writing.Infrastructure.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "8.0.30")
+                .HasAnnotation("ProductVersion", "8.0.31")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -56,6 +56,20 @@ namespace NomiWrite.Writing.Infrastructure.Migrations
                         .HasDefaultValue(true)
                         .HasColumnName("is_active");
 
+                    b.Property<bool>("IsVipOnly")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_vip_only");
+
+                    b.Property<int?>("MaxWords")
+                        .HasColumnType("integer")
+                        .HasColumnName("max_words");
+
+                    b.Property<int?>("MinWords")
+                        .HasColumnType("integer")
+                        .HasColumnName("min_words");
+
                     b.Property<string>("SampleAnswer")
                         .HasMaxLength(20000)
                         .HasColumnType("character varying(20000)")
@@ -85,6 +99,309 @@ namespace NomiWrite.Writing.Infrastructure.Migrations
                         .HasDatabaseName("ix_writing_prompts_writing_type_id");
 
                     b.ToTable("writing_prompts", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("10000000-0000-0000-0000-000000000001"),
+                            CreatedAt = new DateTime(2026, 9, 13, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Difficulty = "Intermediate",
+                            ImageUrl = "https://nomiwrite.example/assets/prompts/urban-transport-modes.png",
+                            Instructions = "The chart compares how commuters travel in three cities. Summarize the main features and make comparisons where relevant.",
+                            IsActive = true,
+                            IsVipOnly = false,
+                            MaxWords = 220,
+                            MinWords = 150,
+                            SampleAnswer = "The chart compares commuter transport choices across three cities. Overall, public transport is the most common option in the largest city, while private cars dominate in the suburban city. Cycling remains the least used mode in all three locations.",
+                            TimeLimitMinutes = 20,
+                            Title = "Urban Transport Modes",
+                            WritingTypeId = new Guid("11111111-1111-1111-1111-111111111111")
+                        },
+                        new
+                        {
+                            Id = new Guid("10000000-0000-0000-0000-000000000002"),
+                            CreatedAt = new DateTime(2026, 9, 13, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Difficulty = "Beginner",
+                            Instructions = "You recently enrolled in an online course but cannot continue. Write a letter to the course provider explaining the situation and requesting a refund.",
+                            IsActive = true,
+                            IsVipOnly = false,
+                            MaxWords = 220,
+                            MinWords = 150,
+                            SampleAnswer = "Dear Sir or Madam, I am writing to request a refund for the online course I purchased last week. Unfortunately, my work schedule has changed and I can no longer attend the live sessions.",
+                            TimeLimitMinutes = 20,
+                            Title = "Request A Course Refund",
+                            WritingTypeId = new Guid("22222222-2222-2222-2222-222222222222")
+                        },
+                        new
+                        {
+                            Id = new Guid("10000000-0000-0000-0000-000000000003"),
+                            CreatedAt = new DateTime(2026, 9, 13, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Difficulty = "Intermediate",
+                            Instructions = "Some people believe remote work improves productivity, while others think employees work better in offices. Discuss both views and give your own opinion.",
+                            IsActive = true,
+                            IsVipOnly = false,
+                            MaxWords = 380,
+                            MinWords = 250,
+                            SampleAnswer = "Remote work can improve productivity by reducing commuting time and allowing employees to focus in a comfortable environment. However, offices still provide faster collaboration and clearer team routines.",
+                            TimeLimitMinutes = 40,
+                            Title = "Remote Work And Productivity",
+                            WritingTypeId = new Guid("33333333-3333-3333-3333-333333333333")
+                        },
+                        new
+                        {
+                            Id = new Guid("10000000-0000-0000-0000-000000000004"),
+                            CreatedAt = new DateTime(2026, 9, 13, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Difficulty = "Advanced",
+                            Instructions = "Summarize the relationship between a reading passage about extended library hours and a lecture that challenges the policy.",
+                            IsActive = true,
+                            IsVipOnly = true,
+                            MaxWords = 225,
+                            MinWords = 150,
+                            SampleAnswer = "The reading supports extending library hours because students need quiet study space at night. The lecture disagrees, arguing that staffing costs are too high and existing evening usage is limited.",
+                            TimeLimitMinutes = 20,
+                            Title = "Campus Library Policy",
+                            WritingTypeId = new Guid("44444444-4444-4444-4444-444444444444")
+                        },
+                        new
+                        {
+                            Id = new Guid("10000000-0000-0000-0000-000000000005"),
+                            CreatedAt = new DateTime(2026, 9, 13, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Difficulty = "Intermediate",
+                            Instructions = "Do you agree or disagree that people learn more from mistakes than from success? Use specific reasons and examples.",
+                            IsActive = true,
+                            IsVipOnly = false,
+                            MaxWords = 450,
+                            MinWords = 300,
+                            SampleAnswer = "I agree that mistakes often teach people more than success because failure forces reflection. When a project succeeds easily, people may not understand which choices mattered.",
+                            TimeLimitMinutes = 30,
+                            Title = "Learning Through Mistakes",
+                            WritingTypeId = new Guid("55555555-5555-5555-5555-555555555555")
+                        },
+                        new
+                        {
+                            Id = new Guid("10000000-0000-0000-0000-000000000006"),
+                            CreatedAt = new DateTime(2026, 9, 13, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Difficulty = "Beginner",
+                            Instructions = "Write a cover letter for a junior marketing associate role, emphasizing communication, campaign support, and willingness to learn.",
+                            IsActive = true,
+                            IsVipOnly = false,
+                            MaxWords = 320,
+                            MinWords = 180,
+                            SampleAnswer = "Dear Hiring Manager, I am excited to apply for the Junior Marketing Associate position. My academic projects and internship experience have helped me build strong communication and campaign coordination skills.",
+                            TimeLimitMinutes = 30,
+                            Title = "Junior Marketing Associate Cover Letter",
+                            WritingTypeId = new Guid("66666666-6666-6666-6666-666666666666")
+                        },
+                        new
+                        {
+                            Id = new Guid("10000000-0000-0000-0000-000000000007"),
+                            CreatedAt = new DateTime(2026, 9, 13, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Difficulty = "Beginner",
+                            Instructions = "Write a professional email informing a client that a project milestone will be delayed by three days and proposing a revised timeline.",
+                            IsActive = true,
+                            IsVipOnly = false,
+                            MaxWords = 220,
+                            MinWords = 120,
+                            SampleAnswer = "Dear Client, I am writing to update you on the current project milestone. We need three additional days to complete final quality checks, and I propose delivering the revised milestone on Friday.",
+                            TimeLimitMinutes = 15,
+                            Title = "Project Deadline Update",
+                            WritingTypeId = new Guid("77777777-7777-7777-7777-777777777777")
+                        },
+                        new
+                        {
+                            Id = new Guid("10000000-0000-0000-0000-000000000008"),
+                            CreatedAt = new DateTime(2026, 9, 13, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Difficulty = "Intermediate",
+                            Instructions = "Write concise meeting minutes from notes about a product launch meeting, including attendees, decisions, action items, and deadlines.",
+                            IsActive = true,
+                            IsVipOnly = true,
+                            MaxWords = 320,
+                            MinWords = 180,
+                            SampleAnswer = "Meeting minutes should identify the meeting purpose, attendees, key decisions, and assigned action items. The product launch date was confirmed, while marketing assets and QA checks were assigned to separate owners.",
+                            TimeLimitMinutes = 25,
+                            Title = "Product Launch Meeting Minutes",
+                            WritingTypeId = new Guid("88888888-8888-8888-8888-888888888888")
+                        },
+                        new
+                        {
+                            Id = new Guid("10000000-0000-0000-0000-000000000013"),
+                            CreatedAt = new DateTime(2026, 9, 13, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Difficulty = "Beginner",
+                            Instructions = "Write one well-structured academic paragraph explaining how peer feedback can improve student writing.",
+                            IsActive = true,
+                            IsVipOnly = false,
+                            MaxWords = 160,
+                            MinWords = 90,
+                            SampleAnswer = "Peer feedback can improve student writing because it helps learners notice unclear ideas and weak organization before final submission. By reading a classmate's comments, students can revise with a clearer sense of audience and purpose.",
+                            TimeLimitMinutes = 15,
+                            Title = "Benefits Of Peer Feedback",
+                            WritingTypeId = new Guid("99999999-9999-9999-9999-999999999999")
+                        },
+                        new
+                        {
+                            Id = new Guid("10000000-0000-0000-0000-000000000014"),
+                            CreatedAt = new DateTime(2026, 9, 13, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Difficulty = "Advanced",
+                            Instructions = "Write a statement of purpose for a master's program in data science, focusing on academic background, project experience, and career goals.",
+                            IsActive = true,
+                            IsVipOnly = true,
+                            MaxWords = 650,
+                            MinWords = 400,
+                            SampleAnswer = "My interest in data science began when I used statistical models to analyze student performance in a university project. Since then, I have developed programming, research, and communication skills that I hope to deepen through graduate study.",
+                            TimeLimitMinutes = 45,
+                            Title = "Data Science Master's SOP",
+                            WritingTypeId = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
+                        },
+                        new
+                        {
+                            Id = new Guid("10000000-0000-0000-0000-000000000009"),
+                            CreatedAt = new DateTime(2026, 9, 13, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Difficulty = "Intermediate",
+                            Instructions = "Summarize a passage about the shift from printed textbooks to digital textbooks in one sentence.",
+                            IsActive = true,
+                            IsVipOnly = false,
+                            MaxWords = 75,
+                            MinWords = 5,
+                            SampleAnswer = "Universities are increasingly adopting digital textbooks because they reduce costs, improve accessibility, and allow faster updates, although some students still prefer printed materials for focused reading.",
+                            TimeLimitMinutes = 10,
+                            Title = "Digital Textbooks In Universities",
+                            WritingTypeId = new Guid("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb")
+                        },
+                        new
+                        {
+                            Id = new Guid("10000000-0000-0000-0000-000000000010"),
+                            CreatedAt = new DateTime(2026, 9, 13, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Difficulty = "Intermediate",
+                            Instructions = "Write an essay discussing whether schools should organize more educational trips for students.",
+                            IsActive = true,
+                            IsVipOnly = false,
+                            MaxWords = 220,
+                            MinWords = 140,
+                            SampleAnswer = "Educational trips should be used more often because they connect classroom knowledge with real experiences. However, schools must plan them carefully so they remain affordable and relevant.",
+                            TimeLimitMinutes = 40,
+                            Title = "School Trips And Learning",
+                            WritingTypeId = new Guid("cccccccc-cccc-cccc-cccc-cccccccccccc")
+                        },
+                        new
+                        {
+                            Id = new Guid("10000000-0000-0000-0000-000000000011"),
+                            CreatedAt = new DateTime(2026, 9, 13, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Difficulty = "Intermediate",
+                            Instructions = "Some people think cities should spend more money on public parks. To what extent do you agree or disagree?",
+                            IsActive = true,
+                            IsVipOnly = false,
+                            MaxWords = 380,
+                            MinWords = 250,
+                            SampleAnswer = "I largely agree that cities should invest more in public parks because they improve public health, provide social spaces, and make dense urban areas more livable.",
+                            TimeLimitMinutes = 40,
+                            Title = "Public Parks In Cities",
+                            WritingTypeId = new Guid("dddddddd-dddd-dddd-dddd-dddddddddddd")
+                        },
+                        new
+                        {
+                            Id = new Guid("10000000-0000-0000-0000-000000000015"),
+                            CreatedAt = new DateTime(2026, 9, 13, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Difficulty = "Advanced",
+                            Instructions = "Write a formal academic essay discussing whether digital tools improve or reduce meaningful interaction in university classrooms.",
+                            IsActive = true,
+                            IsVipOnly = true,
+                            MaxWords = 700,
+                            MinWords = 450,
+                            SampleAnswer = "Digital tools can improve classroom interaction when they support collaborative research, quick feedback, and inclusive participation. However, their value depends on purposeful teaching design rather than the presence of technology alone.",
+                            TimeLimitMinutes = 45,
+                            Title = "Technology And Classroom Interaction",
+                            WritingTypeId = new Guid("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee")
+                        },
+                        new
+                        {
+                            Id = new Guid("10000000-0000-0000-0000-000000000012"),
+                            CreatedAt = new DateTime(2026, 9, 13, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Difficulty = "Advanced",
+                            Instructions = "Write a research abstract for a small study investigating how mobile learning apps affect vocabulary retention among university students.",
+                            IsActive = true,
+                            IsVipOnly = true,
+                            MaxWords = 250,
+                            MinWords = 150,
+                            SampleAnswer = "This study investigates the effect of mobile learning applications on vocabulary retention among university students. Using pre- and post-tests, it compares app-supported practice with conventional review.",
+                            TimeLimitMinutes = 30,
+                            Title = "Abstract For A Study On Mobile Learning",
+                            WritingTypeId = new Guid("ffffffff-ffff-ffff-ffff-ffffffffffff")
+                        },
+                        new
+                        {
+                            Id = new Guid("10000000-0000-0000-0000-000000000016"),
+                            CreatedAt = new DateTime(2026, 9, 13, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Difficulty = "Intermediate",
+                            Instructions = "Summarize the relationship between a reading passage about a new online course policy and a lecture that questions its benefits.",
+                            IsActive = true,
+                            IsVipOnly = false,
+                            MaxWords = 225,
+                            MinWords = 150,
+                            SampleAnswer = "The reading supports the new online course policy because it offers flexibility and helps students manage their schedules. The lecture challenges this view by arguing that online classes may reduce discussion quality and make it harder for some students to stay motivated.",
+                            TimeLimitMinutes = 20,
+                            Title = "Online Course Announcement",
+                            WritingTypeId = new Guid("44444444-4444-4444-4444-444444444444")
+                        },
+                        new
+                        {
+                            Id = new Guid("10000000-0000-0000-0000-000000000017"),
+                            CreatedAt = new DateTime(2026, 9, 13, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Difficulty = "Beginner",
+                            Instructions = "Write concise meeting minutes from notes about a weekly planning meeting, including decisions, owners, action items, and deadlines.",
+                            IsActive = true,
+                            IsVipOnly = false,
+                            MaxWords = 320,
+                            MinWords = 180,
+                            SampleAnswer = "The weekly planning meeting reviewed current project progress, confirmed priority tasks, and assigned owners for design, testing, and client communication. The minutes should clearly record each decision and deadline so the team can follow up efficiently.",
+                            TimeLimitMinutes = 25,
+                            Title = "Weekly Planning Meeting Minutes",
+                            WritingTypeId = new Guid("88888888-8888-8888-8888-888888888888")
+                        },
+                        new
+                        {
+                            Id = new Guid("10000000-0000-0000-0000-000000000018"),
+                            CreatedAt = new DateTime(2026, 9, 13, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Difficulty = "Intermediate",
+                            Instructions = "Write a personal statement for a computer science scholarship, focusing on motivation, relevant achievements, and future contribution.",
+                            IsActive = true,
+                            IsVipOnly = false,
+                            MaxWords = 600,
+                            MinWords = 350,
+                            SampleAnswer = "My interest in computer science grew from building small applications that solved everyday problems for classmates. A scholarship would help me continue developing technical skills and contribute to projects that make learning more accessible.",
+                            TimeLimitMinutes = 45,
+                            Title = "Computer Science Scholarship Statement",
+                            WritingTypeId = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
+                        },
+                        new
+                        {
+                            Id = new Guid("10000000-0000-0000-0000-000000000019"),
+                            CreatedAt = new DateTime(2026, 9, 13, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Difficulty = "Intermediate",
+                            Instructions = "Write a formal academic essay discussing whether group work should be used more often in university courses.",
+                            IsActive = true,
+                            IsVipOnly = false,
+                            MaxWords = 600,
+                            MinWords = 350,
+                            SampleAnswer = "Group work can strengthen university learning because it encourages discussion, shared problem solving, and communication skills. However, instructors need clear assessment criteria to prevent unequal participation.",
+                            TimeLimitMinutes = 45,
+                            Title = "Group Work In University Courses",
+                            WritingTypeId = new Guid("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee")
+                        },
+                        new
+                        {
+                            Id = new Guid("10000000-0000-0000-0000-000000000020"),
+                            CreatedAt = new DateTime(2026, 9, 13, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Difficulty = "Intermediate",
+                            Instructions = "Write a research abstract for a small study investigating the relationship between study habits and exam performance among university students.",
+                            IsActive = true,
+                            IsVipOnly = false,
+                            MaxWords = 250,
+                            MinWords = 150,
+                            SampleAnswer = "This study examines the relationship between study habits and exam performance among university students. Survey responses and course results are analyzed to identify patterns in planning, review frequency, and academic outcomes.",
+                            TimeLimitMinutes = 30,
+                            Title = "Abstract For A Study On Study Habits",
+                            WritingTypeId = new Guid("ffffffff-ffff-ffff-ffff-ffffffffffff")
+                        });
                 });
 
             modelBuilder.Entity("NomiWrite.Writing.Domain.Entities.WritingSubmission", b =>
@@ -107,6 +424,9 @@ namespace NomiWrite.Writing.Infrastructure.Migrations
                     b.Property<DateTime?>("DeadlineAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("deadline_at");
+
+                    b.Property<DateTime?>("GradedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<bool>("IsTimed")
                         .ValueGeneratedOnAdd()
@@ -294,6 +614,51 @@ namespace NomiWrite.Writing.Infrastructure.Migrations
                             Description = "Write a personal statement or statement of purpose for university applications.",
                             IsActive = true,
                             Name = "Personal Statement / SOP"
+                        },
+                        new
+                        {
+                            Id = new Guid("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"),
+                            Category = "ExamFormat",
+                            CreatedAt = new DateTime(2026, 9, 7, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Summarize an academic passage in one sentence for PTE Academic.",
+                            IsActive = true,
+                            Name = "PTE Academic Summarize Written Text"
+                        },
+                        new
+                        {
+                            Id = new Guid("cccccccc-cccc-cccc-cccc-cccccccccccc"),
+                            Category = "ExamFormat",
+                            CreatedAt = new DateTime(2026, 9, 7, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Write a structured essay for Cambridge B2 First or similar Cambridge exams.",
+                            IsActive = true,
+                            Name = "Cambridge B2 First Essay"
+                        },
+                        new
+                        {
+                            Id = new Guid("dddddddd-dddd-dddd-dddd-dddddddddddd"),
+                            Category = "ExamFormat",
+                            CreatedAt = new DateTime(2026, 9, 7, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Write an opinion essay for the Vietnamese Standardized Test of English Proficiency.",
+                            IsActive = true,
+                            Name = "VSTEP Task 2 Essay"
+                        },
+                        new
+                        {
+                            Id = new Guid("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee"),
+                            Category = "Academic",
+                            CreatedAt = new DateTime(2026, 9, 7, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Write a formal academic essay with a clear thesis and supporting arguments.",
+                            IsActive = true,
+                            Name = "Academic Essay"
+                        },
+                        new
+                        {
+                            Id = new Guid("ffffffff-ffff-ffff-ffff-ffffffffffff"),
+                            Category = "Academic",
+                            CreatedAt = new DateTime(2026, 9, 7, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Write a concise abstract summarizing research purpose, method, findings, and implication.",
+                            IsActive = true,
+                            Name = "Research Abstract"
                         });
                 });
 

@@ -79,6 +79,8 @@ export interface WritingPrompt {
   prompt: string;
   imageUrl?: string;
   difficulty?: "Beginner" | "Intermediate" | "Advanced" | string;
+  minWords?: number;
+  maxWords?: number;
 }
 
 export interface SubmissionTimeRemaining {
@@ -104,6 +106,9 @@ export interface Submission {
   overallScore?: number;
   overallFeedback?: string;
   submittedAt: string;
+  deadlineAt?: string | null;
+  isTimed?: boolean;
+  submittedLate?: boolean;
   status: "draft" | "submitted" | "grading" | "graded" | "failed";
 }
 
@@ -207,8 +212,8 @@ export interface QuizQuestion {
   question: string;
   sentence: string;
   options?: string[];
-  correctAnswer: string;
-  explanation: string;
+  correctAnswer?: string;
+  explanation?: string;
 }
 
 export interface Quiz {
@@ -219,13 +224,24 @@ export interface Quiz {
   createdAt: string;
 }
 
+export interface QuizQuestionResult {
+  questionId: string;
+  question: string;
+  userAnswer: string;
+  correctAnswer: string;
+  isCorrect: boolean;
+  explanation: string;
+}
+
 export interface QuizAttempt {
   id: string;
   quizId: string;
   userId: string;
   answers: Record<string, string>;
   score: number;
+  totalQuestions?: number;
   attemptedAt: string;
+  questionBreakdown?: QuizQuestionResult[];
 }
 
 export interface DashboardSummary {

@@ -16,8 +16,7 @@ public class NotificationConfiguration : IEntityTypeConfiguration<Domain.Entitie
             .HasColumnType("uuid");
 
         builder.Property(n => n.UserId)
-            .HasColumnName("user_id")
-            .IsRequired();
+            .HasColumnName("user_id");
 
         builder.HasIndex(n => n.UserId)
             .HasDatabaseName("ix_notifications_user_id");

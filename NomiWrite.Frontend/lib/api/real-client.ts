@@ -84,17 +84,22 @@ interface BackendWritingPrompt {
   instructions?: string;
   imageUrl?: string | null;
   difficulty: string;
+  minWords?: number | null;
+  maxWords?: number | null;
 }
 
 interface BackendSubmission {
   id: string;
   writingPromptId: string;
   promptTitle: string;
-  content: string;
+  content?: string | null;
   wordCount: number;
   status: "Draft" | "Submitted" | string;
-  startedAt: string;
+  startedAt?: string | null;
   submittedAt?: string | null;
+  deadlineAt?: string | null;
+  isTimed?: boolean;
+  submittedLate?: boolean;
 }
 
 interface BackendGradingResult {
@@ -151,6 +156,14 @@ interface BackendApiEnvelope<T> {
   success: boolean;
   data: T;
   message?: string;
+}
+
+interface BackendVocabularyPage {
+  items: VocabSuggestion[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
 }
 
 function getAuthHeaders(): HeadersInit {
@@ -259,11 +272,14 @@ function toWritingPrompt(item: BackendWritingPrompt): WritingPrompt {
     prompt: item.instructions ?? item.title,
     imageUrl: item.imageUrl ?? undefined,
     difficulty: item.difficulty,
+    minWords: item.minWords ?? undefined,
+    maxWords: item.maxWords ?? undefined,
   };
 }
 
 function toSubmission(item: BackendSubmission, userId = ""): Submission {
   const isSubmitted = item.status === "Submitted";
+  const submittedAt = item.submittedAt ?? item.startedAt ?? new Date().toISOString();
   const status: Submission["status"] =
     item.status === "Graded" ? "graded" :
     item.status === "Failed" ? "failed" :
@@ -275,9 +291,12 @@ function toSubmission(item: BackendSubmission, userId = ""): Submission {
     writingType: "",
     topic: item.promptTitle,
     prompt: item.promptTitle,
-    content: item.content,
+    content: item.content ?? "",
     wordCount: item.wordCount,
-    submittedAt: item.submittedAt ?? item.startedAt,
+    submittedAt,
+    deadlineAt: item.deadlineAt,
+    isTimed: item.isTimed ?? false,
+    submittedLate: item.submittedLate ?? false,
     status,
   };
 }
@@ -593,32 +612,34 @@ export const realClient: ApiClient = {
   },
 
   listVocabulary() {
-    return request<VocabSuggestion[]>(apiRoutes.vocabulary.list, { method: "GET" });
+    return request<BackendApiEnvelope<BackendVocabularyPage>>(`${apiRoutes.vocabulary.list}?page=1&pageSize=200`, { method: "GET" }, true)
+      .then(envelope => envelope.data.items);
   },
 
   updateVocabularyMastered(id: string, requestBody: UpdateVocabularyMasteredRequest) {
-    return request<VocabSuggestion>(apiRoutes.vocabulary.mastered(id), {
+    return request<BackendApiEnvelope<VocabSuggestion>>(apiRoutes.vocabulary.mastered(id), {
       method: "PATCH",
       body: JSON.stringify(requestBody),
-    });
+    }, true).then(envelope => envelope.data);
   },
 
   generateQuiz(requestBody: GenerateQuizRequest) {
-    return request<Quiz>(apiRoutes.quizzes.generate, {
+    return request<BackendApiEnvelope<Quiz>>(apiRoutes.quizzes.generate, {
       method: "POST",
       body: JSON.stringify(requestBody),
-    });
+    }, true).then(envelope => envelope.data);
   },
 
   getQuiz(id: string) {
-    return request<Quiz>(apiRoutes.quizzes.detail(id), { method: "GET" });
+    return request<BackendApiEnvelope<Quiz>>(apiRoutes.quizzes.detail(id), { method: "GET" }, true)
+      .then(envelope => envelope.data);
   },
 
   submitQuizAttempt(requestBody: SubmitQuizAttemptRequest) {
-    return request<QuizAttempt>(apiRoutes.quizAttempts.create, {
+    return request<BackendApiEnvelope<QuizAttempt>>(apiRoutes.quizAttempts.create, {
       method: "POST",
       body: JSON.stringify(requestBody),
-    });
+    }, true).then(envelope => envelope.data);
   },
 
   createCheckout(requestBody: CheckoutRequest) {

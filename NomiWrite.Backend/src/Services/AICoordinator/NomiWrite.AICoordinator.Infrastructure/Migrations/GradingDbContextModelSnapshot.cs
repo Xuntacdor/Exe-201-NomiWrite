@@ -22,6 +22,68 @@ namespace NomiWrite.AICoordinator.Infrastructure.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("NomiWrite.AICoordinator.Domain.Entities.AiGradingConfig", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true)
+                        .HasColumnName("is_active");
+
+                    b.Property<int?>("MaxOutputTokens")
+                        .HasColumnType("integer")
+                        .HasColumnName("max_output_tokens");
+
+                    b.Property<string>("ModelName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("model_name");
+
+                    b.Property<string>("ProviderName")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasDefaultValue("Gemini")
+                        .HasColumnName("provider_name");
+
+                    b.Property<string>("SystemPromptTemplate")
+                        .HasColumnType("text")
+                        .HasColumnName("system_prompt_template");
+
+                    b.Property<decimal?>("Temperature")
+                        .HasColumnType("numeric")
+                        .HasColumnName("temperature");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("ai_grading_configs", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaa01"),
+                            CreatedAt = new DateTime(2026, 9, 7, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
+                            ModelName = "gemini-2.5-flash",
+                            ProviderName = "Gemini"
+                        });
+                });
+
             modelBuilder.Entity("NomiWrite.AICoordinator.Domain.Entities.GradingFeedbackFlag", b =>
                 {
                     b.Property<Guid>("Id")

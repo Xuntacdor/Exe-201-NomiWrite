@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import AppShell from "../components/AppShell";
 import {
@@ -290,8 +290,19 @@ export default function GuidePage() {
   const [activeTab, setActiveTab] = useState<Tab>("structure");
   const [copied, setCopied] = useState<string | null>(null);
 
-  const openType = types.find(t => t.id === selectedTypeId) || types[0];
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const params = new URLSearchParams(window.location.search);
+      const openParam = params.get("open");
+      if (openParam && types.find(t => t.id === openParam)) {
+        setSelectedTypeId(openParam);
+      }
+    }, 0);
 
+    return () => clearTimeout(timer);
+  }, []);
+
+  const openType = types.find(t => t.id === selectedTypeId) || types[0];
   const copyPhrase = (phrase: string) => {
     navigator.clipboard?.writeText(phrase);
     setCopied(phrase);

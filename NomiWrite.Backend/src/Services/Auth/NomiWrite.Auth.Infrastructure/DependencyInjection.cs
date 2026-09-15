@@ -18,6 +18,9 @@ namespace NomiWrite.Auth.Infrastructure;
 // To apply the new EmailVerificationTokens / PasswordResetTokens tables and any schema changes, run (do not run — reference only):
 // dotnet ef migrations add AddEmailVerificationAndPasswordReset --project NomiWrite.Auth.Infrastructure --startup-project NomiWrite.Auth.API --context AuthDbContext
 
+// UC71 — AccountStatus + Moderator role column (do not run — reference only):
+// dotnet ef migrations add AddAccountStatusAndRoles --project NomiWrite.Auth.Infrastructure --startup-project NomiWrite.Auth.API --context AuthDbContext
+
 public static class DependencyInjection
 {
     public static IServiceCollection AddAuthInfrastructure(this IServiceCollection services, IConfiguration configuration)
@@ -48,6 +51,10 @@ public static class DependencyInjection
         services.AddScoped<IValidator<ResendVerificationEmailRequestDto>, ResendVerificationEmailRequestValidator>();
         services.AddScoped<IValidator<ForgotPasswordRequestDto>, ForgotPasswordRequestValidator>();
         services.AddScoped<IValidator<ResetPasswordRequestDto>, ResetPasswordRequestValidator>();
+
+        services.AddScoped<IValidator<UpdateUserStatusRequestDto>, UpdateUserStatusRequestValidator>();
+        services.AddScoped<IValidator<UpdateUserRoleRequestDto>, UpdateUserRoleRequestValidator>();
+        services.AddScoped<IAdminUserService, AdminUserService>();
 
         services.AddMassTransit(x =>
         {

@@ -131,6 +131,13 @@ public class AuthService : IAuthService
         if (user.IsDeleted)
             throw new AccountDeactivatedException();
 
+        if (user.AccountStatus != AccountStatus.Active)
+        {
+            if (user.AccountStatus == AccountStatus.Banned)
+                throw new AccountBannedException();
+            throw new AccountDeactivatedException();
+        }
+
         var passwordVerified = _passwordHasher.VerifyPassword(request.Password, user.PasswordHash);
         if (!passwordVerified)
             throw new InvalidCredentialsException();
@@ -165,8 +172,20 @@ public class AuthService : IAuthService
         if (storedToken.ExpiresAt <= DateTime.UtcNow)
             throw new InvalidRefreshTokenException();
 
-        var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Id == storedToken.UserId)
+        var user = await _dbContext.Users
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(u => u.Id == storedToken.UserId)
             ?? throw new InvalidRefreshTokenException();
+
+        if (user.IsDeleted || user.AccountStatus != AccountStatus.Active)
+        {
+            await RevokeTokenFamilyAsync(user.Id);
+
+            if (user.AccountStatus == AccountStatus.Banned)
+                throw new AccountBannedException();
+
+            throw new AccountDeactivatedException();
+        }
 
         var now = DateTime.UtcNow;
         var (accessToken, accessTokenExpiresAt) = _jwtTokenService.GenerateAccessToken(user);
@@ -385,6 +404,9 @@ public class AuthService : IAuthService
         {
             if (user.IsDeleted)
                 throw new AccountDeactivatedException();
+
+            if (user.AccountStatus == AccountStatus.Banned)
+                throw new AccountBannedException();
 
             if (user.GoogleId is null)
                 user.GoogleId = googleId;

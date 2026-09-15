@@ -6,6 +6,11 @@
 # dotenv files
 .env
 
+# Production secrets (never commit)
+.env.production
+.env.production.local
+.env.*.local
+
 # User-specific files
 *.rsuser
 *.suo
@@ -152,6 +157,7 @@ _TeamCity*
 coverage*.json
 coverage*.xml
 coverage*.info
+!coverage-baseline.json
 
 # Visual Studio code coverage results
 *.coverage
@@ -484,3 +490,12 @@ $RECYCLE.BIN/
 *.swp
 # ASP.NET appsettings with secrets (use env vars instead)
 **/appsettings.json
+!NomiWrite.Backend/src/Gateway/NomiWrite.Gateway/appsettings.json
+
+# Database backups
+backups/
+*.sql.gz
+*.dump
+*.backup
+#opencode.json
+opencode.json

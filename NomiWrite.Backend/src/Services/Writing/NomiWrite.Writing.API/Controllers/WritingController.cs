@@ -29,7 +29,9 @@ public class WritingController : ControllerBase
         [FromQuery] DifficultyLevel? difficulty,
         [FromQuery] bool random = false)
     {
-        var result = await _writingService.GetPromptsAsync(typeId, difficulty, random);
+        var userId = GetUserId();
+        var accessToken = GetBearerToken();
+        var result = await _writingService.GetPromptsAsync(typeId, difficulty, random, userId, accessToken);
         return Ok(result);
     }
 
@@ -48,7 +50,7 @@ public class WritingController : ControllerBase
         if (userId is null)
             return Unauthorized();
 
-        var result = await _writingService.CreateSubmissionAsync(userId.Value, request);
+        var result = await _writingService.CreateSubmissionAsync(userId.Value, request, GetBearerToken());
         return Ok(result);
     }
 

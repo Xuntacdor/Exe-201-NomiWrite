@@ -54,7 +54,20 @@ public class ExceptionHandlingMiddleware
                 break;
 
             case AccountDeactivatedException:
+            case AccountBannedException:
                 statusCode = StatusCodes.Status403Forbidden;
+                message = exception.Message;
+                errors = Array.Empty<string>();
+                break;
+
+            case UserNotFoundException:
+                statusCode = StatusCodes.Status404NotFound;
+                message = exception.Message;
+                errors = Array.Empty<string>();
+                break;
+
+            case CannotModifyOwnRoleException:
+                statusCode = StatusCodes.Status400BadRequest;
                 message = exception.Message;
                 errors = Array.Empty<string>();
                 break;

@@ -5,7 +5,8 @@ namespace NomiWrite.Notification.Domain.Entities;
 
 public class Notification : BaseEntity
 {
-    public Guid UserId { get; set; }
+    // Null when the notification is a system-wide broadcast (see SystemAnnouncementCreatedEventConsumer).
+    public Guid? UserId { get; set; }
     public string Title { get; set; } = string.Empty;
     public string Message { get; set; } = string.Empty;
     public NotificationType Type { get; set; }

@@ -182,10 +182,13 @@ public class PaymentService : IPaymentService
         return ToStatusResponse(payment);
     }
 
-    public async Task<PaymentStatusResponseDto> GetPaymentStatusAsync(Guid paymentId)
+    public async Task<PaymentStatusResponseDto> GetPaymentStatusAsync(Guid userId, Guid paymentId)
     {
         var payment = await _dbContext.Payments.FirstOrDefaultAsync(p => p.Id == paymentId)
             ?? throw new PaymentNotFoundException(paymentId);
+
+        if (payment.UserId != userId)
+            throw new InvalidRefundException("Payment does not belong to the caller.", 403);
 
         return ToStatusResponse(payment);
     }

@@ -54,6 +54,7 @@ public static class DependencyInjection
 
         services.AddMassTransit(x =>
         {
+            x.SetEndpointNameFormatter(new KebabCaseEndpointNameFormatter("user", false));
             x.AddConsumer<UserRegisteredEventConsumer>();
 
             x.UsingRabbitMq((context, cfg) =>

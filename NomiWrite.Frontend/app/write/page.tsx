@@ -49,6 +49,7 @@ function WriteContent() {
   const [loadingPrompts, setLoadingPrompts] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [userSelectedType, setUserSelectedType] = useState(Boolean(initialType));
 
   useEffect(() => {
     if (apiMode === "real" && !getSession()?.accessToken) {
@@ -110,6 +111,29 @@ function WriteContent() {
   }, [selectedTypeId]);
 
   useEffect(() => {
+    if (userSelectedType || !selectedTypeId || loadingPrompts || prompts.length > 0 || loadingTypes) return;
+    if (initialType && selectedTypeId === initialType) return;
+
+    let ignore = false;
+    const loadTimer = setTimeout(() => {
+      apiClient.listWritingPrompts()
+        .then(items => {
+          if (ignore) return;
+          const firstAvailable = types.find(type => items.some(prompt => prompt.writingTypeId === type.id));
+          if (firstAvailable && firstAvailable.id !== selectedTypeId) {
+            setSelectedTypeId(firstAvailable.id);
+          }
+        })
+        .catch(() => {});
+    }, 0);
+
+    return () => {
+      ignore = true;
+      clearTimeout(loadTimer);
+    };
+  }, [initialType, loadingPrompts, loadingTypes, prompts.length, selectedTypeId, types, userSelectedType]);
+
+  useEffect(() => {
     if (!selectedPromptId) {
       const clearTimer = setTimeout(() => setSampleAnswer(null), 0);
       return () => clearTimeout(clearTimer);
@@ -131,9 +155,10 @@ function WriteContent() {
 
   const currentType = types.find(type => type.id === selectedTypeId) ?? fallbackType;
   const currentPrompt = prompts.find(prompt => prompt.id === selectedPromptId);
+  const minimumWords = currentPrompt?.minWords ?? currentType.minWords;
   const wordCount = countWords(content);
-  const progress = Math.min((wordCount / currentType.minWords) * 100, 100);
-  const shortContent = wordCount > 0 && wordCount < currentType.minWords;
+  const progress = Math.min((wordCount / minimumWords) * 100, 100);
+  const shortContent = wordCount > 0 && wordCount < minimumWords;
   const canSubmit = Boolean(currentPrompt && content.trim()) && !submitting;
 
   const draftKey = useMemo(
@@ -233,7 +258,10 @@ function WriteContent() {
                 <div className="relative">
                   <select
                     value={selectedTypeId}
-                    onChange={event => setSelectedTypeId(event.target.value)}
+                    onChange={event => {
+                      setUserSelectedType(true);
+                      setSelectedTypeId(event.target.value);
+                    }}
                     disabled={loadingTypes}
                     className="w-full cursor-pointer appearance-none rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 pr-10 text-[15px] font-semibold text-slate-800 outline-none transition-all focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 disabled:opacity-50"
                   >
@@ -343,6 +371,12 @@ Remember to:
               spellCheck="false"
             />
           </div>
+          
+          {error && (
+            <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+              {error}
+            </p>
+          )}
           
           {/* Bottom Bar: Word Count & Status */}
           <div className="flex items-center justify-between border-t border-slate-200 bg-slate-50 px-8 py-4 z-10">

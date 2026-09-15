@@ -16,5 +16,8 @@ public class WritingSubmission : BaseEntity
     public DateTime StartedAt { get; set; } = DateTime.UtcNow;
     public DateTime? SubmittedAt { get; set; }
 
+    // Set by GradingCompletedEventConsumer when the AICoordinator finishes grading.
+    public DateTime? GradedAt { get; set; }
+
     public WritingPrompt? WritingPrompt { get; set; }
 }
