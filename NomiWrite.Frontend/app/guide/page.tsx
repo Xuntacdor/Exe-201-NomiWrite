@@ -1,12 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import AppShell from "../components/AppShell";
 import {
   BookOpen, Briefcase, GraduationCap, FileText, Mail, Star,
-  ChevronRight, Copy, Check, Lightbulb, AlertTriangle, AlignLeft,
-  MessageSquare, Zap, Target, Clock, ArrowRight, X,
+  Copy, Check, Lightbulb, AlertTriangle, AlignLeft,
+  MessageSquare, Zap, X,
 } from "lucide-react";
 
 type Tab = "structure" | "connectors" | "tips" | "mistakes";
@@ -541,7 +540,7 @@ export default function GuidePage() {
                           <X className="h-3.5 w-3.5 text-red-600" />
                         </div>
                         <div>
-                          <p className="text-[11px] font-extrabold uppercase tracking-widest text-red-400 mb-1">Don't write this</p>
+                          <p className="text-[11px] font-extrabold uppercase tracking-widest text-red-400 mb-1">Don&apos;t write this</p>
                           <p className="text-[14px] font-medium leading-relaxed text-red-900 line-through decoration-red-300">
                             {item.wrong}
                           </p>

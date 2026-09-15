@@ -6,6 +6,8 @@ import type {
   GradingHistoryItem,
   LoginRequest,
   RegisterRequest,
+  Submission,
+  WritingFeedback,
   SubmitSubmissionRequest,
   SubmissionTimeRemaining,
   UpdateVocabularyMasteredRequest,
@@ -13,7 +15,6 @@ import type {
 } from "../types";
 import {
   mockDashboardSummary,
-  mockFeedback,
   mockQuiz,
   mockSubmissions,
   mockVocabulary,
@@ -23,6 +24,32 @@ import {
 import { createMockAuthResponse, mockUser } from "../mock-data/auth";
 
 const delay = (ms = 350) => new Promise(resolve => setTimeout(resolve, ms));
+const runtimeSubmissions: Submission[] = [...mockSubmissions];
+
+function createFeedbackForSubmission(submission: Submission): WritingFeedback {
+  return {
+    id: `grade_${submission.id}`,
+    submission: {
+      ...submission,
+      status: "graded",
+      overallScore: submission.overallScore ?? 6.5,
+      overallFeedback: submission.overallFeedback ?? "Clear response to the selected prompt. Add more specific examples and tighten sentence control to improve the score.",
+    },
+    criteriaScores: {
+      taskResponse: 6.5,
+      coherenceCohesion: 6,
+      lexicalResource: 6,
+      grammaticalRangeAccuracy: 6.5,
+    },
+    grammarErrors: [],
+    vocabSuggestions: mockVocabulary.map(item => ({
+      ...item,
+      submissionId: submission.id,
+      userId: submission.userId,
+      topic: submission.topic,
+    })),
+  };
+}
 
 export const mockClient: ApiClient = {
   async login(request: LoginRequest): Promise<AuthResponse> {
@@ -133,7 +160,7 @@ export const mockClient: ApiClient = {
   async listWritingPrompts(writingType?: string, topic?: string) {
     await delay();
     return mockWritingPrompts.filter(prompt => {
-      if (writingType && prompt.writingType !== writingType) return false;
+      if (writingType && prompt.writingTypeId !== writingType && prompt.writingType !== writingType) return false;
       if (topic && prompt.topic !== topic) return false;
       return true;
     });
@@ -155,28 +182,33 @@ export const mockClient: ApiClient = {
 
   async submitSubmission(request: SubmitSubmissionRequest) {
     await delay();
+    const prompt = mockWritingPrompts.find(item => item.id === request.writingPromptId);
+    if (!prompt) throw new Error("Prompt not found.");
+
     const submittedAt = new Date().toISOString();
-    return {
+    const submission: Submission = {
       id: `sub_${Date.now()}`,
       userId: mockUser.id,
       wordCount: request.content.trim() ? request.content.trim().split(/\s+/).length : 0,
       submittedAt,
-      status: "submitted",
-      writingType: "Mock writing",
-      topic: "Mock prompt",
-      prompt: "Mock prompt",
+      status: "graded",
+      writingType: prompt.writingType,
+      topic: prompt.topic,
+      prompt: prompt.prompt,
       content: request.content,
     };
+    runtimeSubmissions.unshift(submission);
+    return submission;
   },
 
   async listSubmissions() {
     await delay();
-    return mockSubmissions;
+    return runtimeSubmissions;
   },
 
   async getSubmission(id: string) {
     await delay();
-    const submission = mockSubmissions.find(item => item.id === id);
+    const submission = runtimeSubmissions.find(item => item.id === id);
     if (!submission) throw new Error("Submission not found.");
     return submission;
   },
@@ -190,19 +222,23 @@ export const mockClient: ApiClient = {
     };
   },
 
-  async gradeSubmission() {
+  async gradeSubmission(id: string) {
     await delay();
-    return mockFeedback;
+    const submission = runtimeSubmissions.find(item => item.id === id);
+    if (!submission) throw new Error("Submission not found.");
+    return createFeedbackForSubmission(submission);
   },
 
-  async getFeedback() {
+  async getFeedback(submissionId: string) {
     await delay();
-    return mockFeedback;
+    const submission = runtimeSubmissions.find(item => item.id === submissionId);
+    if (!submission) throw new Error("Submission not found.");
+    return createFeedbackForSubmission(submission);
   },
 
   async listGradingHistory(): Promise<GradingHistoryItem[]> {
     await delay();
-    return mockSubmissions
+    return runtimeSubmissions
       .filter(item => typeof item.overallScore === "number")
       .map(item => ({
         id: `grade_${item.id}`,
@@ -212,10 +248,12 @@ export const mockClient: ApiClient = {
       }));
   },
 
-  async compareSubmissionFeedback() {
+  async compareSubmissionFeedback(submissionId: string) {
     await delay();
+    const submission = runtimeSubmissions.find(item => item.id === submissionId);
+    if (!submission) throw new Error("Submission not found.");
     return {
-      current: mockFeedback,
+      current: createFeedbackForSubmission(submission),
       previous: null,
       bandDifference: null,
     };
