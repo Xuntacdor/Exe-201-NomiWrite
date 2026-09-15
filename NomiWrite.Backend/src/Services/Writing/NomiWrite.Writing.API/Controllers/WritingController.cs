@@ -76,7 +76,7 @@ public class WritingController : ControllerBase
         if (userId is null)
             return Unauthorized();
 
-        var result = await _writingService.SubmitSubmissionAsync(userId.Value, id);
+        var result = await _writingService.SubmitSubmissionAsync(userId.Value, id, GetClientIpAddress(), GetUserAgent());
         return Ok(result);
     }
 
@@ -145,5 +145,23 @@ public class WritingController : ControllerBase
         return authorizationHeader.StartsWith(bearerPrefix, StringComparison.OrdinalIgnoreCase)
             ? authorizationHeader[bearerPrefix.Length..]
             : authorizationHeader;
+    }
+
+    private string? GetClientIpAddress()
+    {
+        var remoteIp = HttpContext.Connection.RemoteIpAddress;
+        if (remoteIp is null)
+            return null;
+
+        if (remoteIp.IsIPv4MappedToIPv6)
+            remoteIp = remoteIp.MapToIPv4();
+
+        return remoteIp.ToString();
+    }
+
+    private string? GetUserAgent()
+    {
+        var userAgent = Request.Headers.UserAgent.ToString();
+        return string.IsNullOrWhiteSpace(userAgent) ? null : userAgent;
     }
 }
