@@ -12,6 +12,7 @@ using NomiWrite.Auth.Application.Options;
 using NomiWrite.Auth.Domain.Entities;
 using NomiWrite.Auth.Domain.Enums;
 using NomiWrite.Shared.Contracts.Events.Auth;
+using NomiWrite.Shared.Contracts.Events.Logging;
 
 namespace NomiWrite.Auth.Application.Services;
 
@@ -113,7 +114,7 @@ public class AuthService : IAuthService
         return ToResponse(user, accessToken, refreshToken, accessTokenExpiresAt);
     }
 
-    public async Task<AuthResponseDto> LoginAsync(LoginRequestDto request)
+    public async Task<AuthResponseDto> LoginAsync(LoginRequestDto request, string? ipAddress = null, string? userAgent = null)
     {
         var validationResult = await _loginValidator.ValidateAsync(request);
         if (!validationResult.IsValid)
@@ -148,6 +149,9 @@ public class AuthService : IAuthService
 
         _dbContext.RefreshTokens.Add(refreshToken);
         await _dbContext.SaveChangesAsync();
+
+        await PublishActivityLoggedAsync(user.Id, "LOGIN", "Auth", ipAddress, userAgent,
+            new Dictionary<string, object> { ["provider"] = "credentials" }, now);
 
         return ToResponse(user, accessToken, refreshToken, accessTokenExpiresAt);
     }
@@ -369,7 +373,7 @@ public class AuthService : IAuthService
         return Success("Account deactivated successfully.");
     }
 
-    public async Task<AuthResponseDto> GoogleLoginAsync(GoogleLoginRequestDto request)
+    public async Task<AuthResponseDto> GoogleLoginAsync(GoogleLoginRequestDto request, string? ipAddress = null, string? userAgent = null)
     {
         if (string.IsNullOrWhiteSpace(request.IdToken))
             throw new InvalidGoogleTokenException("The Google ID token is required.");
@@ -444,6 +448,9 @@ public class AuthService : IAuthService
         if (isNewUser)
             await _publishEndpoint.Publish(new UserRegisteredEvent(user.Id, user.Email, user.FullName));
 
+        await PublishActivityLoggedAsync(user.Id, "LOGIN", "Auth", ipAddress, userAgent,
+            new Dictionary<string, object> { ["provider"] = "google" }, now);
+
         return ToResponse(user, accessToken, refreshToken, accessTokenExpiresAt);
     }
 
@@ -460,6 +467,35 @@ public class AuthService : IAuthService
             token.IsRevoked = true;
 
         await _dbContext.SaveChangesAsync();
+    }
+
+    private async Task PublishActivityLoggedAsync(
+        Guid userId,
+        string action,
+        string serviceName,
+        string? ipAddress,
+        string? userAgent,
+        Dictionary<string, object> metadata,
+        DateTime timestamp)
+    {
+        try
+        {
+            await _publishEndpoint.Publish(new UserActivityLoggedEvent(
+                userId.ToString(),
+                action,
+                serviceName,
+                ipAddress,
+                userAgent,
+                metadata,
+                timestamp));
+        }
+        catch (Exception exception)
+        {
+            // Activity telemetry is best-effort: a broker hiccup must never
+            // surface as a failed login to the end user.
+            _logger.LogWarning(exception,
+                "Failed to publish {Action} activity log for user {UserId}", action, userId);
+        }
     }
 
     private RefreshToken CreateRefreshToken(Guid userId, DateTime now)

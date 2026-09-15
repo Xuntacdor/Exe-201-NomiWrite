@@ -14,6 +14,7 @@ using NomiWrite.Auth.Application.UnitTests.Persistence;
 using NomiWrite.Auth.Domain.Entities;
 using NomiWrite.Auth.Domain.Enums;
 using NomiWrite.Shared.Contracts.Events.Auth;
+using NomiWrite.Shared.Contracts.Events.Logging;
 using OptionsSet = Microsoft.Extensions.Options.Options;
 
 namespace NomiWrite.Auth.Application.UnitTests;
@@ -300,6 +301,63 @@ public class AuthServiceTests
         result.UserId.Should().Be(user.Id);
         result.RefreshToken.Should().Be("refresh-token");
         db.RefreshTokens.Should().HaveCount(1);
+    }
+
+    [Fact]
+    public async Task LoginAsync_Success_PublishesUserActivityLoggedEvent()
+    {
+        var db = TestAuthDbContext.Create();
+        var user = SeedUser(db);
+
+        var hasher = Substitute.For<IPasswordHasher>();
+        hasher.VerifyPassword(Arg.Any<string>(), Arg.Any<string>()).Returns(true);
+
+        var jwt = Substitute.For<IJwtTokenService>();
+        jwt.GenerateAccessToken(Arg.Any<User>()).Returns(("access-token", Now.AddMinutes(30)));
+        jwt.GenerateRefreshToken().Returns("refresh-token");
+
+        var publish = Substitute.For<IPublishEndpoint>();
+
+        var sut = Build(db, hasher: hasher, jwt: jwt, publish: publish);
+        await sut.LoginAsync(
+            new LoginRequestDto { Email = "user@example.com", Password = "pw" },
+            ipAddress: "203.0.113.7",
+            userAgent: "Mozilla/5.0 (Test)");
+
+        var evt = publish.ReceivedCalls()
+            .SelectMany(c => c.GetArguments())
+            .OfType<UserActivityLoggedEvent>()
+            .Single();
+
+        evt.UserId.Should().Be(user.Id.ToString());
+        evt.Action.Should().Be("LOGIN");
+        evt.ServiceName.Should().Be("Auth");
+        evt.IpAddress.Should().Be("203.0.113.7");
+        evt.UserAgent.Should().Be("Mozilla/5.0 (Test)");
+        evt.Metadata.Should().ContainKey("provider").WhoseValue.Should().Be("credentials");
+    }
+
+    [Fact]
+    public async Task LoginAsync_PublishActivityLogFailure_StillReturnsTokens()
+    {
+        var db = TestAuthDbContext.Create();
+        SeedUser(db);
+
+        var hasher = Substitute.For<IPasswordHasher>();
+        hasher.VerifyPassword(Arg.Any<string>(), Arg.Any<string>()).Returns(true);
+
+        var jwt = Substitute.For<IJwtTokenService>();
+        jwt.GenerateAccessToken(Arg.Any<User>()).Returns(("access-token", Now.AddMinutes(30)));
+        jwt.GenerateRefreshToken().Returns("refresh-token");
+
+        var publish = Substitute.For<IPublishEndpoint>();
+        publish.When(x => x.Publish(Arg.Any<object>(), Arg.Any<CancellationToken>()))
+            .Throw(new InvalidOperationException("broker down"));
+
+        var sut = Build(db, hasher: hasher, jwt: jwt, publish: publish);
+        var result = await sut.LoginAsync(new LoginRequestDto { Email = "user@example.com", Password = "pw" });
+
+        result.AccessToken.Should().Be("access-token");
     }
 
     #endregion
