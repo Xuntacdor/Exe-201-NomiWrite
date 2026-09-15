@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
 using NomiWrite.Shared.Contracts.Events.Writing;
+using NomiWrite.Shared.Contracts.Events.Logging;
 using NomiWrite.Writing.Application.DTOs;
 using NomiWrite.Writing.Application.Exceptions;
 using NomiWrite.Writing.Application.Interfaces;
@@ -439,6 +440,52 @@ public class WritingServiceTests
         await act.Should().ThrowAsync<FluentValidation.ValidationException>();
 
         publish.ReceivedCalls().Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task SubmitSubmissionAsync_PublishesActivityLogEventWithPayload()
+    {
+        var db = TestWritingDbContext.Create();
+        var type = SeedType(db);
+        var prompt = SeedPrompt(db, type);
+        var publish = Substitute.For<IPublishEndpoint>();
+        var sut = Build(db, publish: publish);
+
+        await sut.CreateSubmissionAsync(UserA, new CreateSubmissionRequestDto { WritingPromptId = prompt.Id });
+        var id = db.WritingSubmissions.Single().Id;
+        await sut.UpdateSubmissionAsync(UserA, id, new UpdateSubmissionRequestDto { Content = "one two three four" });
+        await sut.SubmitSubmissionAsync(UserA, id, ipAddress: "10.0.0.5", userAgent: "Mozilla/5.0");
+
+        var evt = publish.ReceivedCalls()
+            .SelectMany(c => c.GetArguments())
+            .OfType<UserActivityLoggedEvent>()
+            .Single();
+
+        evt.UserId.Should().Be(UserA.ToString());
+        evt.Action.Should().Be("SUBMIT_ESSAY");
+        evt.ServiceName.Should().Be("Writing");
+        evt.IpAddress.Should().Be("10.0.0.5");
+        evt.UserAgent.Should().Be("Mozilla/5.0");
+        evt.Metadata.Should().ContainKey("submissionId").WhoseValue.Should().Be(id.ToString());
+        evt.Metadata.Should().ContainKey("wordCount").WhoseValue.Should().Be(4);
+        evt.Metadata.Should().ContainKey("submittedLate").WhoseValue.Should().Be(false);
+    }
+
+    [Fact]
+    public async Task SubmitSubmissionAsync_PublishActivityLogFailure_StillSubmits()
+    {
+        var db = TestWritingDbContext.Create();
+        var type = SeedType(db);
+        var prompt = SeedPrompt(db, type);
+        var publish = Substitute.For<IPublishEndpoint>();
+        var sut = Build(db, publish: publish);
+        await sut.CreateSubmissionAsync(UserA, new CreateSubmissionRequestDto { WritingPromptId = prompt.Id });
+        var id = db.WritingSubmissions.Single().Id;
+        await sut.UpdateSubmissionAsync(UserA, id, new UpdateSubmissionRequestDto { Content = "five tiny words written" });
+
+        var result = await sut.SubmitSubmissionAsync(UserA, id);
+
+        result.Status.Should().Be(SubmissionStatus.Submitted);
     }
 
     #endregion

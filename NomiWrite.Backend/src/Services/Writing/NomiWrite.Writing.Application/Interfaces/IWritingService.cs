@@ -23,7 +23,7 @@ public interface IWritingService
 
     Task<SubmissionResponseDto> UpdateSubmissionAsync(Guid userId, Guid submissionId, UpdateSubmissionRequestDto dto);
 
-    Task<SubmissionResponseDto> SubmitSubmissionAsync(Guid userId, Guid submissionId);
+    Task<SubmissionResponseDto> SubmitSubmissionAsync(Guid userId, Guid submissionId, string? ipAddress = null, string? userAgent = null);
 
     Task<SubmissionResponseDto> GetSubmissionByIdAsync(Guid userId, Guid submissionId);
 

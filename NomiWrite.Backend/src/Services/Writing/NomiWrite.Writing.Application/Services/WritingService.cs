@@ -4,6 +4,7 @@ using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using NomiWrite.Shared.Contracts.Events.Writing;
+using NomiWrite.Shared.Contracts.Events.Logging;
 using NomiWrite.Writing.Application.DTOs;
 using NomiWrite.Writing.Application.Exceptions;
 using NomiWrite.Writing.Application.Interfaces;
@@ -231,7 +232,11 @@ public class WritingService : IWritingService
         return await ToSubmissionResponseAsync(submission);
     }
 
-    public async Task<SubmissionResponseDto> SubmitSubmissionAsync(Guid userId, Guid submissionId)
+    public async Task<SubmissionResponseDto> SubmitSubmissionAsync(
+        Guid userId,
+        Guid submissionId,
+        string? ipAddress = null,
+        string? userAgent = null)
     {
         var submission = await GetOwnedSubmissionAsync(userId, submissionId);
         if (submission.Status != SubmissionStatus.Draft)
@@ -291,6 +296,8 @@ public class WritingService : IWritingService
             submission.Content,
             submission.WordCount,
             submission.SubmittedAt.Value));
+
+        await PublishActivityLoggedAsync(submission, ipAddress, userAgent, submission.SubmittedAt.Value);
 
         return await ToSubmissionResponseAsync(submission);
     }
@@ -400,6 +407,41 @@ public class WritingService : IWritingService
             .FirstOrDefaultAsync() ?? string.Empty;
 
         return ToSubmissionResponse(submission, promptTitle);
+    }
+
+    private async Task PublishActivityLoggedAsync(
+        WritingSubmission submission,
+        string? ipAddress,
+        string? userAgent,
+        DateTime timestamp)
+    {
+        var metadata = new Dictionary<string, object>
+        {
+            ["submissionId"] = submission.Id.ToString(),
+            ["writingPromptId"] = submission.WritingPromptId.ToString(),
+            ["wordCount"] = submission.WordCount,
+            ["submittedLate"] = submission.SubmittedLate
+        };
+
+        try
+        {
+            await _publishEndpoint.Publish(new UserActivityLoggedEvent(
+                submission.UserId.ToString(),
+                "SUBMIT_ESSAY",
+                "Writing",
+                ipAddress,
+                userAgent,
+                metadata,
+                timestamp));
+        }
+        catch (Exception exception)
+        {
+            // Activity telemetry is best-effort: a broker hiccup must never
+            // surface as a failed submission to the end user.
+            _logger.LogWarning(exception,
+                "Failed to publish SUBMIT_ESSAY activity log for submission {SubmissionId}",
+                submission.Id);
+        }
     }
 
     private static SubmissionResponseDto ToSubmissionResponse(WritingSubmission submission, string promptTitle)

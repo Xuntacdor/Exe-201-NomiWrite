@@ -8,7 +8,7 @@ namespace NomiWrite.Auth.Application.Interfaces;
 public interface IAuthService
 {
     Task<AuthResponseDto> RegisterAsync(RegisterRequestDto request);
-    Task<AuthResponseDto> LoginAsync(LoginRequestDto request);
+    Task<AuthResponseDto> LoginAsync(LoginRequestDto request, string? ipAddress = null, string? userAgent = null);
     Task<AuthResponseDto> RefreshTokenAsync(RefreshTokenRequestDto request);
     Task LogoutAsync(Guid userId);
     Task<AuthResultDto> VerifyEmailAsync(VerifyEmailRequestDto request);
@@ -16,5 +16,5 @@ public interface IAuthService
     Task<AuthResultDto> ForgotPasswordAsync(ForgotPasswordRequestDto request);
     Task<AuthResultDto> ResetPasswordAsync(ResetPasswordRequestDto request);
     Task<AuthResultDto> DeactivateAccountAsync(Guid userId);
-    Task<AuthResponseDto> GoogleLoginAsync(GoogleLoginRequestDto request);
+    Task<AuthResponseDto> GoogleLoginAsync(GoogleLoginRequestDto request, string? ipAddress = null, string? userAgent = null);
 }

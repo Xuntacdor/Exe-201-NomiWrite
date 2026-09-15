@@ -60,6 +60,41 @@ services:
     # /var/lib/rabbitmq beyond the data volume.
 
   # ────────────────────────────────────────────────────────────────────────────
+  # MongoDB — NoSQL store for the Logging service (activity/audit logs).
+  # Reachable only over the internal network; credentials from .env.production
+  # via MONGO_INITDB_ROOT_USERNAME / MONGO_INITDB_ROOT_PASSWORD.
+  # ────────────────────────────────────────────────────────────────────────────
+  mongodb:
+    image: mongo:7.0
+    container_name: nomiwrite-mongodb
+    restart: unless-stopped
+    env_file:
+      - .env.production
+    volumes:
+      - mongodb_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+    networks:
+      - nomiwrite-internal
+    deploy:
+      resources:
+        limits:
+          cpus: "1.00"
+          memory: 1024M
+        reservations:
+          cpus: "0.10"
+          memory: 256M
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "5"
+
+  # ────────────────────────────────────────────────────────────────────────────
   # Gateway — YARP reverse proxy. The single public ingress.
   # Only service with a host-published port (HTTP 80 -> container 8080).
   # ────────────────────────────────────────────────────────────────────────────
@@ -89,6 +124,7 @@ services:
       ReverseProxy__Clusters__notification-cluster__Destinations__notification-service__Address: http://notification-service:8080
       ReverseProxy__Clusters__admin-cluster__Destinations__admin-service__Address: http://admin-service:8080
       ReverseProxy__Clusters__learning-cluster__Destinations__learning-service__Address: http://learning-service:8080
+      ReverseProxy__Clusters__logging-cluster__Destinations__logging-service__Address: http://logging-service:8080
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -606,6 +642,65 @@ services:
         max-file: "5"
 
   # ────────────────────────────────────────────────────────────────────────────
+  # Logging API (port 5190 local) — DB: MongoDB (NomiWriteLogDb)
+  # Consumes UserActivityLoggedEvent published by Auth/Writing/Payment/etc and
+  # serves admin activity-log queries. Depends on MongoDB + RabbitMQ.
+  # ────────────────────────────────────────────────────────────────────────────
+  logging-service:
+    build:
+      context: .
+      dockerfile: src/Services/Logging/NomiWrite.Logging.API/Dockerfile
+    container_name: nomiwrite-logging
+    restart: unless-stopped
+    init: true
+    env_file:
+      - .env.production
+    environment:
+      ASPNETCORE_URLS: "http://+:8080"
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__MongoDb: mongodb://root:CHANGE_ME_MONGO_PASSWORD@mongodb:27017
+      MongoDb__DatabaseName: NomiWriteLogDb
+      MongoDb__TtlExpireAfterDays: "180"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8080/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    networks:
+      - nomiwrite-internal
+    read_only: true
+    tmpfs:
+      - /tmp:size=128m,mode=1777
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - NET_RAW
+      - NET_ADMIN
+      - SYS_ADMIN
+      - SYS_TIME
+      - MKNOD
+      - SETPCAP
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 512M
+        reservations:
+          cpus: "0.10"
+          memory: 128M
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "5"
+
+  # ────────────────────────────────────────────────────────────────────────────
   # backup-service — periodic PostgreSQL backup sidecar.
   # Uses the official postgres:17-alpine image so pg_dump/psql/gzip are present.
   # The backup scripts are mounted read-only from ./scripts and run in a loop
@@ -656,6 +751,7 @@ services:
 
 volumes:
   rabbitmq_data:
+  mongodb_data:
   nomiwrite-backups:
 
 networks:

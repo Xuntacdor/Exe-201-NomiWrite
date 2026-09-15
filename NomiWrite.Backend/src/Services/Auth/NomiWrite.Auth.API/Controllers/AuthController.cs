@@ -27,7 +27,7 @@ public class AuthController : ControllerBase
     [AllowAnonymous]
     public async Task<ActionResult<AuthResponseDto>> Login([FromBody] LoginRequestDto request)
     {
-        var result = await _authService.LoginAsync(request);
+        var result = await _authService.LoginAsync(request, GetClientIpAddress(), GetUserAgent());
         return Ok(result);
     }
 
@@ -91,8 +91,26 @@ public class AuthController : ControllerBase
     [AllowAnonymous]
     public async Task<ActionResult<AuthResponseDto>> GoogleLogin([FromBody] GoogleLoginRequestDto request)
     {
-        var result = await _authService.GoogleLoginAsync(request);
+        var result = await _authService.GoogleLoginAsync(request, GetClientIpAddress(), GetUserAgent());
         return Ok(result);
+    }
+
+    private string? GetClientIpAddress()
+    {
+        var remoteIp = HttpContext.Connection.RemoteIpAddress;
+        if (remoteIp is null)
+            return null;
+
+        if (remoteIp.IsIPv4MappedToIPv6)
+            remoteIp = remoteIp.MapToIPv4();
+
+        return remoteIp.ToString();
+    }
+
+    private string? GetUserAgent()
+    {
+        var userAgent = Request.Headers.UserAgent.ToString();
+        return string.IsNullOrWhiteSpace(userAgent) ? null : userAgent;
     }
 
     [HttpPost("deactivate")]

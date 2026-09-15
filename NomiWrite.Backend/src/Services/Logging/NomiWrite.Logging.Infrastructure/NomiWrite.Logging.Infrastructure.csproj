@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <ProjectReference Include="..\NomiWrite.Logging.Application\NomiWrite.Logging.Application.csproj" />
+    <ProjectReference Include="..\NomiWrite.Logging.Domain\NomiWrite.Logging.Domain.csproj" />
+    <ProjectReference Include="..\..\..\Shared\NomiWrite.Shared.Contracts\NomiWrite.Shared.Contracts.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MassTransit.RabbitMQ" Version="8.*" />
+    <PackageReference Include="MongoDB.Driver" Version="2.28.*" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>

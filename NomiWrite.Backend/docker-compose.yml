@@ -1,6 +1,25 @@
 version: "3.8"
 
 services:
+  # ── MongoDB (NoSQL store for Logging / Activity Audit Trails) ────
+  mongodb:
+    image: mongo:7.0
+    container_name: nomiwrite-mongodb
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
+    volumes:
+      - mongodb_data:/data/db
+    healthcheck:
+      test: [ "CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - nomiwrite
+
   # ── RabbitMQ ──────────────────────────────────────────────────────
   rabbitmq:
     image: rabbitmq:3-management
@@ -44,6 +63,7 @@ services:
       - ReverseProxy__Clusters__notification-cluster__Destinations__notification-service__Address=http://notification-service:8080
       - ReverseProxy__Clusters__admin-cluster__Destinations__admin-service__Address=http://admin-service:8080
       - ReverseProxy__Clusters__learning-cluster__Destinations__learning-service__Address=http://learning-service:8080
+      - ReverseProxy__Clusters__logging-cluster__Destinations__logging-service__Address=http://logging-service:8080
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -288,8 +308,36 @@ services:
     networks:
       - nomiwrite
 
+  # ── Logging API (MongoDB-backed Activity / Audit Logs) ───────────
+  logging-service:
+    build:
+      context: .
+      dockerfile: src/Services/Logging/NomiWrite.Logging.API/Dockerfile
+    container_name: nomiwrite-logging
+    ports:
+      - "5190:8080"
+    environment:
+      - ASPNETCORE_URLS=http://+:8080
+      - ConnectionStrings__MongoDb=${ConnectionStrings__MongoDb}
+      - MongoDb__DatabaseName=${MongoDb__DatabaseName}
+      - MongoDb__TtlExpireAfterDays=${MongoDb__TtlExpireAfterDays}
+      - RabbitMQ__Host=rabbitmq
+      - RabbitMQ__Username=${RabbitMQ__Username}
+      - RabbitMQ__Password=${RabbitMQ__Password}
+      - JwtSettings__Secret=${JwtSettings__Secret}
+      - JwtSettings__Issuer=${JwtSettings__Issuer}
+      - JwtSettings__Audience=${JwtSettings__Audience}
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+    networks:
+      - nomiwrite
+
 volumes:
   rabbitmq_data:
+  mongodb_data:
 
 networks:
   nomiwrite:
