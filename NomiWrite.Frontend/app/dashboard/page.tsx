@@ -9,7 +9,6 @@ import {
   ArrowRight,
   Bell,
   BrainCircuit,
-  BookOpen,
   ChevronRight,
   Flame,
   Loader2,
@@ -17,19 +16,20 @@ import {
   Sparkles,
   TrendingUp,
   X,
+  BarChart,
+  MessageSquare,
+  Award,
 } from "lucide-react";
 import { apiClient, apiMode } from "@/lib/api/client";
 import { getSession } from "@/lib/auth/session";
 import type { Submission, User } from "@/lib/types";
 
-const onboardingSteps = [
-  { icon: PenLine, color: "bg-blue-600", title: "Choose a prompt", desc: "Writing types and prompts now come from the backend Writing service." },
-  { icon: Sparkles, color: "bg-violet-600", title: "Submit for AI grading", desc: "Draft creation, content saving, and submission happen through authenticated APIs." },
-  { icon: BrainCircuit, color: "bg-emerald-600", title: "Review and practice", desc: "Results are loaded from the grading endpoint when the AI result is ready." },
-];
-
 function formatDate(value: string) {
-  return new Intl.DateTimeFormat("en", { dateStyle: "medium" }).format(new Date(value));
+  return new Intl.DateTimeFormat("en-GB", { 
+    day: 'numeric', 
+    month: 'short', 
+    year: 'numeric' 
+  }).format(new Date(value));
 }
 
 export default function DashboardPage() {
@@ -87,222 +87,208 @@ export default function DashboardPage() {
     ? (gradedScores.reduce((sum, score) => sum + score, 0) / gradedScores.length).toFixed(1)
     : "--";
   const recentSubmissions = useMemo(
-    () => [...submissions].sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime()).slice(0, 4),
+    () => [...submissions].sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime()).slice(0, 5),
     [submissions],
   );
   const bandHistory = gradedScores.slice(-12);
-  const maxBand = 9;
-
-  const dismissOnboarding = () => {
-    try {
-      localStorage.setItem("nomiwrite_onboarded", "1");
-    } catch {}
-    setShowOnboarding(false);
-  };
+  const maxBand = 9.0;
 
   return (
     <AppShell activePath="/dashboard">
-      {showOnboarding && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <button aria-label="Close onboarding" className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={dismissOnboarding} />
-          <div className="relative w-full max-w-md rounded-3xl bg-white p-8 shadow-2xl">
-            <button
-              type="button"
-              onClick={dismissOnboarding}
-              className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-400 transition-colors hover:bg-slate-200"
-            >
-              <X className="h-4 w-4" />
-            </button>
-            <div className="mb-6 flex items-center gap-2.5">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 shadow-lg shadow-blue-200">
-                <PenLine className="h-5 w-5 text-white" strokeWidth={2.5} />
-              </div>
-              <span className="text-lg font-extrabold text-slate-900">NomiWrite</span>
-            </div>
-            <h2 className="mb-2 text-2xl font-extrabold text-slate-900">Welcome back</h2>
-            <p className="mb-7 text-sm leading-relaxed text-slate-500">
-              The main writing loop is now connected to backend APIs where available.
-            </p>
-            <div className="mb-7 space-y-4">
-              {onboardingSteps.map(step => {
-                const Icon = step.icon;
-                return (
-                  <div key={step.title} className="flex items-start gap-4">
-                    <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${step.color} shadow-sm`}>
-                      <Icon className="h-4.5 w-4.5 text-white" style={{ width: 18, height: 18 }} />
-                    </div>
-                    <div>
-                      <p className="text-sm font-bold text-slate-800">{step.title}</p>
-                      <p className="mt-0.5 text-xs leading-relaxed text-slate-500">{step.desc}</p>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-            <Link
-              href="/write"
-              onClick={dismissOnboarding}
-              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 py-3.5 text-sm font-extrabold text-white shadow-lg shadow-blue-200 transition-all hover:-translate-y-0.5 hover:bg-blue-700"
-            >
-              <PenLine className="h-4 w-4" />
-              Start writing
-            </Link>
-          </div>
-        </div>
-      )}
-
-      <div className="sticky top-0 z-10 flex h-16 items-center justify-between border-b border-slate-100 bg-white/80 px-6 backdrop-blur">
+      <div className="sticky top-0 z-50 flex h-[72px] items-center justify-between border-b border-slate-200/50 bg-white/80 px-8 backdrop-blur-xl">
         <div>
-          <h1 className="text-base font-extrabold text-slate-900">Hello, {user?.displayName ?? "writer"}!</h1>
-          <p className="text-xs text-slate-500">Write one piece today and keep the feedback loop warm.</p>
+          <h1 className="text-xl font-extrabold tracking-tight text-slate-900">
+            Welcome back, {user?.displayName ?? "Writer"}! 👋
+          </h1>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1.5 rounded-full border border-orange-200 bg-orange-50 px-3 py-1.5 text-xs font-bold text-orange-600">
-            <Flame className="h-3.5 w-3.5" />
-            {submissions.length ? "Active" : "New"}
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 rounded-full border border-orange-200 bg-orange-50 px-3.5 py-1.5 text-[13px] font-bold text-orange-600 shadow-sm">
+            <Flame className="h-4 w-4" />
+            <span>{submissions.length} Essays</span>
           </div>
-          <button className="relative flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition-colors hover:bg-slate-200">
-            <Bell className="h-4 w-4" />
+          <button className="relative flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-sm transition-all hover:bg-slate-50 hover:text-slate-900">
+            <Bell className="h-5 w-5" />
+            <span className="absolute right-2.5 top-2.5 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white"></span>
           </button>
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-violet-500 text-sm font-bold text-white">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-blue-800 text-sm font-bold text-white shadow-md">
             {(user?.displayName ?? "N").slice(0, 1).toUpperCase()}
           </div>
         </div>
       </div>
 
-      <div className="w-full space-y-6 p-6">
+      <div className="mx-auto max-w-6xl space-y-8 p-8">
         {loading && (
-          <div className="flex items-center justify-center gap-2 rounded-2xl border border-slate-100 bg-white p-8 text-sm font-semibold text-slate-500 shadow-sm">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            Loading dashboard
+          <div className="flex items-center justify-center gap-3 rounded-3xl border border-slate-100 bg-white p-12 text-[15px] font-semibold text-slate-500 shadow-sm">
+            <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
+            Loading your writing dashboard...
           </div>
         )}
 
         {!loading && error && (
-          <p className="rounded-2xl border border-red-100 bg-red-50 p-4 text-sm font-semibold text-red-600">{error}</p>
+          <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-[15px] font-semibold text-red-700 shadow-sm">
+            {error}
+          </div>
         )}
 
         {!loading && !error && (
           <>
-            <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+            {/* Stats Row */}
+            <div className="grid grid-cols-2 gap-5 lg:grid-cols-4">
               {[
-                { label: "Submissions", value: submissions.length, sub: "from Writing API", color: "text-blue-600", bg: "bg-blue-50", Icon: PenLine },
-                { label: "Average band", value: averageScore, sub: "graded only", color: "text-emerald-600", bg: "bg-emerald-50", Icon: TrendingUp },
-                { label: "Plan", value: user?.plan === "premium" ? "Premium" : "Free", sub: user?.subscriptionEndDate ? `until ${formatDate(user.subscriptionEndDate)}` : "subscription API", color: "text-violet-600", bg: "bg-violet-50", Icon: BrainCircuit },
-                { label: "Prompts", value: "API", sub: "backend driven", color: "text-orange-600", bg: "bg-orange-50", Icon: BookOpen },
+                { label: "Avg. Writing Band", value: averageScore, sub: "Based on AI grading", color: "text-blue-600", bg: "bg-blue-50", Icon: TrendingUp },
+                { label: "Essays Graded", value: gradedScores.length, sub: "Total completed", color: "text-emerald-600", bg: "bg-emerald-50", Icon: Award },
+                { label: "Current Plan", value: user?.plan === "premium" ? "PRO" : "Free", sub: "Upgrade for full AI feedback", color: "text-violet-600", bg: "bg-violet-50", Icon: Sparkles },
+                { label: "Target Band", value: "7.0+", sub: "Set your goal in Profile", color: "text-orange-600", bg: "bg-orange-50", Icon: Flame },
               ].map(({ label, value, sub, color, bg, Icon }) => (
-                <div key={label} className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
-                  <div className={`mb-3 flex h-9 w-9 items-center justify-center rounded-xl ${bg}`}>
-                    <Icon className={color} style={{ width: 18, height: 18 }} />
+                <div key={label} className="relative overflow-hidden rounded-3xl border border-slate-100 bg-white p-6 shadow-[0_2px_12px_rgba(0,0,0,0.02)] transition-all hover:shadow-[0_4px_24px_rgba(0,0,0,0.06)]">
+                  <div className={`mb-4 flex h-12 w-12 items-center justify-center rounded-2xl ${bg}`}>
+                    <Icon className={color} strokeWidth={2.5} style={{ width: 22, height: 22 }} />
                   </div>
-                  <p className={`text-2xl font-extrabold ${color}`}>{value}</p>
-                  <p className="mt-0.5 text-xs font-semibold text-slate-700">{label}</p>
-                  <p className="mt-0.5 text-xs text-slate-400">{sub}</p>
+                  <p className={`text-3xl font-extrabold tracking-tight ${color}`}>{value}</p>
+                  <p className="mt-1 text-[15px] font-bold text-slate-800">{label}</p>
+                  <p className="mt-1 text-[13px] font-medium text-slate-500">{sub}</p>
                 </div>
               ))}
             </div>
 
-            <div className="grid grid-cols-1 gap-5 lg:grid-cols-5">
-              <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm lg:col-span-3">
-                <div className="mb-5 flex items-center justify-between">
-                  <div>
-                    <h3 className="text-sm font-extrabold text-slate-900">Band history</h3>
-                    <p className="mt-0.5 text-xs text-slate-400">Recent graded submissions</p>
-                  </div>
-                  <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">
-                    {bandHistory.length ? "Tracking" : "Waiting"}
-                  </span>
-                </div>
-                {bandHistory.length ? (
-                  <div className="flex h-28 items-end gap-1.5">
-                    {bandHistory.map((band, index) => {
-                      const pct = (band / maxBand) * 100;
-                      const isLast = index === bandHistory.length - 1;
-                      return (
-                        <div key={`${band}-${index}`} className="flex flex-1 flex-col items-center gap-1">
-                          <span className={`text-[10px] font-bold ${isLast ? "text-blue-600" : "text-slate-400"}`}>{isLast ? band : ""}</span>
-                          <div className="flex w-full flex-col justify-end" style={{ height: 80 }}>
-                            <div className={`w-full rounded-t-md ${isLast ? "bg-blue-600" : "bg-blue-200"}`} style={{ height: `${pct}%` }} />
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <p className="rounded-xl bg-slate-50 p-5 text-sm text-slate-500">Submit and grade a writing to see your score trend.</p>
-                )}
+            {/* Practice Modules */}
+            <div>
+              <div className="mb-5 flex items-center justify-between">
+                <h2 className="text-xl font-extrabold text-slate-900">Luyện Tập IELTS Writing</h2>
+                <Link href="/write" className="text-sm font-bold text-blue-600 hover:text-blue-700">View all prompts →</Link>
               </div>
-
-              <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm lg:col-span-2">
-                <div className="mb-5 flex items-center justify-between">
-                  <div>
-                    <h3 className="text-sm font-extrabold text-slate-900">Backend coverage</h3>
-                    <p className="mt-0.5 text-xs text-slate-400">Connected modules</p>
-                  </div>
-                  <AlertCircle className="h-4 w-4 text-slate-300" />
-                </div>
-                <div className="space-y-3.5">
-                  {["Auth", "User profile", "Writing", "Grading", "Subscription", "Payment"].map(label => (
-                    <div key={label}>
-                      <div className="mb-1 flex items-center justify-between">
-                        <span className="text-xs font-medium text-slate-700">{label}</span>
-                        <span className="text-xs font-bold text-slate-500">ready</span>
-                      </div>
-                      <div className="h-1.5 overflow-hidden rounded-full bg-slate-100">
-                        <div className="h-full rounded-full bg-blue-500" style={{ width: "100%" }} />
-                      </div>
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                {/* Task 1 Card */}
+                <div className="group relative flex flex-col justify-between overflow-hidden rounded-3xl border border-slate-100 bg-white p-8 shadow-sm transition-all hover:border-blue-100 hover:shadow-lg hover:shadow-blue-900/5">
+                  <div className="absolute -right-12 -top-12 h-40 w-40 rounded-full bg-blue-50/50 blur-3xl transition-all group-hover:bg-blue-100/50"></div>
+                  <div className="relative z-10">
+                    <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
+                      <BarChart strokeWidth={2.5} className="h-6 w-6" />
                     </div>
-                  ))}
+                    <h3 className="mb-2 text-2xl font-extrabold text-slate-900">Writing Task 1</h3>
+                    <p className="text-[15px] leading-relaxed text-slate-500">
+                      Summarize, describe or explain visual information (graphs, charts, tables or diagrams) in at least 150 words.
+                    </p>
+                  </div>
+                  <Link 
+                    href="/write?task=1" 
+                    className="relative z-10 mt-8 inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-900 px-6 py-3.5 text-[15px] font-bold text-white transition-all hover:bg-slate-800"
+                  >
+                    Bắt đầu làm bài <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </div>
+
+                {/* Task 2 Card */}
+                <div className="group relative flex flex-col justify-between overflow-hidden rounded-3xl border border-slate-100 bg-white p-8 shadow-sm transition-all hover:border-violet-100 hover:shadow-lg hover:shadow-violet-900/5">
+                  <div className="absolute -right-12 -top-12 h-40 w-40 rounded-full bg-violet-50/50 blur-3xl transition-all group-hover:bg-violet-100/50"></div>
+                  <div className="relative z-10">
+                    <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-50 text-violet-600">
+                      <MessageSquare strokeWidth={2.5} className="h-6 w-6" />
+                    </div>
+                    <h3 className="mb-2 text-2xl font-extrabold text-slate-900">Writing Task 2</h3>
+                    <p className="text-[15px] leading-relaxed text-slate-500">
+                      Write an essay in response to a point of view, argument or problem in at least 250 words. High score impact.
+                    </p>
+                  </div>
+                  <Link 
+                    href="/write?task=2" 
+                    className="relative z-10 mt-8 inline-flex items-center justify-center gap-2 rounded-2xl bg-blue-600 px-6 py-3.5 text-[15px] font-bold text-white shadow-md shadow-blue-200 transition-all hover:-translate-y-0.5 hover:bg-blue-700"
+                  >
+                    Bắt đầu làm bài <ArrowRight className="h-4 w-4" />
+                  </Link>
                 </div>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
-              <div className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm lg:col-span-2">
-                <div className="flex items-center justify-between border-b border-slate-50 px-5 py-4">
-                  <h3 className="text-sm font-extrabold text-slate-900">Recent submissions</h3>
-                  <Link href="/history" className="flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-700">
-                    View all <ChevronRight className="h-3 w-3" />
+            {/* Bottom Section */}
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+              {/* Recent History */}
+              <div className="col-span-2 overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-sm">
+                <div className="flex items-center justify-between border-b border-slate-100 p-6">
+                  <div>
+                    <h3 className="text-lg font-extrabold text-slate-900">Lịch sử làm bài</h3>
+                    <p className="mt-1 text-sm text-slate-500">Your latest essay submissions</p>
+                  </div>
+                  <Link href="/history" className="rounded-full bg-slate-50 px-4 py-2 text-sm font-bold text-slate-600 transition-colors hover:bg-slate-100">
+                    Xem tất cả
                   </Link>
                 </div>
                 {recentSubmissions.length ? (
-                  <div className="divide-y divide-slate-50">
+                  <div className="divide-y divide-slate-100">
                     {recentSubmissions.map(submission => (
-                      <Link key={submission.id} href={`/result?submissionId=${submission.id}`} className="flex items-center justify-between px-5 py-3.5 transition-colors hover:bg-slate-50/60 group">
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-semibold text-slate-800">{submission.topic}</p>
-                          <div className="mt-0.5 flex items-center gap-2">
-                            <span className="text-xs text-slate-400">{formatDate(submission.submittedAt)}</span>
-                            <span className="text-slate-200">/</span>
-                            <span className="text-xs font-medium text-slate-500">{submission.status}</span>
+                      <Link key={submission.id} href={`/result?submissionId=${submission.id}`} className="flex items-center justify-between p-6 transition-colors hover:bg-slate-50/80 group">
+                        <div className="flex items-center gap-4">
+                          <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl font-bold ${submission.overallScore ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-500"}`}>
+                            {submission.overallScore ? submission.overallScore.toFixed(1) : "-"}
+                          </div>
+                          <div>
+                            <p className="line-clamp-1 font-bold text-slate-900 group-hover:text-blue-600 transition-colors">{submission.topic}</p>
+                            <div className="mt-1 flex items-center gap-2 text-sm text-slate-500">
+                              <span className="font-medium text-slate-700">{submission.type === "task1" ? "Task 1" : "Task 2"}</span>
+                              <span>•</span>
+                              <span>{formatDate(submission.submittedAt)}</span>
+                              <span>•</span>
+                              <span className={submission.status === "graded" ? "text-emerald-600 font-medium" : "text-amber-600 font-medium"}>
+                                {submission.status.charAt(0).toUpperCase() + submission.status.slice(1)}
+                              </span>
+                            </div>
                           </div>
                         </div>
-                        <ChevronRight className="ml-4 h-4 w-4 shrink-0 text-slate-300 transition-colors group-hover:text-slate-500" />
+                        <ChevronRight className="ml-4 h-5 w-5 shrink-0 text-slate-300 transition-all group-hover:text-blue-600 group-hover:translate-x-1" />
                       </Link>
                     ))}
                   </div>
                 ) : (
-                  <div className="p-8 text-center">
-                    <p className="text-sm font-bold text-slate-800">No writing yet</p>
-                    <p className="mt-1 text-xs text-slate-500">Your first submitted essay will appear here.</p>
+                  <div className="flex flex-col items-center justify-center py-16 text-center">
+                    <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-slate-50 text-slate-400">
+                      <PenLine strokeWidth={2} className="h-8 w-8" />
+                    </div>
+                    <p className="text-lg font-bold text-slate-900">Chưa có bài làm nào</p>
+                    <p className="mt-2 text-sm text-slate-500">Hãy bắt đầu viết bài đầu tiên của bạn để nhận đánh giá chi tiết.</p>
                   </div>
                 )}
               </div>
 
-              <div className="space-y-4">
-                <Link href="/write" className="block rounded-2xl bg-gradient-to-br from-blue-600 to-violet-600 p-5 text-white shadow-lg shadow-blue-200 transition-all hover:-translate-y-1 group">
-                  <PenLine className="mb-3 h-6 w-6 text-blue-200" />
-                  <p className="mb-1 text-base font-extrabold">New writing</p>
-                  <p className="text-sm text-blue-100">Use backend prompts and grading.</p>
-                  <div className="mt-3 flex items-center gap-1 text-xs font-semibold text-blue-200 transition-all group-hover:gap-2">
-                    Start now <ArrowRight className="h-3.5 w-3.5" />
+              {/* Progress Tracking */}
+              <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm flex flex-col">
+                <div className="mb-6">
+                  <h3 className="text-lg font-extrabold text-slate-900">Tiến độ học tập</h3>
+                  <p className="mt-1 text-sm text-slate-500">Writing Band Score Trend</p>
+                </div>
+                
+                <div className="flex-1 flex flex-col justify-end">
+                  {bandHistory.length ? (
+                    <div className="flex items-end justify-between gap-2 h-40">
+                      {bandHistory.map((band, index) => {
+                        const pct = (band / maxBand) * 100;
+                        const isLast = index === bandHistory.length - 1;
+                        return (
+                          <div key={`${band}-${index}`} className="group relative flex flex-1 flex-col items-center gap-2">
+                            <span className={`text-xs font-bold transition-all ${isLast ? "text-blue-600 scale-110" : "text-slate-400 opacity-0 group-hover:opacity-100"}`}>{band}</span>
+                            <div className="flex w-full flex-col justify-end h-full">
+                              <div className={`w-full rounded-t-lg transition-all duration-500 ${isLast ? "bg-blue-600" : "bg-blue-100 group-hover:bg-blue-200"}`} style={{ height: `${pct}%` }} />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="flex h-full flex-col items-center justify-center text-center">
+                      <TrendingUp className="mb-3 h-8 w-8 text-slate-300" />
+                      <p className="text-sm font-medium text-slate-500">Làm bài để xem biểu đồ tiến độ của bạn tại đây.</p>
+                    </div>
+                  )}
+                </div>
+                <div className="mt-6 rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 p-5 text-white">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Sparkles className="h-4 w-4 text-yellow-400" />
+                    <h4 className="font-bold text-sm">NomiWrite PRO</h4>
                   </div>
-                </Link>
-                <Link href="/upgrade" className="block rounded-2xl border border-violet-200 bg-white p-5 shadow-sm transition-all hover:-translate-y-1 hover:shadow-md group">
-                  <BrainCircuit className="mb-3 h-6 w-6 text-violet-500" />
-                  <p className="mb-0.5 text-sm font-extrabold text-slate-900">Subscription</p>
-                  <p className="text-xs text-slate-500">Plans are loaded from the Subscription service.</p>
-                </Link>
+                  <p className="text-xs text-slate-300 mb-4 leading-relaxed">Mở khóa tính năng chấm chữa chi tiết từng câu (Line-by-line grading) và nhận xét theo tiêu chí IELTS.</p>
+                  <Link href="/upgrade" className="block w-full rounded-xl bg-white/10 px-4 py-2 text-center text-xs font-bold transition-colors hover:bg-white/20">
+                    Tìm hiểu thêm
+                  </Link>
+                </div>
               </div>
             </div>
           </>
