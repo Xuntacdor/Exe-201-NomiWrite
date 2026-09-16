@@ -29,6 +29,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Services\Writing\NomiWrite.Writing.Application\NomiWrite.Writing.Application.csproj" />
     <ProjectReference Include="..\..\src\Services\Writing\NomiWrite.Writing.Domain\NomiWrite.Writing.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Services\Writing\NomiWrite.Writing.Infrastructure\NomiWrite.Writing.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

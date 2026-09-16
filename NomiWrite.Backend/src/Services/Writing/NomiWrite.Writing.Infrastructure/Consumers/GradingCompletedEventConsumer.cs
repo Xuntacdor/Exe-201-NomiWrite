@@ -47,7 +47,7 @@ public class GradingCompletedEventConsumer : IConsumer<GradingCompletedEvent>
             return;
         }
 
-        submission.Status = SubmissionStatus.Submitted;
+        submission.Status = SubmissionStatus.Graded;
         submission.GradedAt = @event.CompletedAt;
 
         await _dbContext.SaveChangesAsync();

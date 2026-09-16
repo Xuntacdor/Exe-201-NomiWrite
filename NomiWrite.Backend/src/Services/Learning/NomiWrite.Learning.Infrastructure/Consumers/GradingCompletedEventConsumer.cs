@@ -10,7 +10,27 @@ namespace NomiWrite.Learning.Infrastructure.Consumers;
 public class GradingCompletedEventConsumer : IConsumer<GradingCompletedEvent>
 {
     private const string DefaultVocabularyTopic = "Vocabulary";
-    private const string DefaultGrammarCategory = "Khác";
+    private const string ArticleCategory = "M\u1ea1o t\u1eeb";
+    private const string SubjectVerbAgreementCategory = "H\u00f2a h\u1ee3p ch\u1ee7 ng\u1eef - \u0111\u1ed9ng t\u1eeb";
+    private const string VerbTenseCategory = "Chia th\u00ec \u0111\u1ed9ng t\u1eeb";
+    private const string NounNumberCategory = "S\u1ed1 \u00edt / s\u1ed1 nhi\u1ec1u c\u1ee7a danh t\u1eeb";
+    private const string PrepositionCategory = "Gi\u1edbi t\u1eeb";
+    private const string ConditionalCategory = "C\u00e2u \u0111i\u1ec1u ki\u1ec7n";
+    private const string RelativeClauseCategory = "M\u1ec7nh \u0111\u1ec1 quan h\u1ec7";
+    private const string PassiveVoiceCategory = "C\u00e2u b\u1ecb \u0111\u1ed9ng";
+    private const string WordOrderCategory = "Tr\u1eadt t\u1ef1 t\u1eeb trong c\u00e2u";
+    private const string ConnectorCategory = "Li\u00ean t\u1eeb v\u00e0 t\u1eeb n\u1ed1i";
+    private const string PronounCategory = "\u0110\u1ea1i t\u1eeb";
+    private const string ComparisonCategory = "So s\u00e1nh h\u01a1n / so s\u00e1nh nh\u1ea5t";
+    private const string ModalVerbCategory = "\u0110\u1ed9ng t\u1eeb khuy\u1ebft thi\u1ebfu";
+    private const string GerundInfinitiveCategory = "Danh \u0111\u1ed9ng t\u1eeb v\u00e0 \u0111\u1ed9ng t\u1eeb nguy\u00ean m\u1eabu";
+    private const string SentenceStructureCategory = "C\u1ea5u tr\u00fac c\u00e2u";
+    private const string WordFormCategory = "D\u00f9ng t\u1eeb sai lo\u1ea1i";
+    private const string CollocationCategory = "Collocation";
+    private const string PunctuationCategory = "D\u1ea5u c\u00e2u";
+    private const string WordinessCategory = "L\u1eb7p t\u1eeb / di\u1ec5n \u0111\u1ea1t d\u00e0i d\u00f2ng";
+    private const string FragmentCategory = "Thi\u1ebfu/th\u1eeba th\u00e0nh ph\u1ea7n c\u00e2u";
+    private const string DefaultGrammarCategory = "Kh\u00e1c";
 
     private readonly ILearningDbContext _dbContext;
     private readonly ILogger<GradingCompletedEventConsumer> _logger;
@@ -78,7 +98,6 @@ public class GradingCompletedEventConsumer : IConsumer<GradingCompletedEvent>
             if (string.IsNullOrWhiteSpace(error.OriginalText))
                 continue;
 
-            var errorPart = error.Explanation ?? error.OriginalText;
             var category = ClassifyGrammarCategory(error);
 
             var duplicateExists = await _dbContext.GrammarErrors
@@ -118,87 +137,69 @@ public class GradingCompletedEventConsumer : IConsumer<GradingCompletedEvent>
     {
         var text = string.Concat(error.Suggestion, " ", error.Explanation, " ", error.OriginalText).ToLowerInvariant();
 
-        if (text.Contains("hòa hợp", StringComparison.Ordinal) ||
-            text.Contains("subject-verb agreement", StringComparison.Ordinal) ||
-            text.Contains("agreement", StringComparison.Ordinal))
-            return "Hòa hợp chủ ngữ - động từ";
+        if (ContainsAny(text, "h\u00f2a h\u1ee3p", "subject-verb agreement", "agreement"))
+            return SubjectVerbAgreementCategory;
 
-        if (text.Contains("thì", StringComparison.Ordinal) ||
-            text.Contains("tense", StringComparison.Ordinal))
-            return "Chia thì động từ";
+        if (ContainsAny(text, "th\u00ec", "tense"))
+            return VerbTenseCategory;
 
-        if (text.Contains("mạo từ", StringComparison.Ordinal) ||
-            text.Contains("article", StringComparison.Ordinal))
-            return "Mạo từ";
+        if (ContainsAny(text, "m\u1ea1o t\u1eeb", "article"))
+            return ArticleCategory;
 
-        if (text.Contains("giới từ", StringComparison.Ordinal) ||
-            text.Contains("preposition", StringComparison.Ordinal))
-            return "Giới từ";
+        if (ContainsAny(text, "gi\u1edbi t\u1eeb", "preposition"))
+            return PrepositionCategory;
 
-        if (text.Contains("số ít", StringComparison.Ordinal) ||
-            text.Contains("số nhiều", StringComparison.Ordinal) ||
-            text.Contains("plural", StringComparison.Ordinal) ||
-            text.Contains("singular", StringComparison.Ordinal))
-            return "Số ít / số nhiều của danh từ";
+        if (ContainsAny(text, "s\u1ed1 \u00edt", "s\u1ed1 nhi\u1ec1u", "plural", "singular"))
+            return NounNumberCategory;
 
-        if (text.Contains("câu điều kiện", StringComparison.Ordinal) ||
-            text.Contains("conditional", StringComparison.Ordinal))
-            return "Câu điều kiện";
+        if (ContainsAny(text, "c\u00e2u \u0111i\u1ec1u ki\u1ec7n", "conditional"))
+            return ConditionalCategory;
 
-        if (text.Contains("mệnh đề quan hệ", StringComparison.Ordinal) ||
-            text.Contains("relative", StringComparison.Ordinal))
-            return "Mệnh đề quan hệ";
+        if (ContainsAny(text, "m\u1ec7nh \u0111\u1ec1 quan h\u1ec7", "relative"))
+            return RelativeClauseCategory;
 
-        if (text.Contains("bị động", StringComparison.Ordinal) ||
-            text.Contains("passive", StringComparison.Ordinal))
-            return "Câu bị động";
+        if (ContainsAny(text, "b\u1ecb \u0111\u1ed9ng", "passive"))
+            return PassiveVoiceCategory;
 
-        if (text.Contains("trật tự từ", StringComparison.Ordinal) ||
-            text.Contains("word order", StringComparison.Ordinal))
-            return "Trật tự từ trong câu";
+        if (ContainsAny(text, "tr\u1eadt t\u1ef1 t\u1eeb", "word order"))
+            return WordOrderCategory;
 
-        if (text.Contains("liên từ", StringComparison.Ordinal) ||
-            text.Contains("conjunction", StringComparison.Ordinal))
-            return "Liên từ và từ nối";
+        if (ContainsAny(text, "li\u00ean t\u1eeb", "conjunction", "connector"))
+            return ConnectorCategory;
 
-        if (text.Contains("đại từ", StringComparison.Ordinal) ||
-            text.Contains("pronoun", StringComparison.Ordinal))
-            return "Đại từ";
+        if (ContainsAny(text, "\u0111\u1ea1i t\u1eeb", "pronoun"))
+            return PronounCategory;
 
-        if (text.Contains("so sánh", StringComparison.Ordinal) ||
-            text.Contains("comparative", StringComparison.Ordinal) ||
-            text.Contains("superlative", StringComparison.Ordinal))
-            return "So sánh hơn / so sánh nhất";
+        if (ContainsAny(text, "so s\u00e1nh", "comparative", "superlative"))
+            return ComparisonCategory;
 
-        if (text.Contains("khuyết thiếu", StringComparison.Ordinal) ||
-            text.Contains("modal", StringComparison.Ordinal))
-            return "Động từ khuyết thiếu";
+        if (ContainsAny(text, "khuy\u1ebft thi\u1ebfu", "modal"))
+            return ModalVerbCategory;
 
-        if (text.Contains("danh động từ", StringComparison.Ordinal) ||
-            text.Contains("gerund", StringComparison.Ordinal) ||
-            text.Contains("infinitive", StringComparison.Ordinal))
-            return "Danh động từ và động từ nguyên mẫu";
+        if (ContainsAny(text, "danh \u0111\u1ed9ng t\u1eeb", "gerund", "infinitive"))
+            return GerundInfinitiveCategory;
 
-        if (text.Contains("collocation", StringComparison.Ordinal))
-            return "Collocation";
+        if (ContainsAny(text, "collocation"))
+            return CollocationCategory;
 
-        if (text.Contains("dấu câu", StringComparison.Ordinal) ||
-            text.Contains("punctuation", StringComparison.Ordinal))
-            return "Dấu câu";
+        if (ContainsAny(text, "d\u1ea5u c\u00e2u", "punctuation"))
+            return PunctuationCategory;
 
-        if (text.Contains("dùng từ sai loại", StringComparison.Ordinal) ||
-            text.Contains("word form", StringComparison.Ordinal))
-            return "Dùng từ sai loại";
+        if (ContainsAny(text, "d\u00f9ng t\u1eeb sai lo\u1ea1i", "word form"))
+            return WordFormCategory;
 
-        if (text.Contains("cấu trúc câu", StringComparison.Ordinal) ||
-            text.Contains("sentence structure", StringComparison.Ordinal))
-            return "Cấu trúc câu";
+        if (ContainsAny(text, "c\u1ea5u tr\u00fac c\u00e2u", "sentence structure"))
+            return SentenceStructureCategory;
 
-        if (text.Contains("lặp từ", StringComparison.Ordinal) ||
-            text.Contains("wordy", StringComparison.Ordinal) ||
-            text.Contains("repetition", StringComparison.Ordinal))
-            return "Lặp từ / diễn đạt dài dòng";
+        if (ContainsAny(text, "l\u1eb7p t\u1eeb", "wordy", "repetition"))
+            return WordinessCategory;
+
+        if (ContainsAny(text, "fragment", "run-on", "missing subject", "missing verb"))
+            return FragmentCategory;
 
         return DefaultGrammarCategory;
     }
+
+    private static bool ContainsAny(string text, params string[] needles)
+        => needles.Any(needle => text.Contains(needle, StringComparison.Ordinal));
 }
