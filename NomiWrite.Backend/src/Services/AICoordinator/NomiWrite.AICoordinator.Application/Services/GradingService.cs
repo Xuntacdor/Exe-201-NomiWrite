@@ -58,6 +58,14 @@ public class GradingService : IGradingService
             _dbContext.GradingResults.Add(gradingResult);
             await _dbContext.SaveChangesAsync();
         }
+        else if (gradingResult.Status is GradingStatus.Pending or GradingStatus.Completed)
+        {
+            _logger.LogInformation(
+                "Submission {SubmissionId} already has grading status {Status}; skipping duplicate grading event.",
+                submissionId,
+                gradingResult.Status);
+            return;
+        }
 
         try
         {

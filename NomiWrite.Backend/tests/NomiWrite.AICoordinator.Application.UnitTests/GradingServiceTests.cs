@@ -142,22 +142,56 @@ public class GradingServiceTests
     #region U-G3 — grading idempotency
 
     [Fact]
-    public async Task GradeSubmissionAsync_DuplicateRequest_ReusesExistingResult()
+    public async Task GradeSubmissionAsync_CompletedDuplicateRequest_SkipsProviderAndEvent()
     {
         var db = TestGradingDbContext.Create();
         var first = SeedCompleted(db, submissionId: SubmissionId, band: 5.5m, createdAt: DateTime.UtcNow.AddDays(-1));
 
         var provider = Substitute.For<IAiGradingProvider>();
         provider.GradeEssayAsync(Arg.Any<string>()).Returns(SampleResponse());
+        var publish = Substitute.For<IPublishEndpoint>();
 
-        var sut = Build(db, provider: provider);
+        var sut = Build(db, provider: provider, publish: publish);
         await sut.GradeSubmissionAsync(SubmissionId, UserId, "rewrite of the essay");
 
         db.GradingResults.Should().HaveCount(1);
         var stored = db.GradingResults.Single();
         stored.Id.Should().Be(first.Id);
-        stored.OverallBand.Should().Be(6.5m);
+        stored.OverallBand.Should().Be(5.5m);
         stored.Status.Should().Be(GradingStatus.Completed);
+        await provider.DidNotReceive().GradeEssayAsync(Arg.Any<string>());
+        publish.ReceivedCalls().SelectMany(c => c.GetArguments())
+            .OfType<GradingCompletedEvent>().Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task GradeSubmissionAsync_PendingDuplicateRequest_SkipsProviderAndEvent()
+    {
+        var db = TestGradingDbContext.Create();
+        db.GradingResults.Add(new GradingResult
+        {
+            SubmissionId = SubmissionId,
+            UserId = UserId,
+            GrammarErrorsJson = "[]",
+            VocabularySuggestionsJson = "[]",
+            RestructuringSuggestionsJson = "[]",
+            Status = GradingStatus.Pending,
+            CreatedAt = DateTime.UtcNow
+        });
+        db.SaveChanges();
+
+        var provider = Substitute.For<IAiGradingProvider>();
+        provider.GradeEssayAsync(Arg.Any<string>()).Returns(SampleResponse());
+        var publish = Substitute.For<IPublishEndpoint>();
+
+        var sut = Build(db, provider: provider, publish: publish);
+        await sut.GradeSubmissionAsync(SubmissionId, UserId, "same essay");
+
+        db.GradingResults.Should().HaveCount(1);
+        db.GradingResults.Single().Status.Should().Be(GradingStatus.Pending);
+        await provider.DidNotReceive().GradeEssayAsync(Arg.Any<string>());
+        publish.ReceivedCalls().SelectMany(c => c.GetArguments())
+            .OfType<GradingCompletedEvent>().Should().BeEmpty();
     }
 
     #endregion
