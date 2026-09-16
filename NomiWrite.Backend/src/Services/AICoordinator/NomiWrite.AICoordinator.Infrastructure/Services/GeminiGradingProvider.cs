@@ -1,4 +1,5 @@
 using System.Net.Http.Json;
+using System.Text;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
@@ -81,11 +82,74 @@ public class GeminiGradingProvider : IAiGradingProvider
         var text = geminiResponse?.Candidates?.FirstOrDefault()?.Content?.Parts?.FirstOrDefault()?.Text
             ?? throw new InvalidOperationException("Gemini response did not contain any text content.");
 
-        var gradingResponse = JsonSerializer.Deserialize<GeminiGradingResponseSchema>(text,
+        var json = ExtractJsonPayload(text);
+        var gradingResponse = JsonSerializer.Deserialize<GeminiGradingResponseSchema>(json,
             new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
             ?? throw new InvalidOperationException("Failed to deserialize Gemini grading response.");
 
         return gradingResponse;
+    }
+
+    private static string ExtractJsonPayload(string text)
+    {
+        var trimmed = text.Trim();
+        if (trimmed.StartsWith("```", StringComparison.Ordinal))
+        {
+            var firstNewLine = trimmed.IndexOf('\n');
+            var lastFence = trimmed.LastIndexOf("```", StringComparison.Ordinal);
+            if (firstNewLine >= 0 && lastFence > firstNewLine)
+                trimmed = trimmed[(firstNewLine + 1)..lastFence].Trim();
+        }
+
+        if (trimmed.StartsWith('{') && trimmed.EndsWith('}'))
+            return trimmed;
+
+        var start = trimmed.IndexOf('{');
+        if (start < 0)
+            return trimmed;
+
+        var depth = 0;
+        var inString = false;
+        var escaped = false;
+        var builder = new StringBuilder();
+
+        for (var i = start; i < trimmed.Length; i++)
+        {
+            var character = trimmed[i];
+            builder.Append(character);
+
+            if (escaped)
+            {
+                escaped = false;
+                continue;
+            }
+
+            if (character == '\\' && inString)
+            {
+                escaped = true;
+                continue;
+            }
+
+            if (character == '"')
+            {
+                inString = !inString;
+                continue;
+            }
+
+            if (inString)
+                continue;
+
+            if (character == '{')
+                depth++;
+            else if (character == '}')
+            {
+                depth--;
+                if (depth == 0)
+                    return builder.ToString();
+            }
+        }
+
+        return trimmed;
     }
 
     /// <summary>

@@ -83,14 +83,15 @@ public class GeminiGradingProviderTests
     }
 
     [Fact]
-    public async Task GradeEssayAsync_MarkdownFencedJson_Throws()
+    public async Task GradeEssayAsync_MarkdownFencedJson_Parses()
     {
         var fenced = $"```json\n{ValidGradingJson}\n```";
         var sut = Build(GeminiBody(fenced));
 
-        var act = () => sut.GradeEssayAsync("essay");
+        var result = await sut.GradeEssayAsync("essay");
 
-        await act.Should().ThrowAsync<JsonException>();
+        result.OverallBand.Should().Be(7.0m);
+        result.Criteria.Should().ContainSingle(c => c.Name == "Task Achievement");
     }
 
     [Fact]
@@ -122,14 +123,15 @@ public class GeminiGradingProviderTests
     }
 
     [Fact]
-    public async Task GradeEssayAsync_ProseAroundJson_Throws()
+    public async Task GradeEssayAsync_ProseAroundJson_Parses()
     {
         var prose = $"Here is your band: {ValidGradingJson}";
         var sut = Build(GeminiBody(prose));
 
-        var act = () => sut.GradeEssayAsync("essay");
+        var result = await sut.GradeEssayAsync("essay");
 
-        await act.Should().ThrowAsync<JsonException>();
+        result.OverallBand.Should().Be(7.0m);
+        result.Criteria.Should().ContainSingle(c => c.Name == "Task Achievement");
     }
 
     [Fact]
