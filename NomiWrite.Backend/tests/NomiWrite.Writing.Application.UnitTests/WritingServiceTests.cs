@@ -252,7 +252,7 @@ public class WritingServiceTests
     }
 
     [Fact]
-    public async Task SubmitSubmissionAsync_AboveMaxWords_Throws()
+    public async Task SubmitSubmissionAsync_AboveMaxWords_Submits()
     {
         var db = TestWritingDbContext.Create();
         var type = SeedType(db);
@@ -263,10 +263,10 @@ public class WritingServiceTests
         await sut.UpdateSubmissionAsync(UserA, id,
             new UpdateSubmissionRequestDto { Content = "one two three four five six seven" });
 
-        var act = () => sut.SubmitSubmissionAsync(UserA, id);
+        var result = await sut.SubmitSubmissionAsync(UserA, id);
 
-        await act.Should().ThrowAsync<FluentValidation.ValidationException>()
-            .WithMessage("*cannot exceed 5 words*");
+        result.Status.Should().Be(SubmissionStatus.Submitted);
+        result.WordCount.Should().Be(7);
     }
 
     [Fact]

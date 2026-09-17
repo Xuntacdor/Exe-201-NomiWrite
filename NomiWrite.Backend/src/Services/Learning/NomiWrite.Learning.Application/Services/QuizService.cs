@@ -94,6 +94,52 @@ public class QuizService : IQuizService
         };
     }
 
+    public async Task<IReadOnlyList<QuizSummaryDto>> ListQuizzesAsync(Guid userId)
+    {
+        var quizzes = await _dbContext.Quizzes
+            .AsNoTracking()
+            .Where(q => q.UserId == userId)
+            .OrderByDescending(q => q.CreatedAt)
+            .Take(50)
+            .ToListAsync();
+
+        if (quizzes.Count == 0)
+            return Array.Empty<QuizSummaryDto>();
+
+        var quizIds = quizzes.Select(q => q.Id).ToList();
+        var attempts = await _dbContext.QuizAttempts
+            .AsNoTracking()
+            .Where(a => a.UserId == userId && quizIds.Contains(a.QuizId))
+            .OrderByDescending(a => a.AttemptedAt)
+            .ToListAsync();
+
+        var attemptsByQuiz = attempts
+            .GroupBy(a => a.QuizId)
+            .ToDictionary(group => group.Key, group => group.ToList());
+
+        return quizzes
+            .Select(q =>
+            {
+                attemptsByQuiz.TryGetValue(q.Id, out var quizAttempts);
+                var latestAttempt = quizAttempts?.FirstOrDefault();
+
+                return new QuizSummaryDto
+                {
+                    Id = q.Id,
+                    UserId = q.UserId,
+                    SourceSubmissionId = q.SourceSubmissionId,
+                    Category = q.Category,
+                    QuestionCount = q.Questions.Count,
+                    AttemptCount = quizAttempts?.Count ?? 0,
+                    LatestScore = latestAttempt?.Score,
+                    LatestTotalQuestions = latestAttempt?.TotalQuestions,
+                    LatestAttemptedAt = latestAttempt?.AttemptedAt,
+                    CreatedAt = q.CreatedAt
+                };
+            })
+            .ToList();
+    }
+
     public async Task<QuizDetailDto> GetQuizAsync(Guid userId, Guid quizId)
     {
         var quiz = await _dbContext.Quizzes
@@ -226,34 +272,60 @@ public class QuizService : IQuizService
                 .Select(VocabDtoProjection)
                 .ToListAsync();
 
-            return (grammarErrors, vocab);
+            grammarErrors = ApplyCategoryFilter(grammarErrors, request.Categories);
+
+            if (grammarErrors.Count > 0 || vocab.Count > 0)
+                return (grammarErrors, vocab);
+
+            _logger.LogInformation(
+                "No learning weak points found for submission {SubmissionId}; falling back to user-level quiz sources.",
+                submissionId.Value);
+
+            if (request.VocabularyIds is { Count: > 0 })
+                return await CollectVocabularyIdSourcesAsync(userId, request);
+
+            return await CollectRecentQuizSourcesAsync(userId, request.Categories);
         }
 
         if (request.VocabularyIds is { Count: > 0 })
-        {
-            var ids = request.VocabularyIds.Distinct().ToList();
-            var vocab = await _dbContext.VocabSuggestions
-                .AsNoTracking()
-                .Where(v => v.UserId == userId && ids.Contains(v.Id))
-                .OrderByDescending(v => v.CreatedAt)
-                .Take(50)
-                .Select(VocabDtoProjection)
-                .ToListAsync();
+            return await CollectVocabularyIdSourcesAsync(userId, request);
 
-            var grammarErrors = await _dbContext.GrammarErrors
-                .AsNoTracking()
-                .Where(g => g.UserId == userId)
-                .OrderByDescending(g => g.CreatedAt)
-                .Take(50)
-                .Select(GrammarErrorDtoProjection)
-                .ToListAsync();
+        return await CollectRecentQuizSourcesAsync(userId, request.Categories);
+    }
 
-            return (grammarErrors, vocab);
-        }
+    private async Task<(List<GrammarErrorDto>, List<VocabDto>)> CollectVocabularyIdSourcesAsync(
+        Guid userId,
+        GenerateQuizRequestDto request)
+    {
+        var ids = request.VocabularyIds!.Distinct().ToList();
+        var vocab = await _dbContext.VocabSuggestions
+            .AsNoTracking()
+            .Where(v => v.UserId == userId && ids.Contains(v.Id))
+            .OrderByDescending(v => v.CreatedAt)
+            .Take(50)
+            .Select(VocabDtoProjection)
+            .ToListAsync();
 
+        var grammarErrors = await _dbContext.GrammarErrors
+            .AsNoTracking()
+            .Where(g => g.UserId == userId)
+            .OrderByDescending(g => g.CreatedAt)
+            .Take(50)
+            .Select(GrammarErrorDtoProjection)
+            .ToListAsync();
+
+        return (ApplyCategoryFilter(grammarErrors, request.Categories), vocab);
+    }
+
+    private async Task<(List<GrammarErrorDto>, List<VocabDto>)> CollectRecentQuizSourcesAsync(
+        Guid userId,
+        List<string>? categories)
+    {
         // Recent error history aggregation: pull the latest weak points across
-        // the user's most recent graded submissions.
-        var recentSubmissions = await _dbContext.GrammarErrors
+        // the user's most recent graded submissions. Vocabulary-only submissions
+        // are included so quiz generation still works when grading produced no
+        // grammar findings.
+        var recentGrammarSubmissions = await _dbContext.GrammarErrors
             .AsNoTracking()
             .Where(g => g.UserId == userId)
             .OrderByDescending(g => g.CreatedAt)
@@ -261,6 +333,21 @@ public class QuizService : IQuizService
             .Distinct()
             .Take(RecentHistoryWindow)
             .ToListAsync();
+
+        var recentVocabSubmissions = await _dbContext.VocabSuggestions
+            .AsNoTracking()
+            .Where(v => v.UserId == userId && v.SubmissionId.HasValue)
+            .OrderByDescending(v => v.CreatedAt)
+            .Select(v => v.SubmissionId!.Value)
+            .Distinct()
+            .Take(RecentHistoryWindow)
+            .ToListAsync();
+
+        var recentSubmissions = recentGrammarSubmissions
+            .Concat(recentVocabSubmissions)
+            .Distinct()
+            .Take(RecentHistoryWindow)
+            .ToList();
 
         var recentGrammar = await _dbContext.GrammarErrors
             .AsNoTracking()
@@ -278,13 +365,19 @@ public class QuizService : IQuizService
             .Select(VocabDtoProjection)
             .ToListAsync();
 
-        return (
-            request.Categories is { Count: > 0 }
-                ? recentGrammar
-                    .Where(g => request.Categories.Contains(g.GrammarCategory, StringComparer.OrdinalIgnoreCase))
-                    .ToList()
-                : recentGrammar,
-            recentVocab);
+        return (ApplyCategoryFilter(recentGrammar, categories), recentVocab);
+    }
+
+    private static List<GrammarErrorDto> ApplyCategoryFilter(
+        List<GrammarErrorDto> grammarErrors,
+        List<string>? categories)
+    {
+        if (categories is not { Count: > 0 })
+            return grammarErrors;
+
+        return grammarErrors
+            .Where(g => categories.Contains(g.GrammarCategory, StringComparer.OrdinalIgnoreCase))
+            .ToList();
     }
 
     private async Task<List<QuizQuestionItem>> GenerateQuestionsAsync(QuizGenerationRequest generationRequest)

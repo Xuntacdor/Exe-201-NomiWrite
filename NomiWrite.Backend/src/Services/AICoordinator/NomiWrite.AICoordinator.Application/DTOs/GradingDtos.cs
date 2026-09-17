@@ -13,6 +13,7 @@ public class GradingResultDto
     public List<VocabularySuggestionDto> VocabularySuggestions { get; set; } = new();
     public List<RestructuringSuggestionDto> RestructuringSuggestions { get; set; } = new();
     public GradingStatus Status { get; set; }
+    public string? ErrorMessage { get; set; }
 }
 
 public class CriterionScoreDto

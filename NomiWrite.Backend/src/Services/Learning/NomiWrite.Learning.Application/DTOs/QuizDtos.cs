@@ -48,6 +48,20 @@ public class QuizDto
     public DateTime CreatedAt { get; set; }
 }
 
+public class QuizSummaryDto
+{
+    public Guid Id { get; set; }
+    public Guid UserId { get; set; }
+    public Guid? SourceSubmissionId { get; set; }
+    public string Category { get; set; } = string.Empty;
+    public int QuestionCount { get; set; }
+    public int AttemptCount { get; set; }
+    public int? LatestScore { get; set; }
+    public int? LatestTotalQuestions { get; set; }
+    public DateTime? LatestAttemptedAt { get; set; }
+    public DateTime CreatedAt { get; set; }
+}
+
 public class QuizDetailDto
 {
     public Guid Id { get; set; }

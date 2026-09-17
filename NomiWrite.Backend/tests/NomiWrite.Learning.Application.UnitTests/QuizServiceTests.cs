@@ -113,6 +113,45 @@ public class QuizServiceTests
     #region U-L2 / U-L7 — quiz get + answer-key leakage
 
     [Fact]
+    public async Task ListQuizzesAsync_ReturnsOwnQuizzesWithLatestAttemptSummary()
+    {
+        var db = TestLearningDbContext.Create();
+        var ownOld = SeedQuiz(db, UserA);
+        ownOld.CreatedAt = DateTime.UtcNow.AddDays(-2);
+        var ownNew = SeedQuiz(db, UserA);
+        ownNew.CreatedAt = DateTime.UtcNow.AddDays(-1);
+        SeedQuiz(db, UserB);
+
+        db.QuizAttempts.Add(new QuizAttempt
+        {
+            QuizId = ownNew.Id,
+            UserId = UserA,
+            Score = 1,
+            TotalQuestions = 3,
+            AttemptedAt = DateTime.UtcNow.AddHours(-2)
+        });
+        db.QuizAttempts.Add(new QuizAttempt
+        {
+            QuizId = ownNew.Id,
+            UserId = UserA,
+            Score = 2,
+            TotalQuestions = 3,
+            AttemptedAt = DateTime.UtcNow.AddHours(-1)
+        });
+        db.SaveChanges();
+
+        var sut = Build(db);
+        var result = await sut.ListQuizzesAsync(UserA);
+
+        result.Should().HaveCount(2);
+        result.First().Id.Should().Be(ownNew.Id);
+        result.First().AttemptCount.Should().Be(2);
+        result.First().LatestScore.Should().Be(2);
+        result.First().LatestTotalQuestions.Should().Be(3);
+        result.Should().NotContain(q => q.UserId == UserB);
+    }
+
+    [Fact]
     public async Task GetQuizAsync_OtherUserQuiz_ThrowsForbidden()
     {
         var db = TestLearningDbContext.Create();
@@ -287,6 +326,31 @@ public class QuizServiceTests
     }
 
     [Fact]
+    public async Task GenerateQuizAsync_SubmissionScopedMissingSources_FallsBackToRecentOwnWeakPoints()
+    {
+        var db = TestLearningDbContext.Create();
+        var emptySubmission = Guid.NewGuid();
+        var recentSubmission = Guid.NewGuid();
+        SeedGrammarError(db, UserA, recentSubmission, category: "Tense", sentence: "He go.");
+        SeedGrammarError(db, UserB, Guid.NewGuid(), category: "Preposition", sentence: "She good at.");
+
+        QuizGenerationRequest? captured = null;
+        var ai = Substitute.For<IAiQuizProvider>();
+        ai.GenerateQuestionsAsync(Arg.Do<QuizGenerationRequest>(r => captured = r), Arg.Any<int>())
+            .Returns(new List<QuizQuestionItem>
+            {
+                new() { Id = "x", Category = "Grammar", Type = "multiple_choice", Question = "Q?", CorrectAnswer = "a" }
+            });
+
+        var sut = Build(db, ai: ai);
+        var quiz = await sut.GenerateQuizAsync(UserA, new GenerateQuizRequestDto { SubmissionId = emptySubmission });
+
+        quiz.SourceSubmissionId.Should().Be(emptySubmission);
+        captured!.GrammarErrors.Should().ContainSingle(e => e.SubmissionId == recentSubmission);
+        captured.GrammarErrors.Should().NotContain(e => e.UserId == UserB);
+    }
+
+    [Fact]
     public async Task GenerateQuizAsync_OnlyAnotherUsersVocabIds_ThrowsNoLeak()
     {
         var db = TestLearningDbContext.Create();
@@ -344,6 +408,59 @@ public class QuizServiceTests
         var sut = Build(db, ai: ai);
         await sut.GenerateQuizAsync(UserA, new GenerateQuizRequestDto
         {
+            VocabularyIds = new List<Guid> { wanted.Id }
+        });
+
+        captured!.Vocabulary.Should().ContainSingle(v => v.Id == wanted.Id);
+    }
+
+    [Fact]
+    public async Task GenerateQuizAsync_SubmissionScopedCategories_FiltersGrammarSources()
+    {
+        var db = TestLearningDbContext.Create();
+        var submissionId = Guid.NewGuid();
+        SeedGrammarError(db, UserA, submissionId, category: "Tense", sentence: "He go.");
+        SeedGrammarError(db, UserA, submissionId, category: "Preposition", sentence: "She good at.");
+
+        QuizGenerationRequest? captured = null;
+        var ai = Substitute.For<IAiQuizProvider>();
+        ai.GenerateQuestionsAsync(Arg.Do<QuizGenerationRequest>(r => captured = r), Arg.Any<int>())
+            .Returns(new List<QuizQuestionItem>
+            {
+                new() { Id = "x", Category = "Grammar", Type = "multiple_choice", Question = "Q?", CorrectAnswer = "a" }
+            });
+
+        var sut = Build(db, ai: ai);
+        await sut.GenerateQuizAsync(UserA, new GenerateQuizRequestDto
+        {
+            SubmissionId = submissionId,
+            Categories = new List<string> { "Tense" }
+        });
+
+        captured!.GrammarErrors.Should().ContainSingle();
+        captured.GrammarErrors.Single().GrammarCategory.Should().Be("Tense");
+    }
+
+    [Fact]
+    public async Task GenerateQuizAsync_SubmissionScopedMissingSources_UsesRequestedVocabularyIds()
+    {
+        var db = TestLearningDbContext.Create();
+        var emptySubmission = Guid.NewGuid();
+        var wanted = SeedVocab(db, UserA, submissionId: null, word: "good", suggested: "beneficial");
+        SeedVocab(db, UserA, submissionId: null, word: "bad", suggested: "adverse");
+
+        QuizGenerationRequest? captured = null;
+        var ai = Substitute.For<IAiQuizProvider>();
+        ai.GenerateQuestionsAsync(Arg.Do<QuizGenerationRequest>(r => captured = r), Arg.Any<int>())
+            .Returns(new List<QuizQuestionItem>
+            {
+                new() { Id = "x", Category = "Vocabulary", Type = "multiple_choice", Question = "Q?", CorrectAnswer = "a" }
+            });
+
+        var sut = Build(db, ai: ai);
+        await sut.GenerateQuizAsync(UserA, new GenerateQuizRequestDto
+        {
+            SubmissionId = emptySubmission,
             VocabularyIds = new List<Guid> { wanted.Id }
         });
 

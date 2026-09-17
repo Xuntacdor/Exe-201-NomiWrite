@@ -319,7 +319,8 @@ public class GradingService : IGradingService
             GrammarErrors = grammarErrors,
             VocabularySuggestions = vocabularySuggestions,
             RestructuringSuggestions = restructuringSuggestions,
-            Status = result.Status
+            Status = result.Status,
+            ErrorMessage = result.ErrorMessage
         };
     }
 }

@@ -15,6 +15,7 @@ import type {
   PaymentHistoryItem,
   Quiz,
   QuizAttempt,
+  QuizSummary,
   RegisterRequest,
   RefundRequest,
   RestructuringSuggestion,
@@ -109,6 +110,7 @@ interface BackendGradingResult {
   overallBand: number;
   criterionScores: { criterionName: string; score: number; comment: string }[];
   overallFeedback: string;
+  errorMessage?: string | null;
   grammarErrors: { originalText: string; suggestion: string; explanation: string }[];
   vocabularySuggestions?: { originalWord: string; suggestedAlternatives: string[]; context: string }[];
   restructuringSuggestions?: { originalSentence: string; suggestedRewrite: string; reason: string }[];
@@ -165,6 +167,16 @@ interface BackendVocabularyPage {
   page: number;
   pageSize: number;
   totalPages: number;
+}
+
+export class ApiRequestError extends Error {
+  constructor(
+    message: string,
+    public readonly status: number,
+  ) {
+    super(message);
+    this.name = "ApiRequestError";
+  }
 }
 
 function getAuthHeaders(): HeadersInit {
@@ -316,6 +328,12 @@ async function getCachedPrompt(id: string): Promise<WritingPrompt | undefined> {
 }
 
 function toWritingFeedback(result: BackendGradingResult, submission?: Submission): WritingFeedback {
+  const status = result.status === "Completed"
+    ? "graded"
+    : result.status === "Failed"
+      ? "failed"
+      : "grading";
+
   const fallbackSubmission: Submission = submission ?? {
     id: result.submissionId,
     userId: "",
@@ -327,16 +345,17 @@ function toWritingFeedback(result: BackendGradingResult, submission?: Submission
     overallScore: result.overallBand,
     overallFeedback: result.overallFeedback,
     submittedAt: new Date().toISOString(),
-    status: result.status === "Completed" ? "graded" : "grading",
+    status,
   };
 
   return {
     id: result.id,
+    errorMessage: result.errorMessage,
     submission: {
       ...fallbackSubmission,
       overallScore: result.overallBand,
       overallFeedback: result.overallFeedback,
-      status: result.status === "Completed" ? "graded" : fallbackSubmission.status,
+      status,
     },
     criteriaScores: Object.fromEntries(
       result.criterionScores.map(score => [
@@ -414,7 +433,10 @@ async function request<T>(path: string, init: RequestInit, authenticated = false
 
   if (!response.ok) {
     const message = await response.text();
-    throw new Error(buildErrorMessage(message, `Request failed with status ${response.status}`));
+    throw new ApiRequestError(
+      buildErrorMessage(message, `Request failed with status ${response.status}`),
+      response.status,
+    );
   }
 
   if (response.status === 204) {
@@ -649,6 +671,11 @@ export const realClient: ApiClient = {
       method: "POST",
       body: JSON.stringify(requestBody),
     }, true).then(envelope => envelope.data);
+  },
+
+  listQuizzes() {
+    return request<BackendApiEnvelope<QuizSummary[]>>(apiRoutes.quizzes.list, { method: "GET" }, true)
+      .then(envelope => envelope.data);
   },
 
   getQuiz(id: string) {

@@ -157,6 +157,7 @@ export interface RestructuringSuggestion {
 export interface WritingFeedback {
   id?: string;
   submission: Submission;
+  errorMessage?: string | null;
   criteriaScores: CriteriaScores;
   grammarErrors: GrammarError[];
   vocabSuggestions: VocabSuggestion[];
@@ -221,6 +222,19 @@ export interface Quiz {
   userId: string;
   sourceSubmissionId?: string;
   questions: QuizQuestion[];
+  createdAt: string;
+}
+
+export interface QuizSummary {
+  id: string;
+  userId: string;
+  sourceSubmissionId?: string;
+  category: string;
+  questionCount: number;
+  attemptCount: number;
+  latestScore?: number | null;
+  latestTotalQuestions?: number | null;
+  latestAttemptedAt?: string | null;
   createdAt: string;
 }
 
@@ -350,6 +364,7 @@ export interface ApiClient {
   listVocabulary(): Promise<VocabSuggestion[]>;
   updateVocabularyMastered(id: string, request: UpdateVocabularyMasteredRequest): Promise<VocabSuggestion>;
   generateQuiz(request: GenerateQuizRequest): Promise<Quiz>;
+  listQuizzes(): Promise<QuizSummary[]>;
   getQuiz(id: string): Promise<Quiz>;
   submitQuizAttempt(request: SubmitQuizAttemptRequest): Promise<QuizAttempt>;
   createCheckout(request: CheckoutRequest): Promise<CheckoutResponse>;

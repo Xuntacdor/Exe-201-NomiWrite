@@ -265,16 +265,7 @@ public class WritingService : IWritingService
                     });
             }
 
-            if (prompt.MaxWords.HasValue && submission.WordCount > prompt.MaxWords.Value)
-            {
-                throw new ValidationException(
-                    new[]
-                    {
-                        new ValidationFailure(
-                            "Content",
-                            $"Submission cannot exceed {prompt.MaxWords.Value} words (current: {submission.WordCount}).")
-                    });
-            }
+            // MaxWords is guidance for practice prompts, not a hard submit blocker.
         }
 
         var now = DateTime.UtcNow;

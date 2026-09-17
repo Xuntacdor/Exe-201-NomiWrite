@@ -19,6 +19,17 @@ public class QuizController : ControllerBase
         _quizService = quizService;
     }
 
+    [HttpGet]
+    public async Task<IActionResult> ListQuizzes()
+    {
+        var userId = GetUserId();
+        if (userId is null)
+            return Unauthorized();
+
+        var result = await _quizService.ListQuizzesAsync(userId.Value);
+        return Ok(new { success = true, data = result });
+    }
+
     [HttpPost("generate")]
     public async Task<IActionResult> GenerateQuiz([FromBody] GenerateQuizRequestDto request)
     {

@@ -306,6 +306,22 @@ export const mockClient: ApiClient = {
     return mockQuiz;
   },
 
+  async listQuizzes() {
+    await delay();
+    return [{
+      id: mockQuiz.id,
+      userId: mockQuiz.userId,
+      sourceSubmissionId: mockQuiz.sourceSubmissionId,
+      category: "Grammar, Vocabulary",
+      questionCount: mockQuiz.questions.length,
+      attemptCount: 1,
+      latestScore: 0,
+      latestTotalQuestions: mockQuiz.questions.length,
+      latestAttemptedAt: new Date().toISOString(),
+      createdAt: mockQuiz.createdAt,
+    }];
+  },
+
   async getQuiz() {
     await delay();
     return mockQuiz;
