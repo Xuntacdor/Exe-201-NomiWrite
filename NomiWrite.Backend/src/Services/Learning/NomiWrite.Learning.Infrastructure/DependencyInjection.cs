@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using NomiWrite.Learning.Application.Interfaces;
 using NomiWrite.Learning.Application.Services;
 using NomiWrite.Learning.Infrastructure.Consumers;
+using NomiWrite.Learning.Infrastructure.Options;
 using NomiWrite.Learning.Infrastructure.Persistence;
 using NomiWrite.Learning.Infrastructure.Services;
 
@@ -16,6 +17,8 @@ public static class DependencyInjection
         this IServiceCollection services,
         IConfiguration configuration)
     {
+        services.Configure<GeminiSettings>(configuration.GetSection(GeminiSettings.SectionName));
+
         services.AddDbContext<LearningDbContext>(options =>
             options.UseNpgsql(
                 configuration.GetConnectionString("LearningDb"),

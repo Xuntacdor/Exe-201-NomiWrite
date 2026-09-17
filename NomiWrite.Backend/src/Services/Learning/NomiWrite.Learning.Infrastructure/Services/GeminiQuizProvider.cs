@@ -1,3 +1,4 @@
+using System.Net;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
@@ -33,6 +34,12 @@ public class GeminiQuizProvider : IAiQuizProvider
         _httpClient = httpClientFactory.CreateClient("Gemini");
         _geminiOptions = geminiOptions;
         _logger = logger;
+
+        if (!string.IsNullOrWhiteSpace(_geminiOptions.Value.ApiKey) &&
+            !_httpClient.DefaultRequestHeaders.Contains("x-goog-api-key"))
+        {
+            _httpClient.DefaultRequestHeaders.Add("x-goog-api-key", _geminiOptions.Value.ApiKey);
+        }
     }
 
     public async Task<List<QuizQuestionItem>> GenerateQuestionsAsync(
@@ -54,11 +61,28 @@ public class GeminiQuizProvider : IAiQuizProvider
             }
         };
 
-        using var response = await _httpClient.PostAsJsonAsync(_geminiOptions.Value.Endpoint, body);
+        var endpoint = BuildEndpoint();
 
-        if (!response.IsSuccessStatusCode)
+        const int maxAttempts = 3;
+        for (var attempt = 1; attempt <= maxAttempts; attempt++)
         {
+            using var response = await _httpClient.PostAsJsonAsync(endpoint, body);
+
+            if (response.IsSuccessStatusCode)
+                return await ParseQuestionsAsync(response);
+
             var errorPayload = await response.Content.ReadAsStringAsync();
+            if (IsTransientGeminiError(response.StatusCode) && attempt < maxAttempts)
+            {
+                _logger.LogWarning(
+                    "Gemini quiz generation returned transient {StatusCode} on attempt {Attempt}/{MaxAttempts}; retrying.",
+                    response.StatusCode,
+                    attempt,
+                    maxAttempts);
+                await Task.Delay(TimeSpan.FromSeconds(attempt * 2));
+                continue;
+            }
+
             _logger.LogWarning(
                 "Gemini quiz generation returned {StatusCode}: {Error}",
                 response.StatusCode,
@@ -66,6 +90,25 @@ public class GeminiQuizProvider : IAiQuizProvider
             throw new HttpRequestException($"Gemini returned {(int)response.StatusCode}.");
         }
 
+        throw new InvalidOperationException("Gemini quiz generation failed after all retry attempts.");
+    }
+
+    private string BuildEndpoint()
+    {
+        var options = _geminiOptions.Value;
+        var endpoint = string.IsNullOrWhiteSpace(options.Endpoint)
+            ? "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+            : options.Endpoint;
+        var model = string.IsNullOrWhiteSpace(options.Model) ? "gemini-3.6-flash" : options.Model;
+
+        return endpoint.Replace("{model}", model, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool IsTransientGeminiError(HttpStatusCode statusCode) =>
+        statusCode is HttpStatusCode.ServiceUnavailable or HttpStatusCode.TooManyRequests;
+
+    private async Task<List<QuizQuestionItem>> ParseQuestionsAsync(HttpResponseMessage response)
+    {
         var content = await response.Content.ReadAsStringAsync();
         var text = ExtractText(content);
 

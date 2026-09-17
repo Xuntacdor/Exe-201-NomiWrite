@@ -21,7 +21,8 @@ public class GeminiQuizProviderTests
         var options = Options.Create(new GeminiSettings
         {
             ApiKey = "test-key",
-            Endpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
+            Model = "gemini-3.6-flash",
+            Endpoint = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
         });
         return new GeminiQuizProvider(factory, options, NullLogger<GeminiQuizProvider>.Instance);
     }
