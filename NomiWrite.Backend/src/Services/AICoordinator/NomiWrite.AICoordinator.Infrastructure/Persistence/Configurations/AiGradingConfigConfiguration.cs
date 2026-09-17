@@ -49,14 +49,13 @@ public class AiGradingConfigConfiguration : IEntityTypeConfiguration<AiGradingCo
         builder.Property(c => c.UpdatedAt)
             .HasColumnName("updated_at");
 
-        // Seed one row matching the current hardcoded defaults so existing behaviour is unchanged
-        // until an admin explicitly edits the config.
+        // Seed one row matching the currently supported Gemini default.
         builder.HasData(
             new AiGradingConfig
             {
                 Id = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaa01"),
                 ProviderName = "Gemini",
-                ModelName = "gemini-2.5-flash",
+                ModelName = "gemini-3.6-flash",
                 Temperature = null,
                 SystemPromptTemplate = null,
                 MaxOutputTokens = null,

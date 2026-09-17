@@ -19,6 +19,7 @@ import {
   SplitSquareHorizontal,
 } from "lucide-react";
 import { apiClient, apiMode } from "@/lib/api/client";
+import { ApiRequestError } from "@/lib/api/real-client";
 import { getSession } from "@/lib/auth/session";
 import type { TutorReviewRequest, WritingFeedback } from "@/lib/types";
 
@@ -27,6 +28,10 @@ function getExcerpt(content: string): string {
   const normalized = content.replace(/\s+/g, " ").trim();
   return normalized.length > 180 ? `${normalized.slice(0, 180)}...` : normalized;
 }
+
+const INITIAL_GRADING_CHECK_DELAY_MS = 15000;
+const GRADING_CHECK_INTERVAL_MS = 20000;
+const GRADING_WAIT_TIMEOUT_MS = 10 * 60 * 1000;
 
 function ResultContent() {
   const router = useRouter();
@@ -41,7 +46,7 @@ function ResultContent() {
   const [workingAction, setWorkingAction] = useState<"compare" | "tutor" | "flag" | "">("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [pollAttempt, setPollAttempt] = useState(0);
+  const [waitingForGrading, setWaitingForGrading] = useState(false);
 
   useEffect(() => {
     if (apiMode === "real" && !getSession()?.accessToken) {
@@ -58,39 +63,56 @@ function ResultContent() {
     }
 
     let ignore = false;
-    const loadTimer = setTimeout(() => {
-      setLoading(true);
-      setError("");
+    let checkTimer: number | undefined;
+    const startedAt = Date.now();
+
+    const checkFeedback = () => {
+      if (ignore) return;
       apiClient.getFeedback(submissionId)
         .then(result => {
           if (ignore) return;
           setFeedback(result);
-          setPollAttempt(0);
+          setWaitingForGrading(false);
+          setError("");
         })
         .catch(err => {
           if (ignore) return;
 
           const message = err instanceof Error ? err.message : "Could not load grading result yet.";
-          if (message.toLowerCase().includes("pending") && pollAttempt < 24) {
-            setError("AI grading is still processing. This page will refresh automatically.");
-            window.setTimeout(() => {
-              if (!ignore) setPollAttempt(attempt => attempt + 1);
-            }, 5000);
+          const isPendingResult =
+            message.toLowerCase().includes("pending") ||
+            (err instanceof ApiRequestError && err.status === 404);
+
+          if (isPendingResult && Date.now() - startedAt < GRADING_WAIT_TIMEOUT_MS) {
+            setWaitingForGrading(true);
+            setError("");
+            checkTimer = window.setTimeout(checkFeedback, GRADING_CHECK_INTERVAL_MS);
             return;
           }
 
+          setWaitingForGrading(false);
           setError(message);
         })
         .finally(() => {
           if (!ignore) setLoading(false);
         });
+    };
+
+    const stateTimer = window.setTimeout(() => {
+      if (ignore) return;
+      setFeedback(null);
+      setLoading(false);
+      setWaitingForGrading(true);
+      setError("");
     }, 0);
+    checkTimer = window.setTimeout(checkFeedback, INITIAL_GRADING_CHECK_DELAY_MS);
 
     return () => {
       ignore = true;
-      clearTimeout(loadTimer);
+      if (stateTimer) window.clearTimeout(stateTimer);
+      if (checkTimer) window.clearTimeout(checkTimer);
     };
-  }, [pollAttempt, router, submissionId]);
+  }, [router, submissionId]);
 
   useEffect(() => {
     if (apiMode === "real" && !getSession()?.accessToken) return;
@@ -114,7 +136,6 @@ function ResultContent() {
   const criteriaScores = Object.entries(feedback?.criteriaScores ?? {}).filter(([, score]) => typeof score === "number");
   const excerpt = getExcerpt(submission?.content ?? "");
   const gradingResultId = feedback?.id;
-  const waitingForGrading = error.toLowerCase().includes("processing");
 
   async function handleCompare() {
     if (!submissionId) return;
@@ -292,7 +313,9 @@ function ResultContent() {
                   <div className="flex items-start gap-2">
                     <Info className="mt-0.5 h-4 w-4 shrink-0 text-blue-200" />
                     <p className="text-sm leading-relaxed text-blue-50">
-                      {submission.overallFeedback || "The backend grading service returned this submission without overall feedback."}
+                      {submission.status === "failed"
+                        ? feedback.errorMessage || "AI grading failed. Please try submitting again later."
+                        : submission.overallFeedback || "The backend grading service returned this submission without overall feedback."}
                     </p>
                   </div>
                 </div>

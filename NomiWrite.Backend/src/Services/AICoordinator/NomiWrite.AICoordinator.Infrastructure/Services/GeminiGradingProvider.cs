@@ -1,3 +1,4 @@
+using System.Net;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
@@ -60,23 +61,51 @@ public class GeminiGradingProvider : IAiGradingProvider
     {
         var config = await GetActiveConfigAsync();
 
-        var modelName = config?.ModelName ?? _settings.Model;
+        var modelName = !string.IsNullOrWhiteSpace(_settings.Model)
+            ? _settings.Model
+            : config?.ModelName ?? "gemini-3.6-flash";
         var systemPrompt = !string.IsNullOrWhiteSpace(config?.SystemPromptTemplate)
             ? config!.SystemPromptTemplate!
             : DefaultGradingPrompt;
 
-        var endpoint = _settings.Endpoint.Replace("{model}", modelName);
+        var endpointTemplate = string.IsNullOrWhiteSpace(_settings.Endpoint)
+            ? "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+            : _settings.Endpoint;
+        var endpoint = endpointTemplate.Replace("{model}", modelName, StringComparison.OrdinalIgnoreCase);
         var requestBody = BuildRequestBody(essayContent, systemPrompt, config);
 
-        var response = await _httpClient.PostAsJsonAsync(endpoint, requestBody);
-
-        if (!response.IsSuccessStatusCode)
+        const int maxAttempts = 3;
+        for (var attempt = 1; attempt <= maxAttempts; attempt++)
         {
+            var response = await _httpClient.PostAsJsonAsync(endpoint, requestBody);
+
+            if (response.IsSuccessStatusCode)
+                return await ParseGeminiResponseAsync(response);
+
             var errorBody = await response.Content.ReadAsStringAsync();
+            if (IsTransientGeminiError(response.StatusCode) && attempt < maxAttempts)
+            {
+                _logger.LogWarning(
+                    "Gemini API returned transient {StatusCode} on attempt {Attempt}/{MaxAttempts}; retrying.",
+                    response.StatusCode,
+                    attempt,
+                    maxAttempts);
+                await Task.Delay(TimeSpan.FromSeconds(attempt * 2));
+                continue;
+            }
+
             _logger.LogError("Gemini API returned {StatusCode}: {ErrorBody}", response.StatusCode, errorBody);
             throw new HttpRequestException($"Gemini API error: {(int)response.StatusCode} - {errorBody}");
         }
 
+        throw new InvalidOperationException("Gemini grading failed after all retry attempts.");
+    }
+
+    private static bool IsTransientGeminiError(HttpStatusCode statusCode) =>
+        statusCode is HttpStatusCode.ServiceUnavailable or HttpStatusCode.TooManyRequests;
+
+    private static async Task<GeminiGradingResponseSchema> ParseGeminiResponseAsync(HttpResponseMessage response)
+    {
         var geminiResponse = await response.Content.ReadFromJsonAsync<GeminiApiResponse>();
 
         var text = geminiResponse?.Candidates?.FirstOrDefault()?.Content?.Parts?.FirstOrDefault()?.Text

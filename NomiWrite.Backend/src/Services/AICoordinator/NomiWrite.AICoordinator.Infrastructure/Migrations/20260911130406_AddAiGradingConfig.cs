@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
@@ -33,7 +33,7 @@ namespace NomiWrite.AICoordinator.Infrastructure.Migrations
             migrationBuilder.InsertData(
                 table: "ai_grading_configs",
                 columns: new[] { "id", "created_at", "is_active", "max_output_tokens", "model_name", "provider_name", "system_prompt_template", "temperature", "updated_at" },
-                values: new object[] { new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaa01"), new DateTime(2026, 9, 7, 0, 0, 0, 0, DateTimeKind.Utc), true, null, "gemini-2.5-flash", "Gemini", null, null, null });
+                values: new object[] { new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaa01"), new DateTime(2026, 9, 7, 0, 0, 0, 0, DateTimeKind.Utc), true, null, "gemini-3.6-flash", "Gemini", null, null, null });
         }
 
         /// <inheritdoc />

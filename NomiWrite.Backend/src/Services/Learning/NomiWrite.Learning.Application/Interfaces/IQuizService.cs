@@ -6,6 +6,8 @@ public interface IQuizService
 {
     Task<QuizDto> GenerateQuizAsync(Guid userId, GenerateQuizRequestDto request);
 
+    Task<IReadOnlyList<QuizSummaryDto>> ListQuizzesAsync(Guid userId);
+
     Task<QuizDetailDto> GetQuizAsync(Guid userId, Guid quizId);
 
     Task<QuizAttemptResultDto> SubmitAttemptAsync(Guid userId, SubmitQuizAttemptRequestDto request);

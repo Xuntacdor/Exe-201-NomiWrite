@@ -46,6 +46,7 @@ export const apiRoutes = {
     mastered: (id: string) => `/api/vocabulary/${id}/mastered`,
   },
   quizzes: {
+    list: "/api/quizzes",
     generate: "/api/quizzes/generate",
     detail: (id: string) => `/api/quizzes/${id}`,
   },
