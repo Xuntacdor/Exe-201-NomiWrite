@@ -255,9 +255,9 @@ export default function UpgradePage() {
   if (done) {
     return (
       <PageFrame signedIn={signedIn}>
-        <main className={`flex min-h-screen items-center justify-center bg-slate-50 px-4 ${signedIn ? "" : "pt-16"}`}>
-          <div className="my-16 w-full max-w-md rounded-3xl border border-slate-100 bg-white p-10 text-center shadow-xl">
-            <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-violet-600 shadow-xl shadow-blue-200">
+        <main className={`flex min-h-screen items-center justify-center bg-slate-50 px-4 hero-gradient ${signedIn ? "" : "pt-16"}`}>
+          <div className="my-16 w-full max-w-md rounded-3xl border border-slate-200 bg-white/90 p-10 text-center shadow-2xl backdrop-blur-xl animate-fade-in-up">
+            <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-violet-600 shadow-xl shadow-blue-500/30 animate-float">
               <BadgeCheck className="h-10 w-10 text-white" />
             </div>
             <h2 className="mb-3 text-2xl font-extrabold text-slate-900">Payment order created</h2>
@@ -324,68 +324,76 @@ export default function UpgradePage() {
           <span className="text-sm font-extrabold text-slate-900">Premium checkout</span>
         </div>
 
-        <div className="relative overflow-hidden bg-gradient-to-br from-blue-600 via-blue-700 to-violet-700">
-          <div className="relative mx-auto max-w-5xl px-4 py-10 text-center sm:px-6">
-            <div className="mb-4 inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-1">
-              <Zap className="h-3.5 w-3.5 fill-amber-300 text-amber-300" />
-              <span className="text-xs font-bold text-white">Upgrade to Premium</span>
+        <div className="relative overflow-hidden hero-gradient">
+          <div className="absolute inset-0 pointer-events-none">
+            <div className="absolute -top-32 -left-32 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl animate-pulse-slow" />
+            <div className="absolute top-32 -right-32 w-96 h-96 bg-violet-500/20 rounded-full blur-3xl animate-pulse-slow" style={{ animationDelay: "1s" }} />
+          </div>
+          <div className="relative mx-auto max-w-5xl px-4 py-16 text-center sm:px-6 animate-fade-in-up">
+            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50/80 px-4 py-1.5 shadow-sm backdrop-blur">
+              <Zap className="h-4 w-4 fill-amber-400 text-amber-400" />
+              <span className="text-xs font-extrabold tracking-wider text-blue-700 uppercase">Upgrade to Premium</span>
             </div>
-            <h1 className="mb-3 text-3xl font-extrabold text-white sm:text-4xl">Premium checkout</h1>
-            <p className="mx-auto max-w-md text-sm text-blue-100">
-              Plans and checkout use the backend Subscription and Payment services.
+            <h1 className="mb-4 text-4xl font-extrabold text-slate-900 sm:text-5xl tracking-tight">Premium checkout</h1>
+            <p className="mx-auto max-w-md text-base text-slate-500">
+              Securely upgrade your account using our backend Subscription and Payment services.
             </p>
           </div>
         </div>
 
-        <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
-          <div className="grid grid-cols-1 gap-8 lg:grid-cols-5">
-            <div className="space-y-5 lg:col-span-2">
-              <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
-                <p className="mb-3 text-xs font-bold uppercase tracking-wider text-slate-400">Billing cycle</p>
-                <div className="flex gap-2">
+        <div className="mx-auto max-w-5xl px-4 pb-20 sm:px-6">
+          <div className="grid grid-cols-1 gap-8 lg:grid-cols-5 animate-fade-in-up" style={{ animationDelay: "0.2s" }}>
+            <div className="space-y-6 lg:col-span-2">
+              <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-lg">
+                <p className="mb-4 text-xs font-extrabold uppercase tracking-widest text-slate-400">Billing cycle</p>
+                <div className="flex gap-2 rounded-2xl bg-slate-50 p-1 border border-slate-100">
                   {(["monthly", "yearly"] as const).map(option => (
                     <button
                       key={option}
                       type="button"
                       onClick={() => setBilling(option)}
                       className={`flex-1 rounded-xl py-3 text-sm font-bold capitalize transition-all ${
-                        billing === option ? "bg-blue-600 text-white shadow-md shadow-blue-200" : "bg-slate-100 text-slate-500 hover:bg-slate-200"
+                        billing === option ? "bg-white text-slate-900 shadow-sm border border-slate-200" : "text-slate-500 hover:text-slate-700"
                       }`}
                     >
-                      {option}
+                      {option} {option === "yearly" && <span className="ml-1 text-[10px] font-extrabold text-emerald-500 bg-emerald-50 px-1.5 py-0.5 rounded-full">Save 20%</span>}
                     </button>
                   ))}
                 </div>
               </div>
 
-              <div className="relative overflow-hidden rounded-2xl shadow-md">
-                <div className="absolute inset-0 bg-gradient-to-br from-blue-600 via-blue-700 to-violet-700" />
-                <div className="relative p-6">
-                  <div className="mb-3 flex justify-end">
-                    <div className="inline-flex items-center gap-1 rounded-full bg-amber-400 px-2.5 py-1 text-[10px] font-extrabold text-amber-900">
+              <div className="relative overflow-hidden rounded-3xl shadow-2xl glow-blue card-hover">
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-700" />
+                <div className="absolute top-0 right-0 p-32 bg-white/10 blur-3xl rounded-full" />
+                <div className="absolute bottom-0 left-0 p-32 bg-indigo-500/20 blur-3xl rounded-full" />
+                <div className="relative p-8">
+                  <div className="mb-4 flex justify-between items-center">
+                    <p className="text-xs font-extrabold uppercase tracking-widest text-blue-200">
+                      {selectedPlan?.name ?? "Premium"}
+                    </p>
+                    <div className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-amber-300 to-amber-500 px-3 py-1 text-[10px] font-extrabold text-amber-950 shadow-md">
                       <Sparkles className="h-3 w-3" />
                       Backend plan
                     </div>
                   </div>
-                  <p className="mb-1 text-xs font-bold uppercase tracking-widest text-blue-200">
-                    {selectedPlan?.name ?? "Premium"}
-                  </p>
-                  <div className="mb-1 flex items-end gap-1">
-                    <span className="text-4xl font-extrabold text-white">{fmt(monthlyEquivalent)}</span>
-                    <span className="mb-1.5 text-xs text-blue-200">/ month</span>
+                  <div className="mb-1 flex items-end gap-1.5">
+                    <span className="text-5xl font-extrabold text-white tracking-tight">{fmt(monthlyEquivalent)}</span>
+                    <span className="mb-2 text-sm font-medium text-blue-200">/ month</span>
                   </div>
                   {billing === "yearly" && (
-                    <p className="mb-4 text-xs text-blue-200">
+                    <p className="mb-6 text-sm text-blue-200 font-medium bg-blue-900/30 inline-block px-3 py-1 rounded-full border border-blue-400/20">
                       Total <span className="font-bold text-white">{fmt(total)}</span> / year
                     </p>
                   )}
-                  <div className="mt-4 space-y-2.5">
+                  {billing === "monthly" && <div className="h-6 mb-6" />}
+                  
+                  <div className="mt-8 space-y-4">
                     {proFeatures.map(feature => (
-                      <div key={feature} className="flex items-start gap-2.5">
-                        <div className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-white/20">
-                          <Check className="h-2.5 w-2.5 text-white" />
+                      <div key={feature} className="flex items-start gap-3">
+                        <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm shadow-sm">
+                          <Check className="h-3 w-3 text-white" />
                         </div>
-                        <span className="text-xs leading-relaxed text-blue-50">{feature}</span>
+                        <span className="text-sm font-medium leading-relaxed text-blue-50">{feature}</span>
                       </div>
                     ))}
                   </div>
@@ -475,15 +483,15 @@ export default function UpgradePage() {
               )}
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-5 lg:col-span-3">
-              <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
-                <p className="mb-4 text-xs font-bold uppercase tracking-wider text-slate-400">Payment method</p>
-                <div className="space-y-2">
+            <form onSubmit={handleSubmit} className="space-y-6 lg:col-span-3">
+              <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-xl">
+                <p className="mb-5 text-xs font-extrabold uppercase tracking-widest text-slate-400">Payment method</p>
+                <div className="space-y-3">
                   {paymentMethods.map(({ id, label, icon: Icon, sub }) => (
                     <label
                       key={id}
-                      className={`flex cursor-pointer items-center gap-4 rounded-xl border-2 p-4 transition-all ${
-                        method === id ? "border-blue-500 bg-blue-50/60" : "border-slate-100 hover:border-slate-200"
+                      className={`group flex cursor-pointer items-center gap-4 rounded-2xl border-2 p-4 transition-all duration-300 ${
+                        method === id ? "border-blue-500 bg-blue-50/50 shadow-md shadow-blue-500/10" : "border-slate-100 bg-slate-50/50 hover:border-slate-200 hover:bg-slate-50"
                       }`}
                     >
                       <input
@@ -494,24 +502,24 @@ export default function UpgradePage() {
                         onChange={() => setMethod(id)}
                         className="sr-only"
                       />
-                      <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${method === id ? "bg-blue-100" : "bg-slate-100"}`}>
-                        <Icon className={`h-5 w-5 ${method === id ? "text-blue-600" : "text-slate-400"}`} />
+                      <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl transition-colors ${method === id ? "bg-blue-100" : "bg-white border border-slate-100 shadow-sm group-hover:border-slate-200"}`}>
+                        <Icon className={`h-6 w-6 ${method === id ? "text-blue-600" : "text-slate-400 group-hover:text-slate-500"}`} />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className={`text-sm font-bold ${method === id ? "text-blue-800" : "text-slate-700"}`}>{label}</p>
-                        <p className="mt-0.5 text-xs text-slate-400">{sub}</p>
+                        <p className={`text-base font-extrabold ${method === id ? "text-blue-900" : "text-slate-700 group-hover:text-slate-900"}`}>{label}</p>
+                        <p className={`mt-0.5 text-xs font-medium ${method === id ? "text-blue-600/70" : "text-slate-400"}`}>{sub}</p>
                       </div>
-                      <div className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-all ${method === id ? "border-blue-500 bg-blue-500" : "border-slate-300"}`}>
-                        {method === id && <div className="h-2 w-2 rounded-full bg-white" />}
+                      <div className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 transition-all ${method === id ? "border-blue-500 bg-blue-500 scale-110" : "border-slate-300 bg-white"}`}>
+                        {method === id && <div className="h-2.5 w-2.5 rounded-full bg-white" />}
                       </div>
                     </label>
                   ))}
                 </div>
               </div>
 
-              <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
-                <p className="mb-4 text-xs font-bold uppercase tracking-wider text-slate-400">Order summary</p>
-                <div className="space-y-3">
+              <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-xl">
+                <p className="mb-5 text-xs font-extrabold uppercase tracking-widest text-slate-400">Order summary</p>
+                <div className="space-y-4">
                   <div className="flex gap-2">
                     <div className="relative flex-1">
                       <Percent className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -540,63 +548,59 @@ export default function UpgradePage() {
                       {promoMessage}
                     </p>
                   )}
-                  <div className="flex justify-between text-sm">
-                    <span className="text-slate-500">{selectedPlan?.name ?? "NomiWrite Premium"} - {billing}</span>
-                    <span className="font-bold text-slate-800">{fmt(subtotal)}</span>
+                  <div className="flex justify-between text-base">
+                    <span className="font-semibold text-slate-600">{selectedPlan?.name ?? "NomiWrite Premium"} - <span className="capitalize">{billing}</span></span>
+                    <span className="font-extrabold text-slate-900">{fmt(subtotal)}</span>
                   </div>
                   {promoDiscount !== null && promoDiscount > 0 && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-emerald-600">Promo discount</span>
-                      <span className="font-bold text-emerald-600">-{promoDiscount}%</span>
+                    <div className="flex justify-between text-base">
+                      <span className="font-semibold text-emerald-600">Promo discount</span>
+                      <span className="font-extrabold text-emerald-600">-{promoDiscount}%</span>
                     </div>
                   )}
-                  {selectedPlan && (
-                    <div className="flex justify-between text-xs">
-                      <span className="text-slate-400">Backend plan id</span>
-                      <span className="max-w-52 truncate font-semibold text-slate-600">{selectedPlan.id}</span>
-                    </div>
-                  )}
-                  <div className="flex items-center justify-between border-t border-slate-100 pt-3">
-                    <span className="text-sm font-extrabold text-slate-900">Total</span>
-                    <span className="text-xl font-extrabold text-blue-600">{fmt(total)}</span>
+                  {/* Backend plan id removed as requested */}
+                  <div className="my-2 border-t border-dashed border-slate-200" />
+                  <div className="flex items-center justify-between">
+                    <span className="text-base font-extrabold text-slate-900">Total to pay</span>
+                    <span className="text-3xl font-extrabold text-blue-600 tracking-tight">{fmt(total)}</span>
                   </div>
                 </div>
               </div>
 
-              <label className="flex cursor-pointer items-start gap-3">
+              <label className="flex cursor-pointer items-start gap-4 rounded-2xl bg-slate-50 p-4 border border-slate-100 transition-colors hover:bg-slate-100/50">
                 <button
                   type="button"
                   onClick={() => setAgreed(value => !value)}
-                  className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border-2 transition-all ${agreed ? "border-blue-600 bg-blue-600" : "border-slate-300"}`}
+                  className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border-2 transition-all ${agreed ? "border-blue-600 bg-blue-600 scale-105" : "border-slate-300 bg-white"}`}
                 >
-                  {agreed && <Check className="h-3 w-3 text-white" />}
+                  {agreed && <Check className="h-4 w-4 text-white" />}
                 </button>
-                <span className="text-xs leading-relaxed text-slate-500">
-                  I agree to create a payment order through the selected backend provider.
+                <span className="text-sm font-medium leading-relaxed text-slate-600">
+                  I agree to create a payment order through the selected backend provider securely.
                 </span>
               </label>
 
               {error && (
-                <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">{error}</p>
+                <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">{error}</p>
               )}
 
               <button
                 type="submit"
                 disabled={!agreed || loading}
-                className={`flex w-full items-center justify-center gap-2.5 rounded-2xl py-4 text-sm font-extrabold transition-all ${
+                className={`flex w-full items-center justify-center gap-3 rounded-2xl py-5 text-base font-extrabold transition-all duration-300 ${
                   agreed && !loading
-                    ? "bg-gradient-to-r from-blue-600 to-violet-600 text-white shadow-xl shadow-blue-200 hover:-translate-y-0.5 hover:from-blue-700 hover:to-violet-700"
+                    ? "bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 text-white shadow-xl shadow-blue-500/30 hover:-translate-y-1 hover:shadow-2xl hover:shadow-blue-500/40"
                     : "cursor-not-allowed bg-slate-200 text-slate-400"
                 }`}
               >
                 {loading ? (
                   <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <Loader2 className="h-5 w-5 animate-spin" />
                     Creating payment...
                   </>
                 ) : (
                   <>
-                    <Lock className="h-4 w-4" />
+                    <Lock className="h-5 w-5" />
                     Pay with {method.toUpperCase()} - {fmt(total)}
                   </>
                 )}
