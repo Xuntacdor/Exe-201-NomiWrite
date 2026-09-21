@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { PenLine, Mail, Lock, ArrowRight } from "lucide-react";
 import { apiClient, apiMode } from "@/lib/api/client";
-import { saveSession } from "@/lib/auth/session";
+import { redirectAfterAuth, saveSession } from "@/lib/auth/session";
 import GoogleSignInButton from "../components/GoogleSignInButton";
 
 export default function LoginPage() {
@@ -28,7 +28,7 @@ export default function LoginPage() {
       setSubmitting(true);
       const session = await apiClient.login({ email: email.trim(), password });
       saveSession(session);
-      router.push("/dashboard");
+      redirectAfterAuth(session, router);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed. Please try again.");
     } finally {

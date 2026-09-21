@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AlertCircle, Globe2, Loader2 } from "lucide-react";
 import { apiClient } from "@/lib/api/client";
-import { saveSession } from "@/lib/auth/session";
+import { redirectAfterAuth, saveSession } from "@/lib/auth/session";
 
 declare global {
   interface Window {
@@ -93,7 +93,7 @@ export default function GoogleSignInButton({ mode }: GoogleSignInButtonProps) {
               setStatus("loading");
               const session = await apiClient.googleLogin({ idToken: response.credential });
               saveSession(session);
-              router.push("/dashboard");
+              redirectAfterAuth(session, router);
             } catch (err) {
               setStatus("error");
               setMessage(err instanceof Error ? err.message : "Google sign-in failed.");

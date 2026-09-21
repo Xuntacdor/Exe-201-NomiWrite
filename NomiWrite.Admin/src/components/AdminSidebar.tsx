@@ -11,6 +11,7 @@ import {
   LogOut,
   ShieldAlert,
 } from "lucide-react";
+import { clearAdminSession } from "../lib/authSession";
 
 const adminNavItems = [
   { icon: BarChart3, label: "Overview", href: "/" },
@@ -27,7 +28,7 @@ export default function AdminSidebar() {
   const activePath = location.pathname;
 
   const handleLogout = () => {
-    // Perform logout logic here later
+    clearAdminSession();
     navigate("/login");
   };
 

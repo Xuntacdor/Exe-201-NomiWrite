@@ -26,6 +26,9 @@ public class AdminUserService : IAdminUserService
     public async Task<PagedResultDto<AdminUserListItemDto>> GetUsersAsync(
         string? search, UserRole? role, AccountStatus? status, int page, int pageSize)
     {
+        var safePage = page < 1 ? 1 : page;
+        var safePageSize = pageSize is < 1 or > 100 ? 20 : pageSize;
+
         // IgnoreQueryFilters so deactivated (soft-deleted) accounts remain visible to admins.
         var query = _dbContext.Users
             .AsNoTracking()
@@ -49,8 +52,8 @@ public class AdminUserService : IAdminUserService
 
         var items = await query
             .OrderBy(u => u.CreatedAt)
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
+            .Skip((safePage - 1) * safePageSize)
+            .Take(safePageSize)
             .Select(u => new AdminUserListItemDto
             {
                 Id = u.Id,
@@ -67,9 +70,9 @@ public class AdminUserService : IAdminUserService
         {
             Items = items,
             TotalCount = totalCount,
-            Page = page,
-            PageSize = pageSize,
-            TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize)
+            Page = safePage,
+            PageSize = safePageSize,
+            TotalPages = (int)Math.Ceiling(totalCount / (double)safePageSize)
         };
     }
 
