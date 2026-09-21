@@ -30,6 +30,25 @@ public class SubscriptionExpiredEventConsumer : IConsumer<SubscriptionExpiredEve
             @event.UserId,
             @event.PlanId);
 
+        var message = $"Your subscription expired on {@event.ExpiredAt:MMMM dd, yyyy}. Renew to continue enjoying premium features.";
+        var existing = await _dbContext.Notifications
+            .FirstOrDefaultAsync(n =>
+                n.Type == NotificationType.Subscription
+                && n.UserId == @event.UserId
+                && n.ReferenceId == @event.PlanId
+                && n.Title == "Your subscription has expired"
+                && n.Message == message);
+
+        if (existing is not null)
+        {
+            _logger.LogDebug(
+                "Subscription expired notification already exists for user {UserId}, plan {PlanId}, expiredAt {ExpiredAt}; skipping.",
+                @event.UserId,
+                @event.PlanId,
+                @event.ExpiredAt);
+            return;
+        }
+
         var preference = await _dbContext.NotificationPreferences
             .FirstOrDefaultAsync(p => p.UserId == @event.UserId);
 
@@ -63,9 +82,9 @@ public class SubscriptionExpiredEventConsumer : IConsumer<SubscriptionExpiredEve
         {
             UserId = @event.UserId,
             Title = "Your subscription has expired",
-            Message = "Your subscription has expired. Renew to continue enjoying premium features.",
+            Message = message,
             Type = NotificationType.Subscription,
-            ReferenceId = null,
+            ReferenceId = @event.PlanId,
             IsRead = false,
             CreatedAt = now,
             UpdatedAt = now
