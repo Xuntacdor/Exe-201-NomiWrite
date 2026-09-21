@@ -27,12 +27,13 @@ export default function Users() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [totalCount, setTotalCount] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     const fetchUsers = async () => {
       try {
         setLoading(true);
-        const data = await adminService.getUsers(1, 20);
+        const data = await adminService.getUsers(currentPage, 10);
         setUsers(data.items);
         setTotalCount(data.totalCount);
       } catch (err: any) {
@@ -43,7 +44,12 @@ export default function Users() {
     };
 
     fetchUsers();
-  }, []);
+  }, [currentPage]);
+  
+  const handlePrevious = () => setCurrentPage((prev) => Math.max(1, prev - 1));
+  const handleNext = () => setCurrentPage((prev) => (prev * 10 < totalCount ? prev + 1 : prev));
+  const startEntry = totalCount === 0 ? 0 : (currentPage - 1) * 10 + 1;
+  const endEntry = Math.min(currentPage * 10, totalCount);
 
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-8">
@@ -156,14 +162,26 @@ export default function Users() {
             </tbody>
           </table>
         </div>
-        {/* Pagination placeholder */}
+        {/* Pagination */}
         <div className="px-6 py-4 border-t border-slate-100 flex items-center justify-between bg-slate-50/50">
           <p className="text-xs font-semibold text-slate-500">
-            {totalCount > 0 ? `Showing 1 to ${Math.min(20, totalCount)} of ${totalCount} entries` : "Showing 0 entries"}
+            {totalCount > 0 ? `Showing ${startEntry} to ${endEntry} of ${totalCount} entries` : "Showing 0 entries"}
           </p>
           <div className="flex gap-2">
-            <button className="px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-bold text-slate-400 bg-white cursor-not-allowed">Previous</button>
-            <button className="px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-bold text-slate-400 bg-white cursor-not-allowed">Next</button>
+            <button 
+              onClick={handlePrevious} 
+              disabled={currentPage === 1} 
+              className={`px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-bold ${currentPage === 1 ? 'text-slate-400 bg-white cursor-not-allowed' : 'text-slate-700 bg-white hover:bg-slate-50 transition-colors'}`}
+            >
+              Previous
+            </button>
+            <button 
+              onClick={handleNext} 
+              disabled={currentPage * 10 >= totalCount} 
+              className={`px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-bold ${currentPage * 10 >= totalCount ? 'text-slate-400 bg-white cursor-not-allowed' : 'text-slate-700 bg-white hover:bg-slate-50 transition-colors'}`}
+            >
+              Next
+            </button>
           </div>
         </div>
       </div>
