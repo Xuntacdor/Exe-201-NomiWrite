@@ -10,7 +10,7 @@ export interface AdminSession {
 
 const tokenKey = "token";
 const sessionKey = "nomiwrite_admin_session";
-const adminRoles = new Set(["admin", "moderator"]);
+const adminRoles = new Set(["admin", "moderator", "1", "2"]);
 
 export function saveAdminSession(session: AdminSession) {
   localStorage.setItem(tokenKey, session.accessToken);
@@ -35,7 +35,7 @@ export function clearAdminSession() {
 }
 
 export function isAdminRole(role: string) {
-  return adminRoles.has(role.toLowerCase());
+  return adminRoles.has(String(role ?? "").trim().toLowerCase());
 }
 
 export function hasAdminSession() {
