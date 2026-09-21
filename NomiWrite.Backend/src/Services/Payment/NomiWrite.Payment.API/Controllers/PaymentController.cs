@@ -102,6 +102,17 @@ public class PaymentController : ControllerBase
         return Ok(history);
     }
 
+    [HttpGet("{paymentId:guid}/receipt")]
+    [Authorize]
+    public async Task<ActionResult<PaymentReceiptDto>> GetPaymentReceipt(Guid paymentId)
+    {
+        var userId = GetUserId();
+        if (userId is null)
+            return Unauthorized();
+
+        return Ok(await _paymentService.GetPaymentReceiptAsync(userId.Value, paymentId));
+    }
+
     [HttpPost("{paymentOrderId:guid}/refund-request")]
     [Authorize]
     public async Task<ActionResult<RefundRequestDto>> CreateRefundRequest(
@@ -125,48 +136,6 @@ public class PaymentController : ControllerBase
             return Unauthorized();
 
         var result = await _paymentService.GetRefundRequestsAsync(userId.Value);
-        return Ok(result);
-    }
-
-    [HttpPost("webhook/{provider}")]
-    [AllowAnonymous]
-    public async Task<IActionResult> HandleWebhook(string provider)
-    {
-        if (!Enum.TryParse(provider, ignoreCase: true, out PaymentProvider paymentProvider))
-        {
-            return BadRequest(new
-            {
-                success = false,
-                message = $"Unknown payment provider '{provider}'.",
-                errors = Array.Empty<string>()
-            });
-        }
-
-        var rawPayload = await new StreamReader(Request.Body).ReadToEndAsync();
-
-        WebhookCallbackDto callback;
-        try
-        {
-            callback = JsonSerializer.Deserialize<WebhookCallbackDto>(
-                rawPayload,
-                new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
-                ?? new WebhookCallbackDto();
-        }
-        catch (JsonException)
-        {
-            return BadRequest(new
-            {
-                success = false,
-                message = "Invalid webhook payload.",
-                errors = Array.Empty<string>()
-            });
-        }
-
-        callback.Provider = paymentProvider;
-        callback.RawPayload = rawPayload;
-        callback.ReceivedAt = DateTime.UtcNow;
-
-        var result = await _paymentService.HandleWebhookAsync(callback);
         return Ok(result);
     }
 
@@ -203,6 +172,9 @@ public class PaymentController : ControllerBase
             return Ok(new { RspCode = "01", Message = "Order not found" });
         }
 
+        if (payment.Provider != PaymentProvider.VNPay)
+            return Ok(new { RspCode = "02", Message = "Invalid provider" });
+
         if (verification.Amount != payment.Amount)
         {
             _logger.LogWarning(
@@ -215,16 +187,9 @@ public class PaymentController : ControllerBase
 
         var success = VnPayGatewayService.IsPaymentSuccessful(verification);
 
-        if (success && payment.Status == PaymentStatus.Completed)
+        if (payment.Status != PaymentStatus.Pending)
         {
-            await _dbContext.SaveChangesAsync();
-            return Ok(new { RspCode = "00", Message = "Confirm Success" });
-        }
-
-        if (!success && payment.Status == PaymentStatus.Failed)
-        {
-            await _dbContext.SaveChangesAsync();
-            return Ok(new { RspCode = "00", Message = "Confirm Success" });
+            return Ok(new { RspCode = "02", Message = "Order already confirmed" });
         }
 
         var now = DateTime.UtcNow;
@@ -242,7 +207,7 @@ public class PaymentController : ControllerBase
             payment.UpdatedAt = now;
             await _dbContext.SaveChangesAsync();
             await _publishEndpoint.Publish(
-                new PaymentCompletedEvent(payment.Id, payment.UserId, payment.Amount, payment.OrderReference, payment.PlanId));
+                new PaymentCompletedEvent(payment.Id, payment.UserId, payment.Amount, payment.OrderReference, payment.PlanId, payment.AppliedPromoCode));
         }
         else
         {
@@ -280,6 +245,9 @@ public class PaymentController : ControllerBase
             return NotFound();
         }
 
+        if (payment.Provider != PaymentProvider.Momo)
+            return BadRequest();
+
         if (payload.Amount != payment.Amount)
         {
             _logger.LogWarning(
@@ -291,6 +259,9 @@ public class PaymentController : ControllerBase
         }
 
         var success = verification.ResultCode == 0;
+
+        if (payment.Status != PaymentStatus.Pending)
+            return NoContent();
 
         if (success && payment.Status != PaymentStatus.Completed)
         {
@@ -307,7 +278,7 @@ public class PaymentController : ControllerBase
             payment.UpdatedAt = now;
             await _dbContext.SaveChangesAsync();
             await _publishEndpoint.Publish(
-                new PaymentCompletedEvent(payment.Id, payment.UserId, payment.Amount, payment.OrderReference, payment.PlanId));
+                new PaymentCompletedEvent(payment.Id, payment.UserId, payment.Amount, payment.OrderReference, payment.PlanId, payment.AppliedPromoCode));
         }
         else if (!success && payment.Status != PaymentStatus.Failed)
         {

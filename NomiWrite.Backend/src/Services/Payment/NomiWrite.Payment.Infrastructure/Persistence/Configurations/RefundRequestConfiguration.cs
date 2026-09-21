@@ -21,6 +21,7 @@ public class RefundRequestConfiguration : IEntityTypeConfiguration<RefundRequest
             .IsRequired();
 
         builder.HasIndex(r => r.PaymentOrderId)
+            .IsUnique()
             .HasDatabaseName("ix_refund_requests_payment_order_id");
 
         builder.Property(r => r.UserId)

@@ -8,6 +8,7 @@ public interface ISubscriptionDbContext
     DbSet<SubscriptionPlan> SubscriptionPlans { get; }
     DbSet<UserSubscription> UserSubscriptions { get; }
     DbSet<PromoCode> PromoCodes { get; }
+    DbSet<ProcessedPayment> ProcessedPayments { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

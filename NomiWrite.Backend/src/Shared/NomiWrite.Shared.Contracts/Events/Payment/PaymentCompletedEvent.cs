@@ -1,3 +1,3 @@
 namespace NomiWrite.Shared.Contracts.Events.Payment;
 
-public sealed record PaymentCompletedEvent(Guid PaymentId, Guid UserId, decimal Amount, string OrderReference, Guid? PlanId = null);
+public sealed record PaymentCompletedEvent(Guid PaymentId, Guid UserId, decimal Amount, string OrderReference, Guid? PlanId = null, string? PromoCode = null);

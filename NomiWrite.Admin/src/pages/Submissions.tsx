@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Search, Filter, MoreVertical, Eye, FileCheck, Target, GraduationCap } from "lucide-react";
+import { Search, Filter, Eye, FileCheck, Target, GraduationCap } from "lucide-react";
 
 interface Submission {
   id: string;

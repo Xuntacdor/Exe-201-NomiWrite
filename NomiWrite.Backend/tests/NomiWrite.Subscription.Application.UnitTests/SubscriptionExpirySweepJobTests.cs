@@ -137,6 +137,60 @@ public class SubscriptionExpirySweepJobTests
     }
 
     [Fact]
+    public async Task Sweep_ExpiringPublishFails_PersistsGuardBeforePublishSoRetryDoesNotRepublish()
+    {
+        var harness = Build();
+        var sub = SeedActive(harness.Db, DateTime.UtcNow.AddDays(2));
+        var shouldThrow = true;
+        harness.Publish.When(p => p.Publish(
+                Arg.Any<SubscriptionExpiringEvent>(),
+                Arg.Any<CancellationToken>()))
+            .Do(_ =>
+            {
+                if (shouldThrow)
+                    throw new InvalidOperationException("broker down");
+            });
+
+        await FluentActions.Invoking(() => Sweep(harness.Job))
+            .Should().ThrowAsync<InvalidOperationException>();
+
+        (await ReadAsync(harness.Db, sub.Id)).ExpiryWarningsSent.Should().BeTrue();
+
+        shouldThrow = false;
+        harness.Publish.ClearReceivedCalls();
+        await Sweep(harness.Job);
+
+        ExpiringEvents(harness.Publish).Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Sweep_ExpiredPublishFails_PersistsStatusBeforePublishSoRetryDoesNotRepublish()
+    {
+        var harness = Build();
+        var sub = SeedActive(harness.Db, DateTime.UtcNow.AddDays(-1));
+        var shouldThrow = true;
+        harness.Publish.When(p => p.Publish(
+                Arg.Any<SubscriptionExpiredEvent>(),
+                Arg.Any<CancellationToken>()))
+            .Do(_ =>
+            {
+                if (shouldThrow)
+                    throw new InvalidOperationException("broker down");
+            });
+
+        await FluentActions.Invoking(() => Sweep(harness.Job))
+            .Should().ThrowAsync<InvalidOperationException>();
+
+        (await ReadAsync(harness.Db, sub.Id)).Status.Should().Be(SubscriptionStatus.Expired);
+
+        shouldThrow = false;
+        harness.Publish.ClearReceivedCalls();
+        await Sweep(harness.Job);
+
+        ExpiredEvents(harness.Publish).Should().BeEmpty();
+    }
+
+    [Fact]
     public async Task Sweep_ExpiredButAlreadyExpiredStatus_NotProcessedAgain()
     {
         var harness = Build();

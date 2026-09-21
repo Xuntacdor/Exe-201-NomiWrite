@@ -37,6 +37,11 @@ public static class DependencyInjection
             client.BaseAddress = new Uri(serviceUrls.SubscriptionService);
             client.Timeout = TimeSpan.FromSeconds(3);
         });
+        services.AddHttpClient<ISubscriptionPlanClient, SubscriptionPlanClient>(client =>
+        {
+            client.BaseAddress = new Uri(serviceUrls.SubscriptionService);
+            client.Timeout = TimeSpan.FromSeconds(3);
+        });
 
         services.AddScoped<IValidator<CreatePaymentRequestDto>, CreatePaymentRequestValidator>();
         services.AddScoped<IValidator<CreateRefundRequestDto>, CreateRefundRequestValidator>();

@@ -20,6 +20,7 @@ public class PaymentTransactionConfiguration : IEntityTypeConfiguration<PaymentT
             .IsRequired();
 
         builder.HasIndex(t => t.PaymentId)
+            .IsUnique()
             .HasDatabaseName("ix_payment_transactions_payment_id");
 
         builder.Property(t => t.ProviderTransactionId)

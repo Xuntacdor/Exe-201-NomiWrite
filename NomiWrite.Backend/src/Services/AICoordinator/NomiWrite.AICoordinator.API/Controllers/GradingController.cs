@@ -27,7 +27,7 @@ public class GradingController : ControllerBase
         if (userId is null)
             return Unauthorized();
 
-        var result = await _gradingService.GetGradingResultBySubmissionIdAsync(submissionId, userId.Value);
+        var result = await _gradingService.GetGradingResultBySubmissionIdAsync(submissionId, userId.Value, GetBearerToken());
 
         if (result is null || result.Status == GradingStatus.Pending)
             return NotFound(new { success = false, message = "Grading result not found or still pending." });
@@ -53,7 +53,7 @@ public class GradingController : ControllerBase
         if (userId is null)
             return Unauthorized();
 
-        var comparison = await _gradingService.CompareWithPreviousAttemptAsync(userId.Value, submissionId);
+        var comparison = await _gradingService.CompareWithPreviousAttemptAsync(userId.Value, submissionId, GetBearerToken());
         return Ok(new { success = true, data = comparison });
     }
 

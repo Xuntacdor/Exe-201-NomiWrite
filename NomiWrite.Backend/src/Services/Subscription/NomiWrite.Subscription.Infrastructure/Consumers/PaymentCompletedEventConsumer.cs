@@ -39,6 +39,7 @@ public class PaymentCompletedEventConsumer : IConsumer<PaymentCompletedEvent>
         await _subscriptionService.ActivateSubscriptionFromPaymentAsync(
             @event.UserId,
             @event.PlanId.Value,
-            @event.PaymentId);
+            @event.PaymentId,
+            @event.PromoCode);
     }
 }

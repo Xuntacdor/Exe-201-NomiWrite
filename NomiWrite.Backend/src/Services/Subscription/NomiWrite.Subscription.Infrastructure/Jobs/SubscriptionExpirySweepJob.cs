@@ -11,9 +11,10 @@ namespace NomiWrite.Subscription.Infrastructure.Jobs;
 
 public class SubscriptionExpirySweepJob : BackgroundService
 {
+    private static readonly TimeSpan Interval = TimeSpan.FromHours(1);
+
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILogger<SubscriptionExpirySweepJob> _logger;
-    private static readonly TimeSpan Interval = TimeSpan.FromHours(1);
 
     public SubscriptionExpirySweepJob(
         IServiceScopeFactory scopeFactory,
@@ -48,7 +49,6 @@ public class SubscriptionExpirySweepJob : BackgroundService
     {
         using var scope = _scopeFactory.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<SubscriptionDbContext>();
-        // Lấy IPublishEndpoint từ scope đã tạo thay vì inject vào Singleton
         var publishEndpoint = scope.ServiceProvider.GetRequiredService<IPublishEndpoint>();
 
         var now = DateTime.UtcNow;
@@ -62,18 +62,19 @@ public class SubscriptionExpirySweepJob : BackgroundService
                 && !s.ExpiryWarningsSent)
             .ToListAsync(cancellationToken);
 
+        var expiringEvents = new List<SubscriptionExpiringEvent>(expiringSubscriptions.Count);
         foreach (var subscription in expiringSubscriptions)
         {
             _logger.LogInformation(
-                "Publishing SubscriptionExpiringEvent for user {UserId}, plan {PlanId}, endDate {EndDate}.",
+                "Marking subscription as expiring for user {UserId}, plan {PlanId}, endDate {EndDate}.",
                 subscription.UserId,
                 subscription.PlanId,
                 subscription.EndDate);
 
-            await publishEndpoint.Publish(new SubscriptionExpiringEvent(
+            expiringEvents.Add(new SubscriptionExpiringEvent(
                 subscription.UserId,
                 subscription.PlanId,
-                subscription.EndDate), cancellationToken);
+                subscription.EndDate));
 
             subscription.ExpiryWarningsSent = true;
             subscription.UpdatedAt = now;
@@ -85,20 +86,21 @@ public class SubscriptionExpirySweepJob : BackgroundService
                 && s.EndDate <= now)
             .ToListAsync(cancellationToken);
 
+        var expiredEvents = new List<SubscriptionExpiredEvent>(expiredSubscriptions.Count);
         foreach (var subscription in expiredSubscriptions)
         {
             _logger.LogInformation(
-                "Publishing SubscriptionExpiredEvent for user {UserId}, plan {PlanId}.",
+                "Marking subscription as expired for user {UserId}, plan {PlanId}.",
                 subscription.UserId,
                 subscription.PlanId);
 
-            subscription.Status = SubscriptionStatus.Expired;
-            subscription.UpdatedAt = now;
-
-            await publishEndpoint.Publish(new SubscriptionExpiredEvent(
+            expiredEvents.Add(new SubscriptionExpiredEvent(
                 subscription.UserId,
                 subscription.PlanId,
-                now), cancellationToken);
+                now));
+
+            subscription.Status = SubscriptionStatus.Expired;
+            subscription.UpdatedAt = now;
         }
 
         if (expiringSubscriptions.Count > 0 || expiredSubscriptions.Count > 0)
@@ -106,9 +108,30 @@ public class SubscriptionExpirySweepJob : BackgroundService
             await dbContext.SaveChangesAsync(cancellationToken);
 
             _logger.LogInformation(
-                "Subscription expiry sweep completed: {ExpiringCount} expiring warnings sent, {ExpiredCount} expired.",
+                "Subscription expiry sweep persisted: {ExpiringCount} expiring warnings marked, {ExpiredCount} expired.",
                 expiringSubscriptions.Count,
                 expiredSubscriptions.Count);
+        }
+
+        foreach (var evt in expiringEvents)
+        {
+            _logger.LogInformation(
+                "Publishing SubscriptionExpiringEvent for user {UserId}, plan {PlanId}, endDate {EndDate}.",
+                evt.UserId,
+                evt.PlanId,
+                evt.EndDate);
+
+            await publishEndpoint.Publish(evt, cancellationToken);
+        }
+
+        foreach (var evt in expiredEvents)
+        {
+            _logger.LogInformation(
+                "Publishing SubscriptionExpiredEvent for user {UserId}, plan {PlanId}.",
+                evt.UserId,
+                evt.PlanId);
+
+            await publishEndpoint.Publish(evt, cancellationToken);
         }
     }
 }

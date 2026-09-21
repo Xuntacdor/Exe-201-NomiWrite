@@ -9,6 +9,7 @@ public interface IPaymentService
     Task<PaymentStatusResponseDto> HandleWebhookAsync(WebhookCallbackDto callback);
 
     Task<PaymentStatusResponseDto> GetPaymentStatusAsync(Guid userId, Guid paymentId);
+    Task<PaymentReceiptDto> GetPaymentReceiptAsync(Guid userId, Guid paymentId);
 
     Task<IEnumerable<PaymentHistoryItemDto>> GetPaymentHistoryAsync(Guid userId);
 

@@ -76,8 +76,20 @@ public class WritingController : ControllerBase
         if (userId is null)
             return Unauthorized();
 
-        var result = await _writingService.SubmitSubmissionAsync(userId.Value, id, GetClientIpAddress(), GetUserAgent());
+        var result = await _writingService.SubmitSubmissionAsync(userId.Value, id, GetClientIpAddress(), GetUserAgent(), GetBearerToken());
         return Ok(result);
+    }
+
+    [HttpPost("submissions/{id:guid}/retry-grading")]
+    [Authorize]
+    public async Task<IActionResult> RetryGrading(Guid id)
+    {
+        var userId = GetUserId();
+        if (userId is null)
+            return Unauthorized();
+
+        await _writingService.RetryGradingAsync(userId.Value, id);
+        return Accepted(new { queued = true });
     }
 
     [HttpGet("submissions")]
