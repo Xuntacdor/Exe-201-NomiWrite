@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import {
   BarChart3,
   Users,
@@ -13,6 +13,8 @@ import {
 } from "lucide-react";
 import { clearAdminSession } from "../lib/authSession";
 
+const frontendLoginUrl = `${import.meta.env.VITE_FRONTEND_APP_URL ?? "http://localhost:3000"}/login`;
+
 const adminNavItems = [
   { icon: BarChart3, label: "Overview", href: "/" },
   { icon: Users, label: "Users", href: "/users" },
@@ -23,13 +25,12 @@ const adminNavItems = [
 
 export default function AdminSidebar() {
   const [collapsed, setCollapsed] = useState(false);
-  const navigate = useNavigate();
   const location = useLocation();
   const activePath = location.pathname;
 
   const handleLogout = () => {
     clearAdminSession();
-    navigate("/login");
+    window.location.assign(frontendLoginUrl);
   };
 
   return (
