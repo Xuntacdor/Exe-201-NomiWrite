@@ -117,10 +117,7 @@ public class SubscriptionService : ISubscriptionService
             && (promoCode.ExpiresAt is null || promoCode.ExpiresAt > now)
             && (promoCode.MaxRedemptions is null || promoCode.TimesRedeemed < promoCode.MaxRedemptions);
 
-        // TimesRedeemed is intentionally NOT incremented here. It is only incremented
-        // on actual successful use, which would require a callback from Payment Service
-        // on payment completion. That callback is a known simplification and out of
-        // scope for this pass.
+        // Validation is read-only; payment activation records a successful redemption.
         return new PromoCodeValidationResultDto
         {
             Valid = isValid,
@@ -128,8 +125,11 @@ public class SubscriptionService : ISubscriptionService
         };
     }
 
-    public async Task ActivateSubscriptionFromPaymentAsync(Guid userId, Guid planId, Guid paymentOrderId)
+    public async Task ActivateSubscriptionFromPaymentAsync(Guid userId, Guid planId, Guid paymentOrderId, string? promoCode = null)
     {
+        if (await _dbContext.ProcessedPayments.AnyAsync(p => p.PaymentOrderId == paymentOrderId))
+            return;
+
         var plan = await _dbContext.SubscriptionPlans.FirstOrDefaultAsync(p => p.Id == planId)
             ?? throw new PlanNotFoundException(planId);
 
@@ -148,6 +148,7 @@ public class SubscriptionService : ISubscriptionService
             activeSubscription.PaymentOrderId = paymentOrderId;
             activeSubscription.StartDate = now;
             activeSubscription.EndDate = now.AddDays(plan.DurationDays);
+            activeSubscription.ExpiryWarningsSent = false;
             activeSubscription.UpdatedAt = now;
 
             endDate = activeSubscription.EndDate;
@@ -156,6 +157,8 @@ public class SubscriptionService : ISubscriptionService
         {
             endDate = activeSubscription.EndDate.AddDays(plan.DurationDays);
             activeSubscription.EndDate = endDate;
+            activeSubscription.PaymentOrderId = paymentOrderId;
+            activeSubscription.ExpiryWarningsSent = false;
             activeSubscription.UpdatedAt = now;
         }
         else
@@ -172,6 +175,22 @@ public class SubscriptionService : ISubscriptionService
                 CreatedAt = now,
                 UpdatedAt = now
             });
+        }
+
+        _dbContext.ProcessedPayments.Add(new ProcessedPayment
+        {
+            PaymentOrderId = paymentOrderId,
+            UserId = userId,
+            PlanId = planId,
+            ProcessedAt = now
+        });
+
+        if (!string.IsNullOrWhiteSpace(promoCode))
+        {
+            var code = promoCode.Trim().ToUpperInvariant();
+            var promo = await _dbContext.PromoCodes.FirstOrDefaultAsync(p => p.Code == code);
+            if (promo is not null)
+                promo.TimesRedeemed++;
         }
 
         await _dbContext.SaveChangesAsync();

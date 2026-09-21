@@ -124,7 +124,9 @@ public class MomoGatewayService
 
     public MomoIpnResult VerifyIpnAsync(MomoIpnPayload payload)
     {
-        if (string.IsNullOrEmpty(payload.Signature))
+        if (string.IsNullOrEmpty(payload.Signature)
+            || string.IsNullOrWhiteSpace(_settings.SecretKey)
+            || !string.Equals(payload.PartnerCode, _settings.PartnerCode, StringComparison.Ordinal))
         {
             _logger.LogWarning("MoMo IPN received without a signature.");
             return InvalidResult;

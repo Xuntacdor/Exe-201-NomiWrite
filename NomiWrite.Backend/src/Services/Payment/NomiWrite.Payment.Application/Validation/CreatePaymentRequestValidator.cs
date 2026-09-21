@@ -11,7 +11,11 @@ public class CreatePaymentRequestValidator : AbstractValidator<CreatePaymentRequ
             .GreaterThan(0).WithMessage("Amount must be greater than zero.");
 
         RuleFor(x => x.Provider)
-            .IsInEnum().WithMessage("Provider is not a supported payment provider.");
+            .Must(p => p is Domain.Enums.PaymentProvider.VNPay or Domain.Enums.PaymentProvider.Momo)
+            .WithMessage("Only VNPay and MoMo checkout are supported.");
+
+        RuleFor(x => x.PlanId)
+            .NotNull().WithMessage("A subscription plan is required.");
 
         RuleFor(x => x.Currency)
             .NotEmpty().WithMessage("Currency is required.")

@@ -24,11 +24,6 @@ public class MockedPaymentGatewayService : IPaymentGatewayService
 
     public Task<GatewayWebhookVerificationResult> VerifyWebhookAsync(WebhookCallbackDto callback)
     {
-        // TODO: Replace with real webhook signature verification per provider.
-        // VNPay signs with an HMAC-SHA512 checksum, MoMo includes a signature field
-        // and VietQR relies on the provider settlement report. Authenticity must be
-        // validated using the provider's shared secret credentials. This stub always
-        // accepts the payload so the webhook flow can be exercised end-to-end.
-        return Task.FromResult(new GatewayWebhookVerificationResult(true, null));
+        return Task.FromResult(new GatewayWebhookVerificationResult(false, "Generic webhooks are disabled."));
     }
 }

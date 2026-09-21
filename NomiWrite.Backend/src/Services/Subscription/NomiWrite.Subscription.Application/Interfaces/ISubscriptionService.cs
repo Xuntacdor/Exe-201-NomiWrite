@@ -6,7 +6,7 @@ public interface ISubscriptionService
 {
     Task<IEnumerable<SubscriptionPlanDto>> GetActivePlansAsync();
     Task<UserSubscriptionStatusDto?> GetCurrentSubscriptionAsync(Guid userId);
-    Task ActivateSubscriptionFromPaymentAsync(Guid userId, Guid planId, Guid paymentOrderId);
+    Task ActivateSubscriptionFromPaymentAsync(Guid userId, Guid planId, Guid paymentOrderId, string? promoCode = null);
     Task<UserSubscriptionStatusDto> CancelSubscriptionAsync(Guid userId);
     Task<PromoCodeValidationResultDto> ValidatePromoCodeAsync(string code);
 }

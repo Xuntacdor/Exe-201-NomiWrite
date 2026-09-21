@@ -25,7 +25,12 @@ public class GradingServiceTests
         ISubscriptionStatusClient? subscription = null, IPublishEndpoint? publish = null)
     {
         provider ??= Substitute.For<IAiGradingProvider>();
-        subscription ??= Substitute.For<ISubscriptionStatusClient>();
+        if (subscription is null)
+        {
+            subscription = Substitute.For<ISubscriptionStatusClient>();
+            subscription.GetCurrentSubscriptionAsync(Arg.Any<Guid>(), Arg.Any<string?>())
+                .Returns(new SubscriptionStatusResult(false, null, null));
+        }
         publish ??= Substitute.For<IPublishEndpoint>();
 
         return new GradingService(
@@ -131,7 +136,7 @@ public class GradingServiceTests
 
         var stored = db.GradingResults.Single(r => r.SubmissionId == SubmissionId && r.UserId == UserId);
         stored.Status.Should().Be(GradingStatus.Failed);
-        stored.ErrorMessage.Should().Be("Gemini API error: 429");
+        stored.ErrorMessage.Should().Be("AI grading failed. Please retry this submission.");
 
         publish.ReceivedCalls().SelectMany(c => c.GetArguments())
             .OfType<GradingCompletedEvent>().Should().BeEmpty();
@@ -192,6 +197,35 @@ public class GradingServiceTests
         await provider.DidNotReceive().GradeEssayAsync(Arg.Any<string>());
         publish.ReceivedCalls().SelectMany(c => c.GetArguments())
             .OfType<GradingCompletedEvent>().Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task GradeSubmissionAsync_FailedResult_CanBeRetried()
+    {
+        var db = TestGradingDbContext.Create();
+        db.GradingResults.Add(new GradingResult
+        {
+            SubmissionId = SubmissionId,
+            UserId = UserId,
+            GrammarErrorsJson = "[]",
+            VocabularySuggestionsJson = "[]",
+            RestructuringSuggestionsJson = "[]",
+            Status = GradingStatus.Failed,
+            ErrorMessage = "Previous error",
+            CompletedAt = DateTime.UtcNow,
+            CreatedAt = DateTime.UtcNow
+        });
+        await db.SaveChangesAsync();
+        var provider = Substitute.For<IAiGradingProvider>();
+        provider.GradeEssayAsync("essay").Returns(SampleResponse());
+        var sut = Build(db, provider);
+
+        await sut.GradeSubmissionAsync(SubmissionId, UserId, "essay");
+
+        var result = db.GradingResults.Single();
+        result.Status.Should().Be(GradingStatus.Completed);
+        result.ErrorMessage.Should().BeNull();
+        db.GradingResults.Should().ContainSingle();
     }
 
     #endregion
@@ -266,6 +300,25 @@ public class GradingServiceTests
         comparison.BandDifference.Should().Be(1.0m);
         comparison.Previous.Id.Should().Be(previous.Id);
         comparison.Previous.Id.Should().NotBe(current.Id);
+    }
+
+    [Theory]
+    [InlineData(false, 0)]
+    [InlineData(true, 1)]
+    public async Task GetGradingResultBySubmissionIdAsync_AdvancedRewritesRequireVip(bool isVip, int expectedCount)
+    {
+        var db = TestGradingDbContext.Create();
+        var stored = SeedCompleted(db, SubmissionId);
+        stored.RestructuringSuggestionsJson = JsonSerializer.Serialize(SampleResponse().RestructuringSuggestions);
+        db.SaveChanges();
+        var subscription = Substitute.For<ISubscriptionStatusClient>();
+        subscription.GetCurrentSubscriptionAsync(UserId, "token")
+            .Returns(new SubscriptionStatusResult(isVip, null, null));
+        var sut = Build(db, subscription: subscription);
+
+        var result = await sut.GetGradingResultBySubmissionIdAsync(SubmissionId, UserId, "token");
+
+        result!.RestructuringSuggestions.Should().HaveCount(expectedCount);
     }
 
     [Fact]

@@ -153,6 +153,33 @@ public class GeminiGradingProviderTests
         await act.Should().ThrowAsync<HttpRequestException>();
     }
 
+    [Fact]
+    public async Task GradeEssayAsync_ServiceUnavailable_UsesFallbackModel()
+    {
+        var requestedModels = new List<string>();
+        var handler = new CallbackHttpMessageHandler(request =>
+        {
+            var path = request.RequestUri!.AbsolutePath;
+            requestedModels.Add(path);
+            return path.Contains("gemini-3.5-flash-lite", StringComparison.Ordinal)
+                ? new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(GeminiBody(ValidGradingJson)) }
+                : new HttpResponseMessage(HttpStatusCode.ServiceUnavailable) { Content = new StringContent("unavailable") };
+        });
+        var sut = new GeminiGradingProvider(
+            new HttpClient(handler),
+            Options.Create(new GeminiSettings { ApiKey = ApiKey, Model = "gemini-3.5-flash", FallbackModel = "gemini-3.5-flash-lite", Endpoint = Endpoint }),
+            TestGradingDbContext.Create(),
+            new MemoryCache(new MemoryCacheOptions()),
+            NullLogger<GeminiGradingProvider>.Instance);
+
+        var result = await sut.GradeEssayAsync("essay");
+
+        result.OverallBand.Should().Be(7.0m);
+        requestedModels.Should().HaveCount(4);
+        requestedModels.Take(3).Should().OnlyContain(path => path.Contains("gemini-3.5-flash:generateContent", StringComparison.Ordinal));
+        requestedModels.Last().Should().Contain("gemini-3.5-flash-lite");
+    }
+
     #endregion
 
     private sealed class StubHttpMessageHandler : HttpMessageHandler
@@ -175,5 +202,11 @@ public class GeminiGradingProviderTests
             };
             return Task.FromResult(response);
         }
+    }
+
+    private sealed class CallbackHttpMessageHandler(Func<HttpRequestMessage, HttpResponseMessage> callback) : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
+            Task.FromResult(callback(request));
     }
 }

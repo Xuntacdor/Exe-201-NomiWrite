@@ -35,6 +35,18 @@ public class PaymentStatusResponseDto
     public DateTime? UpdatedAt { get; set; }
 }
 
+public class PaymentReceiptDto
+{
+    public Guid PaymentId { get; set; }
+    public string OrderReference { get; set; } = string.Empty;
+    public Guid PlanId { get; set; }
+    public decimal Amount { get; set; }
+    public string Currency { get; set; } = "VND";
+    public PaymentProvider Provider { get; set; }
+    public int? AppliedDiscountPercent { get; set; }
+    public DateTime PaidAt { get; set; }
+}
+
 public class PaymentHistoryItemDto
 {
     public Guid Id { get; set; }

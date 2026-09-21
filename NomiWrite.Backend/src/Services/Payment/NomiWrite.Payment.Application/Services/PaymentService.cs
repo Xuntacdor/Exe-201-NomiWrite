@@ -19,6 +19,7 @@ public class PaymentService : IPaymentService
     private readonly IValidator<CreatePaymentRequestDto> _createPaymentValidator;
     private readonly IValidator<CreateRefundRequestDto> _createRefundValidator;
     private readonly IPromoCodeValidator _promoCodeValidator;
+    private readonly ISubscriptionPlanClient _planClient;
     private readonly IPublishEndpoint _publishEndpoint;
 
     public PaymentService(
@@ -27,13 +28,15 @@ public class PaymentService : IPaymentService
         IValidator<CreatePaymentRequestDto> createPaymentValidator,
         IValidator<CreateRefundRequestDto> createRefundValidator,
         IPromoCodeValidator promoCodeValidator,
-        IPublishEndpoint publishEndpoint)
+        IPublishEndpoint publishEndpoint,
+        ISubscriptionPlanClient planClient)
     {
         _dbContext = dbContext;
         _gatewayService = gatewayService;
         _createPaymentValidator = createPaymentValidator;
         _createRefundValidator = createRefundValidator;
         _promoCodeValidator = promoCodeValidator;
+        _planClient = planClient;
         _publishEndpoint = publishEndpoint;
     }
 
@@ -47,8 +50,17 @@ public class PaymentService : IPaymentService
 
         var now = DateTime.UtcNow;
 
-        var amount = request.Amount;
+        if (request.PlanId is null)
+            throw new ValidationException("A subscription plan is required.");
+
+        var plan = await _planClient.GetActivePlanAsync(request.PlanId.Value)
+            ?? throw new ValidationException("The subscription plan is unavailable.");
+        if (!string.Equals(plan.Currency, request.Currency, StringComparison.OrdinalIgnoreCase))
+            throw new ValidationException("Payment currency does not match the subscription plan.");
+
+        var amount = plan.Price;
         int? appliedDiscountPercent = null;
+        string? appliedPromoCode = null;
 
         if (!string.IsNullOrWhiteSpace(request.PromoCode))
         {
@@ -59,9 +71,10 @@ public class PaymentService : IPaymentService
             // one-time-use codes.
             var promoResult = await _promoCodeValidator.ValidateAsync(request.PromoCode);
 
-            if (promoResult.Valid && promoResult.DiscountPercent is > 0 and <= 100)
+            if (promoResult.Valid && promoResult.DiscountPercent is > 0 and < 100)
             {
                 appliedDiscountPercent = promoResult.DiscountPercent.Value;
+                appliedPromoCode = request.PromoCode.Trim().ToUpperInvariant();
                 amount = decimal.Round(amount * (100m - appliedDiscountPercent.Value) / 100m, 2);
             }
         }
@@ -76,22 +89,13 @@ public class PaymentService : IPaymentService
             OrderReference = GenerateOrderReference(),
             PlanId = request.PlanId,
             AppliedDiscountPercent = appliedDiscountPercent,
+            AppliedPromoCode = appliedPromoCode,
             CreatedAt = now,
             UpdatedAt = now
         };
 
         _dbContext.Payments.Add(payment);
         await _dbContext.SaveChangesAsync();
-
-        string? paymentUrl = null;
-
-        // TODO: Integrate the real payment gateway SDK (VNPay / MoMo / VietQR) for
-        // the selected provider. Each provider SDK requires merchant credentials
-        // (partner code, merchant account, secret/hash secret) loaded from
-        // configuration and must return the hosted checkout URL used to redirect
-        // the buyer. Replace this call with the concrete gateway implementation.
-        var gatewayResult = await _gatewayService.CreatePaymentAsync(payment);
-        paymentUrl = gatewayResult.PaymentUrl;
 
         await _publishEndpoint.Publish(new PaymentCreatedEvent
         {
@@ -112,7 +116,7 @@ public class PaymentService : IPaymentService
             Currency = payment.Currency,
             Provider = payment.Provider,
             Status = payment.Status,
-            PaymentUrl = paymentUrl,
+            PaymentUrl = null,
             CreatedAt = payment.CreatedAt,
             AppliedDiscountPercent = payment.AppliedDiscountPercent
         };
@@ -129,16 +133,14 @@ public class PaymentService : IPaymentService
                 $"Provider '{callback.Provider}' does not match payment '{payment.OrderReference}' provider '{payment.Provider}'.");
         }
 
-        // TODO: Verify the webhook signature before trusting the payload. VNPay
-        // signs with an HMAC-SHA512 checksum, MoMo includes a signature field and
-        // VietQR relies on the provider settlement report. The concrete gateway
-        // implementation must validate the signature using the provider's shared
-        // secret credentials loaded from configuration.
         var verification = await _gatewayService.VerifyWebhookAsync(callback);
         if (!verification.IsValid)
         {
             throw new InvalidWebhookException(verification.Reason ?? "Webhook signature verification failed.");
         }
+
+        if (payment.Status != PaymentStatus.Pending)
+            return ToStatusResponse(payment);
 
         var now = DateTime.UtcNow;
         _dbContext.PaymentTransactions.Add(new PaymentTransaction
@@ -152,13 +154,13 @@ public class PaymentService : IPaymentService
         PaymentCompletedEvent? completed = null;
         PaymentFailedEvent? failed = null;
 
-        if (callback.IsSuccess && payment.Status != PaymentStatus.Completed)
+        if (callback.IsSuccess && payment.Status == PaymentStatus.Pending)
         {
             payment.Status = PaymentStatus.Completed;
             payment.UpdatedAt = now;
-            completed = new PaymentCompletedEvent(payment.Id, payment.UserId, payment.Amount, payment.OrderReference, payment.PlanId);
+            completed = new PaymentCompletedEvent(payment.Id, payment.UserId, payment.Amount, payment.OrderReference, payment.PlanId, payment.AppliedPromoCode);
         }
-        else if (!callback.IsSuccess && payment.Status != PaymentStatus.Failed)
+        else if (!callback.IsSuccess && payment.Status == PaymentStatus.Pending)
         {
             payment.Status = PaymentStatus.Failed;
             payment.UpdatedAt = now;
@@ -191,6 +193,28 @@ public class PaymentService : IPaymentService
             throw new InvalidRefundException("Payment does not belong to the caller.", 403);
 
         return ToStatusResponse(payment);
+    }
+
+    public async Task<PaymentReceiptDto> GetPaymentReceiptAsync(Guid userId, Guid paymentId)
+    {
+        var payment = await _dbContext.Payments.FirstOrDefaultAsync(p => p.Id == paymentId)
+            ?? throw new PaymentNotFoundException(paymentId);
+        if (payment.UserId != userId)
+            throw new InvalidRefundException("Payment does not belong to the caller.", 403);
+        if (payment.Status != PaymentStatus.Completed || payment.PlanId is null)
+            throw new InvalidRefundException("Payment is not completed.", 409);
+
+        return new PaymentReceiptDto
+        {
+            PaymentId = payment.Id,
+            OrderReference = payment.OrderReference,
+            PlanId = payment.PlanId.Value,
+            Amount = payment.Amount,
+            Currency = payment.Currency,
+            Provider = payment.Provider,
+            AppliedDiscountPercent = payment.AppliedDiscountPercent,
+            PaidAt = payment.UpdatedAt ?? payment.CreatedAt
+        };
     }
 
     public async Task<IEnumerable<PaymentHistoryItemDto>> GetPaymentHistoryAsync(Guid userId)
@@ -228,6 +252,9 @@ public class PaymentService : IPaymentService
 
         if (payment.Status != PaymentStatus.Completed)
             throw new InvalidRefundException("Only completed payments can be refunded.");
+
+        if (await _dbContext.RefundRequests.AnyAsync(r => r.PaymentOrderId == paymentOrderId))
+            throw new InvalidRefundException("A refund request already exists for this payment.", 409);
 
         var now = DateTime.UtcNow;
         var refundRequest = new RefundRequest

@@ -66,6 +66,13 @@ public class GradingService : IGradingService
                 gradingResult.Status);
             return;
         }
+        else
+        {
+            gradingResult.Status = GradingStatus.Pending;
+            gradingResult.ErrorMessage = null;
+            gradingResult.CompletedAt = null;
+            await _dbContext.SaveChangesAsync();
+        }
 
         try
         {
@@ -107,14 +114,16 @@ public class GradingService : IGradingService
             _logger.LogError(ex, "AI grading failed for submission {SubmissionId}", submissionId);
 
             gradingResult.Status = GradingStatus.Failed;
-            gradingResult.ErrorMessage = ex.Message;
+            gradingResult.ErrorMessage = ex is HttpRequestException
+                ? "AI grading is temporarily unavailable. Please retry this submission."
+                : "AI grading failed. Please retry this submission.";
             gradingResult.CompletedAt = DateTime.UtcNow;
 
             await _dbContext.SaveChangesAsync();
         }
     }
 
-    public async Task<GradingResultDto?> GetGradingResultBySubmissionIdAsync(Guid submissionId, Guid userId)
+    public async Task<GradingResultDto?> GetGradingResultBySubmissionIdAsync(Guid submissionId, Guid userId, string? accessToken = null)
     {
         var result = await _dbContext.GradingResults
             .AsNoTracking()
@@ -123,7 +132,8 @@ public class GradingService : IGradingService
         if (result is null)
             return null;
 
-        return ToGradingResultDto(result);
+        var subscription = await GetSubscriptionStatusOrDefaultAsync(userId, accessToken);
+        return ToGradingResultDto(result, subscription.HasActiveSubscription);
     }
 
     public async Task<IReadOnlyList<GradingHistoryItemDto>> GetGradingHistoryAsync(Guid userId)
@@ -146,7 +156,7 @@ public class GradingService : IGradingService
             .ToList();
     }
 
-    public async Task<ComparisonDto> CompareWithPreviousAttemptAsync(Guid userId, Guid submissionId)
+    public async Task<ComparisonDto> CompareWithPreviousAttemptAsync(Guid userId, Guid submissionId, string? accessToken = null)
     {
         var currentResult = await _dbContext.GradingResults
             .AsNoTracking()
@@ -165,10 +175,11 @@ public class GradingService : IGradingService
             .OrderByDescending(r => r.CreatedAt)
             .FirstOrDefaultAsync();
 
+        var subscription = await GetSubscriptionStatusOrDefaultAsync(userId, accessToken);
         return new ComparisonDto
         {
-            Current = ToGradingResultDto(currentResult),
-            Previous = previousResult is null ? null : ToGradingResultDto(previousResult),
+            Current = ToGradingResultDto(currentResult, subscription.HasActiveSubscription),
+            Previous = previousResult is null ? null : ToGradingResultDto(previousResult, subscription.HasActiveSubscription),
             BandDifference = previousResult is null
                 ? null
                 : currentResult.OverallBand - previousResult.OverallBand
@@ -288,7 +299,7 @@ public class GradingService : IGradingService
         }
     }
 
-    private static GradingResultDto ToGradingResultDto(GradingResult result)
+    private static GradingResultDto ToGradingResultDto(GradingResult result, bool includeAdvanced)
     {
         var grammarErrors = string.IsNullOrEmpty(result.GrammarErrorsJson)
             ? new List<GrammarErrorDto>()
@@ -299,7 +310,7 @@ public class GradingService : IGradingService
             : JsonSerializer.Deserialize<List<VocabularySuggestionDto>>(result.VocabularySuggestionsJson)
                 ?? new List<VocabularySuggestionDto>();
 
-        var restructuringSuggestions = string.IsNullOrEmpty(result.RestructuringSuggestionsJson)
+        var restructuringSuggestions = !includeAdvanced || string.IsNullOrEmpty(result.RestructuringSuggestionsJson)
             ? new List<RestructuringSuggestionDto>()
             : JsonSerializer.Deserialize<List<RestructuringSuggestionDto>>(result.RestructuringSuggestionsJson)
                 ?? new List<RestructuringSuggestionDto>();

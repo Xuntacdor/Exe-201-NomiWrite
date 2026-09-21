@@ -55,6 +55,10 @@ public class PaymentOrderConfiguration : IEntityTypeConfiguration<PaymentOrder>
         builder.Property(p => p.AppliedDiscountPercent)
             .HasColumnName("applied_discount_percent");
 
+        builder.Property(p => p.AppliedPromoCode)
+            .HasColumnName("applied_promo_code")
+            .HasMaxLength(64);
+
         builder.HasIndex(p => p.OrderReference)
             .IsUnique()
             .HasDatabaseName("ix_payment_orders_order_reference");

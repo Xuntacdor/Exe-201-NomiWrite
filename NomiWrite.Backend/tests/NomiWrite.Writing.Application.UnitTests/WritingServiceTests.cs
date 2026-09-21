@@ -21,6 +21,44 @@ public class WritingServiceTests
     private static readonly Guid UserA = Guid.NewGuid();
     private static readonly Guid UserB = Guid.NewGuid();
 
+    [Fact]
+    public async Task RetryGradingAsync_SubmittedEssay_RepublishesOriginalWithoutNewSubmission()
+    {
+        var db = TestWritingDbContext.Create();
+        var prompt = SeedPrompt(db, SeedType(db));
+        var publish = Substitute.For<IPublishEndpoint>();
+        var sut = Build(db, publish);
+        var created = await sut.CreateSubmissionAsync(UserA, new CreateSubmissionRequestDto { WritingPromptId = prompt.Id });
+        await sut.UpdateSubmissionAsync(UserA, created.Id, new UpdateSubmissionRequestDto { Content = "This is my essay." });
+        await sut.SubmitSubmissionAsync(UserA, created.Id);
+
+        await sut.RetryGradingAsync(UserA, created.Id);
+
+        db.WritingSubmissions.Should().ContainSingle();
+        var events = publish.ReceivedCalls().SelectMany(call => call.GetArguments())
+            .OfType<WritingSubmittedEvent>().ToList();
+        events.Should().HaveCount(2);
+        events.Last().Content.Should().Be("This is my essay.");
+        events.Last().SubmittedAt.Should().Be(events.First().SubmittedAt);
+    }
+
+    [Fact]
+    public async Task RetryGradingAsync_RejectsDraftAndOtherUser()
+    {
+        var db = TestWritingDbContext.Create();
+        var prompt = SeedPrompt(db, SeedType(db));
+        var publish = Substitute.For<IPublishEndpoint>();
+        var sut = Build(db, publish);
+        var created = await sut.CreateSubmissionAsync(UserA, new CreateSubmissionRequestDto { WritingPromptId = prompt.Id });
+
+        await FluentActions.Invoking(() => sut.RetryGradingAsync(UserA, created.Id))
+            .Should().ThrowAsync<SubmissionNotEditableException>();
+        await FluentActions.Invoking(() => sut.RetryGradingAsync(UserB, created.Id))
+            .Should().ThrowAsync<ForbiddenSubmissionAccessException>();
+        publish.ReceivedCalls().SelectMany(call => call.GetArguments())
+            .OfType<WritingSubmittedEvent>().Should().BeEmpty();
+    }
+
     private static WritingService Build(TestWritingDbContext db,
         IPublishEndpoint? publish = null,
         ISubscriptionStatusClient? subClient = null)
@@ -267,6 +305,43 @@ public class WritingServiceTests
 
         result.Status.Should().Be(SubmissionStatus.Submitted);
         result.WordCount.Should().Be(7);
+    }
+
+    [Theory]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    public async Task SubmitSubmissionAsync_DailyLimitAppliesOnlyToFreeUsers(bool isVip, bool blocked)
+    {
+        var db = TestWritingDbContext.Create();
+        var type = SeedType(db);
+        var prompt = SeedPrompt(db, type);
+        var subClient = Substitute.For<ISubscriptionStatusClient>();
+        subClient.GetCurrentSubscriptionAsync(UserA, Arg.Any<string?>())
+            .Returns(new SubscriptionStatusResult(isVip, isVip ? "VIP" : null, null));
+        var publish = Substitute.For<IPublishEndpoint>();
+        var sut = Build(db, publish, subClient);
+
+        for (var i = 0; i < 4; i++)
+        {
+            var draft = await sut.CreateSubmissionAsync(UserA,
+                new CreateSubmissionRequestDto { WritingPromptId = prompt.Id });
+            await sut.UpdateSubmissionAsync(UserA, draft.Id,
+                new UpdateSubmissionRequestDto { Content = "a complete short essay" });
+
+            if (i == 3 && blocked)
+            {
+                var act = () => sut.SubmitSubmissionAsync(UserA, draft.Id);
+                await act.Should().ThrowAsync<DailyGradingLimitExceededException>();
+                db.WritingSubmissions.Single(s => s.Id == draft.Id).Status.Should().Be(SubmissionStatus.Draft);
+            }
+            else
+            {
+                await sut.SubmitSubmissionAsync(UserA, draft.Id);
+            }
+        }
+
+        db.WritingSubmissions.Count(s => s.Status == SubmissionStatus.Submitted)
+            .Should().Be(blocked ? 3 : 4);
     }
 
     [Fact]

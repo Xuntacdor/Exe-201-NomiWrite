@@ -28,6 +28,7 @@ export const apiRoutes = {
     list: "/api/writing/submissions",
     detail: (id: string) => `/api/writing/submissions/${id}`,
     submit: (id: string) => `/api/writing/submissions/${id}/submit`,
+    retryGrading: (id: string) => `/api/writing/submissions/${id}/retry-grading`,
     timeRemaining: (id: string) => `/api/writing/submissions/${id}/time-remaining`,
   },
   feedback: {
