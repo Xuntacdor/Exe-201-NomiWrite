@@ -1,6 +1,8 @@
 using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using System.Security.Cryptography;
+using System.Text;
 using NomiWrite.Notification.Application.Interfaces;
 using NomiWrite.Notification.Domain.Entities;
 using NomiWrite.Notification.Domain.Enums;
@@ -35,6 +37,22 @@ public class PostLikedEventConsumer : IConsumer<PostLikedEvent>
             _logger.LogDebug(
                 "Post author and liker are the same user {UserId}; skipping self-notification.",
                 @event.PostAuthorUserId);
+            return;
+        }
+
+        var likeReferenceId = CreateLikeReferenceId(@event.PostId, @event.LikerUserId);
+        var existing = await _dbContext.Notifications
+            .FirstOrDefaultAsync(n =>
+                n.Type == NotificationType.Forum
+                && n.UserId == @event.PostAuthorUserId
+                && n.ReferenceId == likeReferenceId);
+
+        if (existing is not null)
+        {
+            _logger.LogDebug(
+                "Post like notification already exists for post {PostId} and liker {LikerUserId}; skipping.",
+                @event.PostId,
+                @event.LikerUserId);
             return;
         }
 
@@ -73,7 +91,7 @@ public class PostLikedEventConsumer : IConsumer<PostLikedEvent>
             Title = "Someone liked your post",
             Message = "Someone liked your post.",
             Type = NotificationType.Forum,
-            ReferenceId = @event.PostId,
+            ReferenceId = likeReferenceId,
             IsRead = false,
             CreatedAt = now,
             UpdatedAt = now
@@ -85,5 +103,12 @@ public class PostLikedEventConsumer : IConsumer<PostLikedEvent>
             "Created post like notification for user {UserId}, post {PostId}.",
             @event.PostAuthorUserId,
             @event.PostId);
+    }
+
+    private static Guid CreateLikeReferenceId(Guid postId, Guid likerUserId)
+    {
+        var input = $"{postId:N}:{likerUserId:N}";
+        var hash = MD5.HashData(Encoding.UTF8.GetBytes(input));
+        return new Guid(hash);
     }
 }

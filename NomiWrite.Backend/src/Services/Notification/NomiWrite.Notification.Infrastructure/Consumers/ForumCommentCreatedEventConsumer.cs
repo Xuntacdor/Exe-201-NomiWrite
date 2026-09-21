@@ -38,6 +38,20 @@ public class ForumCommentCreatedEventConsumer : IConsumer<ForumCommentCreatedEve
             return;
         }
 
+        var existing = await _dbContext.Notifications
+            .FirstOrDefaultAsync(n =>
+                n.Type == NotificationType.Forum
+                && n.UserId == @event.PostAuthorUserId
+                && n.ReferenceId == @event.CommentId);
+
+        if (existing is not null)
+        {
+            _logger.LogDebug(
+                "Forum comment notification already exists for comment {CommentId}; skipping.",
+                @event.CommentId);
+            return;
+        }
+
         var preference = await _dbContext.NotificationPreferences
             .FirstOrDefaultAsync(p => p.UserId == @event.PostAuthorUserId);
 
@@ -73,7 +87,7 @@ public class ForumCommentCreatedEventConsumer : IConsumer<ForumCommentCreatedEve
             Title = "New comment on your post",
             Message = $"Someone commented on your post: \"{@event.CommentPreview}\"",
             Type = NotificationType.Forum,
-            ReferenceId = @event.PostId,
+            ReferenceId = @event.CommentId,
             IsRead = false,
             CreatedAt = now,
             UpdatedAt = now
