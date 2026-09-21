@@ -51,6 +51,7 @@ public class AdminPromptService : IAdminPromptService
             {
                 Id = p.Id,
                 WritingTypeId = p.WritingTypeId,
+                WritingTypeName = p.WritingType != null ? p.WritingType.Name : string.Empty,
                 Title = p.Title,
                 Difficulty = p.Difficulty,
                 IsActive = p.IsActive,
@@ -77,6 +78,7 @@ public class AdminPromptService : IAdminPromptService
     {
         var prompt = await _dbContext.WritingPrompts
             .AsNoTracking()
+            .Include(p => p.WritingType)
             .FirstOrDefaultAsync(p => p.Id == id)
             ?? throw new PromptNotFoundException(id);
 
@@ -84,6 +86,7 @@ public class AdminPromptService : IAdminPromptService
         {
             Id = prompt.Id,
             WritingTypeId = prompt.WritingTypeId,
+            WritingTypeName = prompt.WritingType?.Name ?? string.Empty,
             Title = prompt.Title,
             Difficulty = prompt.Difficulty,
             IsActive = prompt.IsActive,
@@ -120,10 +123,16 @@ public class AdminPromptService : IAdminPromptService
         _dbContext.WritingPrompts.Add(prompt);
         await _dbContext.SaveChangesAsync();
 
+        var writingTypeName = await _dbContext.WritingTypes
+            .Where(t => t.Id == prompt.WritingTypeId)
+            .Select(t => t.Name)
+            .FirstOrDefaultAsync() ?? string.Empty;
+
         return new AdminPromptListItemDto
         {
             Id = prompt.Id,
             WritingTypeId = prompt.WritingTypeId,
+            WritingTypeName = writingTypeName,
             Title = prompt.Title,
             Difficulty = prompt.Difficulty,
             IsActive = prompt.IsActive,
@@ -159,10 +168,16 @@ public class AdminPromptService : IAdminPromptService
 
         await _dbContext.SaveChangesAsync();
 
+        var writingTypeName = await _dbContext.WritingTypes
+            .Where(t => t.Id == prompt.WritingTypeId)
+            .Select(t => t.Name)
+            .FirstOrDefaultAsync() ?? string.Empty;
+
         return new AdminPromptListItemDto
         {
             Id = prompt.Id,
             WritingTypeId = prompt.WritingTypeId,
+            WritingTypeName = writingTypeName,
             Title = prompt.Title,
             Difficulty = prompt.Difficulty,
             IsActive = prompt.IsActive,

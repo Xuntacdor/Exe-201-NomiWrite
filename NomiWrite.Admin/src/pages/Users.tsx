@@ -3,6 +3,24 @@ import { Search, Filter, MoreVertical, Shield, UserX, UserCheck, Mail, Loader2 }
 import { adminService } from "../services/adminService";
 import type { AdminUserListItemDto } from "../services/adminService";
 
+function normalizeEnum(value: number | string) {
+  return String(value).trim().toLowerCase();
+}
+
+function getRoleLabel(role: number | string) {
+  const normalized = normalizeEnum(role);
+  if (normalized === "1" || normalized === "admin") return "Admin";
+  if (normalized === "2" || normalized === "moderator") return "Moderator";
+  return "Student";
+}
+
+function getStatusLabel(status: number | string) {
+  const normalized = normalizeEnum(status);
+  if (normalized === "0" || normalized === "active") return "Active";
+  if (normalized === "1" || normalized === "deactivated") return "Deactivated";
+  return "Blocked";
+}
+
 export default function Users() {
   const [searchTerm, setSearchTerm] = useState("");
   const [users, setUsers] = useState<AdminUserListItemDto[]>([]);
@@ -87,7 +105,13 @@ export default function Users() {
                   <td colSpan={5} className="px-6 py-12 text-center text-slate-500 font-semibold">No users found.</td>
                  </tr>
               )}
-              {users.map((user) => (
+              {users.map((user) => {
+                const roleLabel = getRoleLabel(user.role);
+                const statusLabel = getStatusLabel(user.accountStatus);
+                const isElevatedRole = roleLabel !== "Student";
+                const isActive = statusLabel === "Active";
+
+                return (
                 <tr key={user.id} className="hover:bg-slate-50/50 transition-colors">
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
@@ -104,18 +128,18 @@ export default function Users() {
                   </td>
                   <td className="px-6 py-4">
                     <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-extrabold uppercase tracking-widest ${
-                      user.role === 1 ? "bg-purple-100 text-purple-700" : "bg-slate-100 text-slate-600"
+                      isElevatedRole ? "bg-purple-100 text-purple-700" : "bg-slate-100 text-slate-600"
                     }`}>
-                      {user.role === 1 && <Shield className="h-3 w-3" />}
-                      {user.role === 1 ? "Admin" : "Student"}
+                      {isElevatedRole && <Shield className="h-3 w-3" />}
+                      {roleLabel}
                     </span>
                   </td>
                   <td className="px-6 py-4">
                     <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-extrabold uppercase tracking-widest ${
-                      user.accountStatus === 0 ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"
+                      isActive ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"
                     }`}>
-                      {user.accountStatus === 0 ? <UserCheck className="h-3 w-3" /> : <UserX className="h-3 w-3" />}
-                      {user.accountStatus === 0 ? "Active" : "Blocked"}
+                      {isActive ? <UserCheck className="h-3 w-3" /> : <UserX className="h-3 w-3" />}
+                      {statusLabel}
                     </span>
                   </td>
                   <td className="px-6 py-4 text-slate-500 font-medium">
@@ -127,7 +151,8 @@ export default function Users() {
                     </button>
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         </div>

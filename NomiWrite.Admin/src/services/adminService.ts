@@ -10,9 +10,24 @@ export interface AdminUserListItemDto {
   id: string;
   email: string;
   fullName: string;
-  role: number;
-  accountStatus: number;
+  role: number | string;
+  accountStatus: number | string;
   isEmailVerified: boolean;
+  createdAt: string;
+}
+
+export interface AdminPromptListItemDto {
+  id: string;
+  writingTypeId: string;
+  writingTypeName?: string;
+  title: string;
+  difficulty: number | string;
+  isActive: boolean;
+  timeLimitMinutes?: number | null;
+  minWords?: number | null;
+  maxWords?: number | null;
+  imageUrl?: string | null;
+  isVipOnly: boolean;
   createdAt: string;
 }
 
@@ -32,6 +47,13 @@ export const adminService = {
 
   getUsers: async (page = 1, pageSize = 20): Promise<PagedResultDto<AdminUserListItemDto>> => {
     const response = await apiClient.get('/users', {
+      params: { page, pageSize },
+    });
+    return response.data;
+  },
+
+  getPrompts: async (page = 1, pageSize = 50): Promise<PagedResultDto<AdminPromptListItemDto>> => {
+    const response = await apiClient.get('/prompts', {
       params: { page, pageSize },
     });
     return response.data;
