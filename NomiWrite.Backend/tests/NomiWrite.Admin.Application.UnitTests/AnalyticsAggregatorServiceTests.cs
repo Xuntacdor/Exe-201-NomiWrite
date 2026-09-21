@@ -22,12 +22,21 @@ public class AnalyticsAggregatorServiceTests
         SubscriptionService = "http://subscription.local/"
     };
 
-    private static AnalyticsAggregatorService Build(StubHttpMessageHandler handler)
+    private static AnalyticsAggregatorService Build(StubHttpMessageHandler handler, string? authorization = null)
     {
         var client = new HttpClient(handler) { BaseAddress = new Uri("http://x.local/") };
         var apiClient = new AnalyticsApiClient(client);
         var httpContext = Substitute.For<IHttpContextAccessor>();
-        httpContext.HttpContext.Returns((HttpContext?)null);
+        if (authorization is null)
+        {
+            httpContext.HttpContext.Returns((HttpContext?)null);
+        }
+        else
+        {
+            var context = new DefaultHttpContext();
+            context.Request.Headers.Authorization = authorization;
+            httpContext.HttpContext.Returns(context);
+        }
 
         return new AnalyticsAggregatorService(
             apiClient,
@@ -114,11 +123,24 @@ public class AnalyticsAggregatorServiceTests
         handler.CallCount.Should().Be(4);
     }
 
+    [Fact]
+    public async Task GetOverview_ForwardsCallerAuthorizationToAdminUpstreams()
+    {
+        var handler = new StubHttpMessageHandler();
+        var sut = Build(handler, "Bearer admin-token");
+
+        await sut.GetOverviewAsync();
+
+        handler.AuthorizationHeaders.Should().HaveCount(4);
+        handler.AuthorizationHeaders.Should().OnlyContain(h => h == "Bearer admin-token");
+    }
+
     #endregion
 
     private sealed class StubHttpMessageHandler : HttpMessageHandler
     {
         private readonly Dictionary<string, int> _failures = new(StringComparer.OrdinalIgnoreCase);
+        public List<string?> AuthorizationHeaders { get; } = new();
         public int CallCount { get; private set; }
 
         public void SetFailure(string service, int statusCode) => _failures[service] = statusCode;
@@ -127,6 +149,11 @@ public class AnalyticsAggregatorServiceTests
             CancellationToken cancellationToken)
         {
             CallCount++;
+            AuthorizationHeaders.Add(
+                request.Headers.TryGetValues("Authorization", out var values)
+                    ? values.SingleOrDefault()
+                    : null);
+
             var path = request.RequestUri!.AbsolutePath;
 
             if (_failures.TryGetValue(ServiceKey(path), out var statusCode))

@@ -68,6 +68,25 @@ public class ContentReportServiceTests
     }
 
     [Fact]
+    public async Task CreateReport_SameTargetDifferentContentType_Allowed()
+    {
+        var db = TestAdminDbContext.Create();
+        var target = Guid.NewGuid();
+        var sut = Build(db);
+        await sut.CreateReportAsync(Reporter, ReportOn(target));
+
+        var other = await sut.CreateReportAsync(Reporter, new CreateReportRequestDto
+        {
+            ContentType = ContentType.Post,
+            TargetId = target,
+            Reason = "same id but different content"
+        });
+
+        other.Status.Should().Be(ReportStatus.Pending);
+        db.ContentReports.Should().HaveCount(2);
+    }
+
+    [Fact]
     public async Task CreateReport_EmptyReason_Throws()
     {
         var db = TestAdminDbContext.Create();
