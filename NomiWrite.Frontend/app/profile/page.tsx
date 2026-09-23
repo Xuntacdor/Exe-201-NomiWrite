@@ -247,9 +247,6 @@ export default function ProfilePage() {
               <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                 <p className="mb-3 text-xs font-bold uppercase tracking-widest text-slate-400">Current plan</p>
                 <p className="mb-1 text-base font-extrabold text-slate-900">{planLabel}</p>
-                <p className="mb-4 text-xs leading-relaxed text-slate-500">
-                  Subscription data is loaded from `/api/users/me/account`.
-                </p>
                 <Link href="/upgrade" className="block w-full rounded-xl bg-gradient-to-r from-blue-600 to-violet-600 py-2.5 text-center text-xs font-bold text-white transition-opacity hover:opacity-90">
                   Upgrade Premium
                 </Link>
@@ -268,9 +265,6 @@ export default function ProfilePage() {
 
               <div className="rounded-2xl border border-red-100 bg-white p-5 shadow-sm">
                 <p className="mb-2 text-xs font-bold uppercase tracking-widest text-red-400">Account safety</p>
-                <p className="mb-4 text-xs leading-relaxed text-slate-500">
-                  Account deactivation is backed by `/api/auth/deactivate`.
-                </p>
                 <button
                   type="button"
                   onClick={() => setConfirmAction("deactivate")}
