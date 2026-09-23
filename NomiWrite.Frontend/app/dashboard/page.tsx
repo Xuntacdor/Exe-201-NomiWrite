@@ -48,11 +48,18 @@ export default function DashboardPage() {
       Promise.all([
         apiClient.getMyAccount().catch(() => apiClient.getMe()),
         apiClient.listSubmissions(),
+        apiClient.listGradingHistory().catch(() => []),
       ])
-        .then(([profile, history]) => {
+        .then(([profile, items, gradingHistory]) => {
           if (ignore) return;
+          const scoreBySubmission = new Map(gradingHistory.map(item => [item.submissionId, item.overallBand]));
+          const merged = items.map(item => ({
+            ...item,
+            overallScore: item.overallScore ?? scoreBySubmission.get(item.id),
+            status: scoreBySubmission.has(item.id) ? "graded" as const : item.status,
+          }));
           setUser(profile);
-          setSubmissions(history);
+          setSubmissions(merged);
         })
         .catch(err => {
           if (!ignore) setError(err instanceof Error ? err.message : "Could not load dashboard.");
@@ -235,43 +242,17 @@ export default function DashboardPage() {
                 )}
               </div>
 
-              {/* Progress Tracking */}
-              <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm flex flex-col">
-                <div className="mb-6">
-                  <h3 className="text-lg font-extrabold text-slate-900">Tiến độ học tập</h3>
-                  <p className="mt-1 text-sm text-slate-500">Writing Band Score Trend</p>
-                </div>
-                
-                <div className="flex-1 flex flex-col justify-end">
-                  {bandHistory.length ? (
-                    <div className="flex items-end justify-between gap-2 h-40">
-                      {bandHistory.map((band, index) => {
-                        const pct = (band / maxBand) * 100;
-                        const isLast = index === bandHistory.length - 1;
-                        return (
-                          <div key={`${band}-${index}`} className="group relative flex flex-1 flex-col items-center gap-2">
-                            <span className={`text-xs font-bold transition-all ${isLast ? "text-blue-600 scale-110" : "text-slate-400 opacity-0 group-hover:opacity-100"}`}>{band}</span>
-                            <div className="flex w-full flex-col justify-end h-full">
-                              <div className={`w-full rounded-t-lg transition-all duration-500 ${isLast ? "bg-blue-600" : "bg-blue-100 group-hover:bg-blue-200"}`} style={{ height: `${pct}%` }} />
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <div className="flex h-full flex-col items-center justify-center text-center">
-                      <TrendingUp className="mb-3 h-8 w-8 text-slate-300" />
-                      <p className="text-sm font-medium text-slate-500">Làm bài để xem biểu đồ tiến độ của bạn tại đây.</p>
-                    </div>
-                  )}
-                </div>
-                <div className="mt-6 rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 p-5 text-white">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Sparkles className="h-4 w-4 text-yellow-400" />
-                    <h4 className="font-bold text-sm">NomiWrite PRO</h4>
+              {/* PRO Banner */}
+              <div className="flex flex-col gap-6">
+                <div className="rounded-3xl bg-gradient-to-br from-slate-900 to-slate-800 p-6 text-white shadow-sm">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Sparkles className="h-5 w-5 text-yellow-400" />
+                    <h4 className="font-bold text-base">NomiWrite PRO</h4>
                   </div>
-                  <p className="text-xs text-slate-300 mb-4 leading-relaxed">Mở khóa tính năng chấm chữa chi tiết từng câu (Line-by-line grading) và nhận xét theo tiêu chí IELTS.</p>
-                  <Link href="/upgrade" className="block w-full rounded-xl bg-white/10 px-4 py-2 text-center text-xs font-bold transition-colors hover:bg-white/20">
+                  <p className="text-[13px] text-slate-300 mb-5 leading-relaxed">
+                    Mở khóa tính năng chấm chữa chi tiết từng câu (Line-by-line grading) và nhận xét theo tiêu chí IELTS.
+                  </p>
+                  <Link href="/upgrade" className="block w-full rounded-xl bg-white/10 px-4 py-3 text-center text-sm font-bold transition-colors hover:bg-white/20">
                     Tìm hiểu thêm
                   </Link>
                 </div>
