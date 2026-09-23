@@ -13,6 +13,7 @@ public class LearningDbContext : DbContext, ILearningDbContext
     public DbSet<GrammarError> GrammarErrors => Set<GrammarError>();
     public DbSet<Quiz> Quizzes => Set<Quiz>();
     public DbSet<QuizAttempt> QuizAttempts => Set<QuizAttempt>();
+    public DbSet<StudyGuide> StudyGuides => Set<StudyGuide>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
