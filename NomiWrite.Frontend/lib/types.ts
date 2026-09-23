@@ -376,6 +376,8 @@ export interface ApiClient {
   getCurrentSubscription(): Promise<SubscriptionStatus>;
   cancelSubscription(): Promise<SubscriptionStatus>;
   validatePromoCode(code: string): Promise<PromoCodeValidation>;
+  getStudyGuide(): Promise<StudyGuide | null>;
+  generateStudyGuide(request: GenerateStudyGuideRequest): Promise<StudyGuide>;
 }
 
 export interface SubscriptionPlan {
@@ -397,4 +399,37 @@ export interface SubscriptionStatus {
     endDate: string;
     daysRemaining: number;
   } | null;
+}
+
+export interface GenerateStudyGuideRequest {
+  targetExam?: string;
+  targetBand?: number;
+  forceRefresh?: boolean;
+}
+
+export interface StudyGuideStep {
+  title: string;
+  description: string;
+  focus: string;
+}
+
+export interface StudyGuideTopic {
+  title: string;
+  reason: string;
+  suggestedPrompt: string;
+}
+
+export interface StudyGuide {
+  id: string;
+  userId: string;
+  targetExam: string;
+  targetBand?: number | null;
+  summary: string;
+  estimatedBand: number;
+  strengths: string[];
+  weaknesses: string[];
+  nextSteps: StudyGuideStep[];
+  recommendedTopic: StudyGuideTopic;
+  analyzedEssayCount: number;
+  createdAt: string;
 }

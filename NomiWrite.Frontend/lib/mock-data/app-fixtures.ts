@@ -1,6 +1,7 @@
 import type {
   DashboardSummary,
   Quiz,
+  StudyGuide,
   Submission,
   VocabSuggestion,
   WritingFeedback,
@@ -8,6 +9,55 @@ import type {
   WritingType,
 } from "../types";
 import { mockUser } from "./auth";
+
+export const mockStudyGuide: StudyGuide = {
+  id: "study-guide-mock-0001",
+  userId: mockUser.id,
+  targetExam: "IELTS Academic - Writing Task 2",
+  targetBand: 7,
+  summary:
+    "Your recent essays show clear structure and a strong, consistent position, which is holding your Task Response and Coherence at Band 7. Lexical Resource and Grammatical Range are the two criteria keeping your overall score below target.",
+  estimatedBand: 6.5,
+  strengths: [
+    "Clear, consistent position on every question",
+    "Coherent paragraph structure with linking logic",
+    "Few repetition errors in essay organization",
+  ],
+  weaknesses: [
+    "Lexical Resource is the lowest criterion (6.0)",
+    "'Preposition' mistakes recur in almost every essay",
+    "Limited range of complex sentence structures",
+  ],
+  nextSteps: [
+    {
+      title: "Raise Lexical Resource to Band 7",
+      description:
+        "Learn 5 academic collocations per week targeted at your recurring topics. Aim to use 2 unfamiliar words from your saved vocabulary in each new essay.",
+      focus: "vocabulary",
+    },
+    {
+      title: "Eliminate recurring 'Preposition' errors",
+      description:
+        "Review every flagged preposition error in History, note each corrected collocation, and drill them until they appear as corrections in the next essay.",
+      focus: "grammar",
+    },
+    {
+      title: "Add one complex structure per essay",
+      description:
+        "Draft at least one conditional or relative clause per body paragraph. Keep it short and correct rather than long and error-prone.",
+      focus: "grammar",
+    },
+  ],
+  recommendedTopic: {
+    title: "Renewable energy and the future of employment",
+    reason:
+      "This topic forces 'cause and effect' writing, which exercises your weakest lexical area and challenges your sentence variety.",
+    suggestedPrompt:
+      "Some people think that the transition to renewable energy will create more jobs than it destroys. To what extent do you agree or disagree?",
+  },
+  analyzedEssayCount: 3,
+  createdAt: new Date().toISOString(),
+};
 
 export const mockWritingTypes: WritingType[] = [
   { id: "11111111-1111-1111-1111-111111111111", label: "IELTS Writing Task 1 Academic", badge: "Exam", minWords: 150 },

@@ -66,4 +66,8 @@ export const apiRoutes = {
     cancel: "/api/subscriptions/me/cancel",
     validatePromoCode: (code: string) => `/api/subscriptions/promo-codes/${encodeURIComponent(code)}/validate`,
   },
+  studyGuides: {
+    get: "/api/study-guides",
+    generate: "/api/study-guides/generate",
+  },
 } as const;
