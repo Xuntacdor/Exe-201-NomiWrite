@@ -176,13 +176,7 @@ export default function HistoryPage() {
           )}
         </div>
 
-        <div className="flex items-start gap-3 rounded-2xl border border-blue-100 bg-blue-50 p-4">
-          <Check className="mt-0.5 h-4 w-4 shrink-0 text-blue-500" />
-          <div>
-            <p className="text-sm font-semibold text-blue-800">History is connected to the Writing service.</p>
-            <p className="mt-0.5 text-xs text-blue-600">Scores appear once the grading service has completed a submission.</p>
-          </div>
-        </div>
+
       </div>
     </AppShell>
   );
