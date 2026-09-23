@@ -28,6 +28,37 @@ export default function Users() {
   const [error, setError] = useState<string | null>(null);
   const [totalCount, setTotalCount] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
+  const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (!(event.target as Element).closest('.action-menu-container')) {
+        setOpenDropdownId(null);
+      }
+    };
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, []);
+
+  const handleUpdateStatus = async (id: string, status: number) => {
+    try {
+      await adminService.updateUserStatus(id, status);
+      setUsers(prev => prev.map(u => u.id === id ? { ...u, accountStatus: status } : u));
+    } catch (err: any) {
+      alert("Failed to update status: " + err.message);
+    }
+    setOpenDropdownId(null);
+  };
+
+  const handleUpdateRole = async (id: string, role: number) => {
+    try {
+      await adminService.updateUserRole(id, role);
+      setUsers(prev => prev.map(u => u.id === id ? { ...u, role } : u));
+    } catch (err: any) {
+      alert("Failed to update role: " + err.message);
+    }
+    setOpenDropdownId(null);
+  };
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -111,11 +142,12 @@ export default function Users() {
                   <td colSpan={5} className="px-6 py-12 text-center text-slate-500 font-semibold">No users found.</td>
                  </tr>
               )}
-              {users.map((user) => {
+              {users.map((user, index) => {
                 const roleLabel = getRoleLabel(user.role);
                 const statusLabel = getStatusLabel(user.accountStatus);
                 const isElevatedRole = roleLabel !== "Student";
                 const isActive = statusLabel === "Active";
+                const isNearBottom = index >= Math.max(0, users.length - 3);
 
                 return (
                 <tr key={user.id} className="hover:bg-slate-50/50 transition-colors">
@@ -152,9 +184,53 @@ export default function Users() {
                     {new Date(user.createdAt).toLocaleDateString()}
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <button className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors">
-                      <MoreVertical className="h-4 w-4" />
-                    </button>
+                    <div className="relative inline-block text-left action-menu-container">
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setOpenDropdownId(openDropdownId === user.id ? null : user.id);
+                        }}
+                        className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
+                      >
+                        <MoreVertical className="h-4 w-4" />
+                      </button>
+                      
+                      {openDropdownId === user.id && (
+                        <div className={`absolute right-0 ${isNearBottom ? "bottom-full mb-2" : "mt-2"} w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50 overflow-hidden`}>
+                          <div className="py-1">
+                            <div className="px-3 py-2 text-xs font-bold text-slate-400 uppercase tracking-wider bg-slate-50">Role</div>
+                            {roleLabel !== "Student" && (
+                              <button onClick={() => handleUpdateRole(user.id, 0)} className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 transition-colors">
+                                Demote to Student
+                              </button>
+                            )}
+                            {roleLabel !== "Admin" && (
+                              <button onClick={() => handleUpdateRole(user.id, 1)} className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 transition-colors">
+                                Promote to Admin
+                              </button>
+                            )}
+                            
+                            <div className="border-t border-slate-100 mt-1"></div>
+                            <div className="px-3 py-2 text-xs font-bold text-slate-400 uppercase tracking-wider bg-slate-50">Status</div>
+                            {statusLabel !== "Active" && (
+                              <button onClick={() => handleUpdateStatus(user.id, 0)} className="w-full text-left px-4 py-2 text-sm text-emerald-600 hover:bg-emerald-50 transition-colors">
+                                Activate User
+                              </button>
+                            )}
+                            {statusLabel !== "Deactivated" && (
+                              <button onClick={() => handleUpdateStatus(user.id, 1)} className="w-full text-left px-4 py-2 text-sm text-orange-600 hover:bg-orange-50 transition-colors">
+                                Deactivate User
+                              </button>
+                            )}
+                            {statusLabel !== "Blocked" && (
+                              <button onClick={() => handleUpdateStatus(user.id, 2)} className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors">
+                                Block User
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </td>
                 </tr>
                 );
