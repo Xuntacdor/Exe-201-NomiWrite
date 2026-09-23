@@ -58,4 +58,12 @@ export const adminService = {
     });
     return response.data;
   },
+
+  updateUserStatus: async (id: string, status: number | string): Promise<void> => {
+    await apiClient.patch(`/users/${id}/status`, { status });
+  },
+
+  updateUserRole: async (id: string, role: number | string): Promise<void> => {
+    await apiClient.patch(`/users/${id}/role`, { role });
+  },
 };

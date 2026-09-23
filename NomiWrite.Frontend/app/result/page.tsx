@@ -100,18 +100,10 @@ function ResultContent() {
         });
     };
 
-    const stateTimer = window.setTimeout(() => {
-      if (ignore) return;
-      setFeedback(null);
-      setLoading(false);
-      setWaitingForGrading(true);
-      setError("");
-    }, 0);
-    checkTimer = window.setTimeout(checkFeedback, INITIAL_GRADING_CHECK_DELAY_MS);
+    checkFeedback();
 
     return () => {
       ignore = true;
-      if (stateTimer) window.clearTimeout(stateTimer);
       if (checkTimer) window.clearTimeout(checkTimer);
     };
   }, [router, submissionId, retryVersion]);
