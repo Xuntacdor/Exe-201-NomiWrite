@@ -41,12 +41,11 @@ export default function RegisterPage() {
         email: email.trim(),
         password,
       });
-      saveSession(session);
       localStorage.setItem(
         "nomiwrite_onboarding",
         JSON.stringify({ currentLevel: selectedLevel, targetType: selectedTarget }),
       );
-      router.push("/dashboard");
+      router.push("/login");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Registration failed. Please try again.");
     } finally {
