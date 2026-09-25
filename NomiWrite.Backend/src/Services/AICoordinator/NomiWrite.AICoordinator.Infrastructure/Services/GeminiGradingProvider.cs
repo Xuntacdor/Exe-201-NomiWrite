@@ -67,7 +67,7 @@ public class GeminiGradingProvider : IAiGradingProvider
 
         var modelName = !string.IsNullOrWhiteSpace(_settings.Model)
             ? _settings.Model
-            : config?.ModelName ?? "gemini-3.6-flash";
+            : config?.ModelName ?? "gemini-3.5-flash";
         var systemPrompt = !string.IsNullOrWhiteSpace(config?.SystemPromptTemplate)
             ? config!.SystemPromptTemplate!
             : DefaultGradingPrompt;
@@ -75,12 +75,12 @@ public class GeminiGradingProvider : IAiGradingProvider
         var endpointTemplate = string.IsNullOrWhiteSpace(_settings.Endpoint)
             ? "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
             : _settings.Endpoint;
-        var endpoint = endpointTemplate.Replace("{model}", modelName, StringComparison.OrdinalIgnoreCase);
         var requestBody = BuildRequestBody(essayContent, systemPrompt, config);
 
         for (var attempt = 1; attempt <= MaxAttempts; attempt++)
         {
-            var response = await _httpClient.PostAsJsonAsync(endpoint, requestBody);
+            var endpoint = endpointTemplate.Replace("{model}", modelName, StringComparison.OrdinalIgnoreCase);
+            using var response = await _httpClient.PostAsJsonAsync(endpoint, requestBody);
 
             if (response.IsSuccessStatusCode)
                 return await ParseGeminiResponseAsync(response);
@@ -95,6 +95,22 @@ public class GeminiGradingProvider : IAiGradingProvider
                     MaxAttempts);
                 await DelayBackoffAsync(GetBackoff(attempt), CancellationToken.None);
                 continue;
+            }
+
+            if (response.StatusCode == HttpStatusCode.ServiceUnavailable &&
+                endpointTemplate.Contains("{model}", StringComparison.OrdinalIgnoreCase) &&
+                !string.IsNullOrWhiteSpace(_settings.FallbackModel) &&
+                !string.Equals(modelName, _settings.FallbackModel, StringComparison.OrdinalIgnoreCase))
+            {
+                var fallbackEndpoint = endpointTemplate.Replace("{model}", _settings.FallbackModel, StringComparison.OrdinalIgnoreCase);
+                _logger.LogWarning("Gemini model {Model} is unavailable; trying fallback model {FallbackModel}.", modelName, _settings.FallbackModel);
+                using var fallbackResponse = await _httpClient.PostAsJsonAsync(fallbackEndpoint, requestBody);
+                if (fallbackResponse.IsSuccessStatusCode)
+                    return await ParseGeminiResponseAsync(fallbackResponse);
+
+                var fallbackError = await fallbackResponse.Content.ReadAsStringAsync();
+                _logger.LogError("Gemini fallback returned {StatusCode}: {ErrorBody}", fallbackResponse.StatusCode, fallbackError);
+                throw new HttpRequestException($"Gemini API error: {(int)fallbackResponse.StatusCode} - {fallbackError}");
             }
 
             _logger.LogError("Gemini API returned {StatusCode}: {ErrorBody}", response.StatusCode, errorBody);

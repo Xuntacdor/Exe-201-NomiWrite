@@ -3,18 +3,68 @@ import { Search, Filter, MoreVertical, Shield, UserX, UserCheck, Mail, Loader2 }
 import { adminService } from "../services/adminService";
 import type { AdminUserListItemDto } from "../services/adminService";
 
+function normalizeEnum(value: number | string) {
+  return String(value).trim().toLowerCase();
+}
+
+function getRoleLabel(role: number | string) {
+  const normalized = normalizeEnum(role);
+  if (normalized === "1" || normalized === "admin") return "Admin";
+  if (normalized === "2" || normalized === "moderator") return "Moderator";
+  return "Student";
+}
+
+function getStatusLabel(status: number | string) {
+  const normalized = normalizeEnum(status);
+  if (normalized === "0" || normalized === "active") return "Active";
+  if (normalized === "1" || normalized === "deactivated") return "Deactivated";
+  return "Blocked";
+}
+
 export default function Users() {
   const [searchTerm, setSearchTerm] = useState("");
   const [users, setUsers] = useState<AdminUserListItemDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [totalCount, setTotalCount] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (!(event.target as Element).closest('.action-menu-container')) {
+        setOpenDropdownId(null);
+      }
+    };
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, []);
+
+  const handleUpdateStatus = async (id: string, status: number) => {
+    try {
+      await adminService.updateUserStatus(id, status);
+      setUsers(prev => prev.map(u => u.id === id ? { ...u, accountStatus: status } : u));
+    } catch (err: any) {
+      alert("Failed to update status: " + err.message);
+    }
+    setOpenDropdownId(null);
+  };
+
+  const handleUpdateRole = async (id: string, role: number) => {
+    try {
+      await adminService.updateUserRole(id, role);
+      setUsers(prev => prev.map(u => u.id === id ? { ...u, role } : u));
+    } catch (err: any) {
+      alert("Failed to update role: " + err.message);
+    }
+    setOpenDropdownId(null);
+  };
 
   useEffect(() => {
     const fetchUsers = async () => {
       try {
         setLoading(true);
-        const data = await adminService.getUsers(1, 20);
+        const data = await adminService.getUsers(currentPage, 10);
         setUsers(data.items);
         setTotalCount(data.totalCount);
       } catch (err: any) {
@@ -25,7 +75,12 @@ export default function Users() {
     };
 
     fetchUsers();
-  }, []);
+  }, [currentPage]);
+  
+  const handlePrevious = () => setCurrentPage((prev) => Math.max(1, prev - 1));
+  const handleNext = () => setCurrentPage((prev) => (prev * 10 < totalCount ? prev + 1 : prev));
+  const startEntry = totalCount === 0 ? 0 : (currentPage - 1) * 10 + 1;
+  const endEntry = Math.min(currentPage * 10, totalCount);
 
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-8">
@@ -87,7 +142,14 @@ export default function Users() {
                   <td colSpan={5} className="px-6 py-12 text-center text-slate-500 font-semibold">No users found.</td>
                  </tr>
               )}
-              {users.map((user) => (
+              {users.map((user, index) => {
+                const roleLabel = getRoleLabel(user.role);
+                const statusLabel = getStatusLabel(user.accountStatus);
+                const isElevatedRole = roleLabel !== "Student";
+                const isActive = statusLabel === "Active";
+                const isNearBottom = index >= Math.max(0, users.length - 3);
+
+                return (
                 <tr key={user.id} className="hover:bg-slate-50/50 transition-colors">
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
@@ -104,41 +166,98 @@ export default function Users() {
                   </td>
                   <td className="px-6 py-4">
                     <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-extrabold uppercase tracking-widest ${
-                      user.role === 1 ? "bg-purple-100 text-purple-700" : "bg-slate-100 text-slate-600"
+                      isElevatedRole ? "bg-purple-100 text-purple-700" : "bg-slate-100 text-slate-600"
                     }`}>
-                      {user.role === 1 && <Shield className="h-3 w-3" />}
-                      {user.role === 1 ? "Admin" : "Student"}
+                      {isElevatedRole && <Shield className="h-3 w-3" />}
+                      {roleLabel}
                     </span>
                   </td>
                   <td className="px-6 py-4">
                     <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-extrabold uppercase tracking-widest ${
-                      user.accountStatus === 0 ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"
+                      isActive ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"
                     }`}>
-                      {user.accountStatus === 0 ? <UserCheck className="h-3 w-3" /> : <UserX className="h-3 w-3" />}
-                      {user.accountStatus === 0 ? "Active" : "Blocked"}
+                      {isActive ? <UserCheck className="h-3 w-3" /> : <UserX className="h-3 w-3" />}
+                      {statusLabel}
                     </span>
                   </td>
                   <td className="px-6 py-4 text-slate-500 font-medium">
                     {new Date(user.createdAt).toLocaleDateString()}
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <button className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors">
-                      <MoreVertical className="h-4 w-4" />
-                    </button>
+                    <div className="relative inline-block text-left action-menu-container">
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setOpenDropdownId(openDropdownId === user.id ? null : user.id);
+                        }}
+                        className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
+                      >
+                        <MoreVertical className="h-4 w-4" />
+                      </button>
+                      
+                      {openDropdownId === user.id && (
+                        <div className={`absolute right-0 ${isNearBottom ? "bottom-full mb-2" : "mt-2"} w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50 overflow-hidden`}>
+                          <div className="py-1">
+                            <div className="px-3 py-2 text-xs font-bold text-slate-400 uppercase tracking-wider bg-slate-50">Role</div>
+                            {roleLabel !== "Student" && (
+                              <button onClick={() => handleUpdateRole(user.id, 0)} className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 transition-colors">
+                                Demote to Student
+                              </button>
+                            )}
+                            {roleLabel !== "Admin" && (
+                              <button onClick={() => handleUpdateRole(user.id, 1)} className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 transition-colors">
+                                Promote to Admin
+                              </button>
+                            )}
+                            
+                            <div className="border-t border-slate-100 mt-1"></div>
+                            <div className="px-3 py-2 text-xs font-bold text-slate-400 uppercase tracking-wider bg-slate-50">Status</div>
+                            {statusLabel !== "Active" && (
+                              <button onClick={() => handleUpdateStatus(user.id, 0)} className="w-full text-left px-4 py-2 text-sm text-emerald-600 hover:bg-emerald-50 transition-colors">
+                                Activate User
+                              </button>
+                            )}
+                            {statusLabel !== "Deactivated" && (
+                              <button onClick={() => handleUpdateStatus(user.id, 1)} className="w-full text-left px-4 py-2 text-sm text-orange-600 hover:bg-orange-50 transition-colors">
+                                Deactivate User
+                              </button>
+                            )}
+                            {statusLabel !== "Blocked" && (
+                              <button onClick={() => handleUpdateStatus(user.id, 2)} className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors">
+                                Block User
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         </div>
-        {/* Pagination placeholder */}
+        {/* Pagination */}
         <div className="px-6 py-4 border-t border-slate-100 flex items-center justify-between bg-slate-50/50">
           <p className="text-xs font-semibold text-slate-500">
-            {totalCount > 0 ? `Showing 1 to ${Math.min(20, totalCount)} of ${totalCount} entries` : "Showing 0 entries"}
+            {totalCount > 0 ? `Showing ${startEntry} to ${endEntry} of ${totalCount} entries` : "Showing 0 entries"}
           </p>
           <div className="flex gap-2">
-            <button className="px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-bold text-slate-400 bg-white cursor-not-allowed">Previous</button>
-            <button className="px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-bold text-slate-400 bg-white cursor-not-allowed">Next</button>
+            <button 
+              onClick={handlePrevious} 
+              disabled={currentPage === 1} 
+              className={`px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-bold ${currentPage === 1 ? 'text-slate-400 bg-white cursor-not-allowed' : 'text-slate-700 bg-white hover:bg-slate-50 transition-colors'}`}
+            >
+              Previous
+            </button>
+            <button 
+              onClick={handleNext} 
+              disabled={currentPage * 10 >= totalCount} 
+              className={`px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-bold ${currentPage * 10 >= totalCount ? 'text-slate-400 bg-white cursor-not-allowed' : 'text-slate-700 bg-white hover:bg-slate-50 transition-colors'}`}
+            >
+              Next
+            </button>
           </div>
         </div>
       </div>

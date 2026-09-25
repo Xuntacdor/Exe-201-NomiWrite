@@ -32,6 +32,7 @@ public class ContentReportService : IContentReportService
         var duplicate = await _dbContext.ContentReports
             .FirstOrDefaultAsync(r =>
                 r.ReporterUserId == reporterUserId
+                && r.ContentType == request.ContentType
                 && r.TargetId == request.TargetId
                 && r.Status == ReportStatus.Pending);
 

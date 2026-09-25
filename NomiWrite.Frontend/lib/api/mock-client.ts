@@ -231,6 +231,11 @@ export const mockClient: ApiClient = {
     return createFeedbackForSubmission(submission);
   },
 
+  async retryGrading(id: string) {
+    await delay();
+    if (!runtimeSubmissions.some(item => item.id === id)) throw new Error("Submission not found.");
+  },
+
   async getFeedback(submissionId: string) {
     await delay();
     const submission = runtimeSubmissions.find(item => item.id === submissionId);

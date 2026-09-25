@@ -15,6 +15,7 @@ namespace NomiWrite.Payment.Application.UnitTests;
 
 public class PaymentServiceTests
 {
+    private static readonly Guid PlanId = Guid.NewGuid();
     private static IPaymentGatewayService ValidGateway()
     {
         var gateway = Substitute.For<IPaymentGatewayService>();
@@ -26,11 +27,14 @@ public class PaymentServiceTests
     }
 
     private static PaymentService Build(TestPaymentDbContext db, IPaymentGatewayService? gateway = null,
-        IPromoCodeValidator? promo = null, IPublishEndpoint? publish = null)
+        IPromoCodeValidator? promo = null, IPublishEndpoint? publish = null,
+        ISubscriptionPlanClient? planClient = null)
     {
         gateway ??= ValidGateway();
         promo ??= Substitute.For<IPromoCodeValidator>();
         publish ??= Substitute.For<IPublishEndpoint>();
+        planClient ??= Substitute.For<ISubscriptionPlanClient>();
+        planClient.GetActivePlanAsync(PlanId).Returns(new SubscriptionPlanPrice(100_000m, "VND"));
 
         return new PaymentService(
             db,
@@ -38,7 +42,8 @@ public class PaymentServiceTests
             new Valid<CreatePaymentRequestDto>(),
             new Valid<CreateRefundRequestDto>(),
             promo,
-            publish);
+            publish,
+            planClient);
     }
 
     private static PaymentOrder SeedPayment(TestPaymentDbContext db, Guid userId,
@@ -97,9 +102,7 @@ public class PaymentServiceTests
         completedEvents.Should().BeEmpty();
         failedEvents.Should().BeEmpty();
 
-        // NOTE: the current implementation always records a PaymentTransaction even for
-        // duplicate callbacks (no dedup guard). U-P1 expects "no new transaction"; the
-        // transaction guard is a known gap (see plan S-6). Documented here as-is.
+        db.PaymentTransactions.Should().BeEmpty();
     }
 
     #endregion
@@ -205,16 +208,52 @@ public class PaymentServiceTests
         {
             Amount = 100_000m,
             Provider = PaymentProvider.VNPay,
+            PlanId = PlanId,
             PromoCode = "SAVE20"
         });
 
         result.Amount.Should().Be(80_000m);
         result.AppliedDiscountPercent.Should().Be(20);
+        db.Payments.Single().AppliedPromoCode.Should().Be("SAVE20");
         result.Currency.Should().Be("VND");
         result.Status.Should().Be(PaymentStatus.Pending);
         result.OrderReference.Should().StartWith("PAY-");
 
         db.Payments.Should().ContainSingle(p => p.Amount == 80_000m && p.AppliedDiscountPercent == 20);
+    }
+
+    [Fact]
+    public async Task CreatePaymentAsync_UsesCatalogPriceInsteadOfClientAmount()
+    {
+        var db = TestPaymentDbContext.Create();
+        var sut = Build(db);
+
+        var result = await sut.CreatePaymentAsync(Guid.NewGuid(), new CreatePaymentRequestDto
+        {
+            Amount = 1m,
+            PlanId = PlanId,
+            Provider = PaymentProvider.VNPay
+        });
+
+        result.Amount.Should().Be(100_000m);
+        db.Payments.Single().Amount.Should().Be(100_000m);
+    }
+
+    [Fact]
+    public async Task CreatePaymentAsync_UnknownPlan_DoesNotCreateOrder()
+    {
+        var db = TestPaymentDbContext.Create();
+        var sut = Build(db);
+
+        var act = () => sut.CreatePaymentAsync(Guid.NewGuid(), new CreatePaymentRequestDto
+        {
+            Amount = 1m,
+            PlanId = Guid.NewGuid(),
+            Provider = PaymentProvider.Momo
+        });
+
+        await act.Should().ThrowAsync<ValidationException>();
+        db.Payments.Should().BeEmpty();
     }
 
     [Fact]
@@ -229,6 +268,7 @@ public class PaymentServiceTests
         {
             Amount = 100_000m,
             Provider = PaymentProvider.VNPay,
+            PlanId = PlanId,
             PromoCode = "BAD"
         });
 
@@ -248,6 +288,7 @@ public class PaymentServiceTests
         {
             Amount = 100_000m,
             Provider = PaymentProvider.VNPay,
+            PlanId = PlanId,
             PromoCode = "FRAUD"
         });
 
@@ -264,16 +305,18 @@ public class PaymentServiceTests
         var first = await sut.CreatePaymentAsync(Guid.NewGuid(), new CreatePaymentRequestDto
         {
             Amount = 100m,
-            Currency = "usd",
+            Currency = "vnd",
+            PlanId = PlanId,
             Provider = PaymentProvider.Momo
         });
         var second = await sut.CreatePaymentAsync(Guid.NewGuid(), new CreatePaymentRequestDto
         {
             Amount = 100m,
+            PlanId = PlanId,
             Provider = PaymentProvider.Momo
         });
 
-        first.Currency.Should().Be("USD");
+        first.Currency.Should().Be("VND");
         second.Currency.Should().Be("VND");
         first.OrderReference.Should().NotBe(second.OrderReference);
         db.Payments.Should().HaveCount(2);
@@ -339,20 +382,18 @@ public class PaymentServiceTests
     }
 
     [Fact]
-    public async Task CreateRefundRequestAsync_DuplicatePendingRequest_CurrentBehaviorAllowsSecond()
+    public async Task CreateRefundRequestAsync_DuplicatePendingRequest_RejectsSecond()
     {
-        // U-P6 expects duplicates to be rejected, but the current implementation creates a
-        // second Pending request with no dedup guard. This test documents current behavior;
-        // it should flip to expect a rejection once the guard is implemented.
         var db = TestPaymentDbContext.Create();
         var user = Guid.NewGuid();
         var payment = SeedPayment(db, user);
 
         var sut = Build(db);
         await sut.CreateRefundRequestAsync(user, payment.Id, "First");
-        await sut.CreateRefundRequestAsync(user, payment.Id, "Second");
+        var act = () => sut.CreateRefundRequestAsync(user, payment.Id, "Second");
 
-        db.RefundRequests.Should().HaveCount(2);
+        await act.Should().ThrowAsync<InvalidRefundException>().Where(e => e.StatusCode == 409);
+        db.RefundRequests.Should().ContainSingle();
     }
 
     #endregion
@@ -371,6 +412,38 @@ public class PaymentServiceTests
 
         result.PaymentId.Should().Be(payment.Id);
         result.Status.Should().Be(payment.Status);
+    }
+
+    [Fact]
+    public async Task GetPaymentReceiptAsync_CompletedOwnPayment_ReturnsConfirmation()
+    {
+        var db = TestPaymentDbContext.Create();
+        var user = Guid.NewGuid();
+        var payment = SeedPayment(db, user);
+        payment.PlanId = PlanId;
+        db.SaveChanges();
+
+        var receipt = await Build(db).GetPaymentReceiptAsync(user, payment.Id);
+
+        receipt.OrderReference.Should().Be(payment.OrderReference);
+        receipt.Amount.Should().Be(payment.Amount);
+        receipt.PlanId.Should().Be(PlanId);
+    }
+
+    [Fact]
+    public async Task GetPaymentReceiptAsync_PendingOrOtherUser_IsRejected()
+    {
+        var db = TestPaymentDbContext.Create();
+        var user = Guid.NewGuid();
+        var payment = SeedPayment(db, user, PaymentStatus.Pending);
+        payment.PlanId = PlanId;
+        db.SaveChanges();
+        var sut = Build(db);
+
+        Func<Task> pending = () => sut.GetPaymentReceiptAsync(user, payment.Id);
+        Func<Task> otherUser = () => sut.GetPaymentReceiptAsync(Guid.NewGuid(), payment.Id);
+        await pending.Should().ThrowAsync<InvalidRefundException>().Where(e => e.StatusCode == 409);
+        await otherUser.Should().ThrowAsync<InvalidRefundException>().Where(e => e.StatusCode == 403);
     }
 
     [Fact]

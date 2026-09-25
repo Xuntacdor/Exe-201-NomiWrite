@@ -1,27 +1,65 @@
 "use client";
 
-import { useState } from "react";
-import { Plus, Search, Filter, MoreVertical, FileText, Edit2, Trash2 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Plus, Search, Filter, MoreVertical, FileText, Edit2, Trash2, Loader2 } from "lucide-react";
+import { adminService } from "../services/adminService";
+import type { AdminPromptListItemDto } from "../services/adminService";
 
-interface Prompt {
-  id: string;
-  title: string;
-  type: string;
-  difficulty: "Easy" | "Medium" | "Hard";
-  status: "Published" | "Draft";
-  createdAt: string;
+function normalizeEnum(value: number | string) {
+  return String(value).trim().toLowerCase();
 }
 
-const mockPrompts: Prompt[] = [
-  { id: "1", title: "Technology in modern society", type: "IELTS Task 2", difficulty: "Medium", status: "Published", createdAt: "2023-11-10" },
-  { id: "2", title: "Describe a memorable journey", type: "IELTS Task 2", difficulty: "Easy", status: "Published", createdAt: "2023-11-12" },
-  { id: "3", title: "Line graph: renewable energy 2000-2020", type: "IELTS Task 1", difficulty: "Hard", status: "Draft", createdAt: "2023-11-15" },
-  { id: "4", title: "VSTEP Writing Task 2: Environment", type: "VSTEP", difficulty: "Medium", status: "Published", createdAt: "2023-11-18" },
-  { id: "5", title: "Write an email to a manager", type: "Email", difficulty: "Easy", status: "Published", createdAt: "2023-11-20" },
-];
+function getDifficultyLabel(difficulty: number | string) {
+  const normalized = normalizeEnum(difficulty);
+  if (normalized === "0" || normalized === "beginner") return "Beginner";
+  if (normalized === "2" || normalized === "advanced") return "Advanced";
+  return "Intermediate";
+}
 
 export default function AdminPromptsPage() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [prompts, setPrompts] = useState<AdminPromptListItemDto[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [totalCount, setTotalCount] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+
+  useEffect(() => {
+    const fetchPrompts = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await adminService.getPrompts(currentPage, 10);
+        setPrompts(data.items);
+        setTotalCount(data.totalCount);
+      } catch (err: any) {
+        setError(err.message || "Failed to fetch prompts");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPrompts();
+  }, [currentPage]);
+  
+  const handlePrevious = () => setCurrentPage((prev) => Math.max(1, prev - 1));
+  const handleNext = () => setCurrentPage((prev) => (prev * 10 < totalCount ? prev + 1 : prev));
+  const startEntry = totalCount === 0 ? 0 : (currentPage - 1) * 10 + 1;
+  const endEntry = Math.min(currentPage * 10, totalCount);
+
+  const filteredPrompts = useMemo(() => {
+    const query = searchTerm.trim().toLowerCase();
+    if (!query) return prompts;
+
+    return prompts.filter((prompt) => {
+      const typeName = prompt.writingTypeName || prompt.writingTypeId;
+      return (
+        prompt.title.toLowerCase().includes(query) ||
+        typeName.toLowerCase().includes(query) ||
+        getDifficultyLabel(prompt.difficulty).toLowerCase().includes(query)
+      );
+    });
+  }, [prompts, searchTerm]);
 
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-8">
@@ -55,9 +93,20 @@ export default function AdminPromptsPage() {
         </div>
       </div>
 
+      {error && (
+        <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm font-bold flex items-center justify-between">
+          <span>Warning: Could not fetch prompts from the real backend API ({error}). Are you sure the backend is running?</span>
+        </div>
+      )}
+
       {/* Prompts Table */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto min-h-[400px] relative">
+          {loading && (
+            <div className="absolute inset-0 bg-white/50 backdrop-blur-sm z-10 flex items-center justify-center">
+              <Loader2 className="h-8 w-8 animate-spin text-indigo-500" />
+            </div>
+          )}
           <table className="w-full text-left text-sm">
             <thead className="bg-slate-50 border-b border-slate-200">
               <tr>
@@ -70,7 +119,16 @@ export default function AdminPromptsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {mockPrompts.map((prompt) => (
+              {filteredPrompts.length === 0 && !loading && !error && (
+                <tr>
+                  <td colSpan={6} className="px-6 py-12 text-center text-slate-500 font-semibold">No prompts found.</td>
+                </tr>
+              )}
+              {filteredPrompts.map((prompt) => {
+                const difficultyLabel = getDifficultyLabel(prompt.difficulty);
+                const typeName = prompt.writingTypeName || prompt.writingTypeId.slice(0, 8);
+
+                return (
                 <tr key={prompt.id} className="hover:bg-slate-50/50 transition-colors">
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
@@ -81,26 +139,26 @@ export default function AdminPromptsPage() {
                     </div>
                   </td>
                   <td className="px-6 py-4 text-slate-600 font-semibold">
-                    {prompt.type}
+                    {typeName}
                   </td>
                   <td className="px-6 py-4">
                     <span className={`inline-flex px-2.5 py-1 rounded-md text-[11px] font-extrabold uppercase tracking-widest ${
-                      prompt.difficulty === "Easy" ? "bg-emerald-100 text-emerald-700" :
-                      prompt.difficulty === "Medium" ? "bg-amber-100 text-amber-700" :
+                      difficultyLabel === "Beginner" ? "bg-emerald-100 text-emerald-700" :
+                      difficultyLabel === "Intermediate" ? "bg-amber-100 text-amber-700" :
                       "bg-rose-100 text-rose-700"
                     }`}>
-                      {prompt.difficulty}
+                      {difficultyLabel}
                     </span>
                   </td>
                   <td className="px-6 py-4">
                     <span className={`inline-flex px-2.5 py-1 rounded-md text-[11px] font-extrabold uppercase tracking-widest ${
-                      prompt.status === "Published" ? "bg-blue-100 text-blue-700" : "bg-slate-200 text-slate-600"
+                      prompt.isActive ? "bg-blue-100 text-blue-700" : "bg-slate-200 text-slate-600"
                     }`}>
-                      {prompt.status}
+                      {prompt.isActive ? "Published" : "Draft"}
                     </span>
                   </td>
                   <td className="px-6 py-4 text-slate-500 font-medium">
-                    {prompt.createdAt}
+                    {new Date(prompt.createdAt).toLocaleDateString()}
                   </td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-2">
@@ -116,16 +174,31 @@ export default function AdminPromptsPage() {
                     </div>
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         </div>
         {/* Pagination */}
         <div className="px-6 py-4 border-t border-slate-100 flex items-center justify-between bg-slate-50/50">
-          <p className="text-xs font-semibold text-slate-500">Showing 1 to 5 of 5 entries</p>
+          <p className="text-xs font-semibold text-slate-500">
+            {totalCount > 0 ? `Showing ${startEntry} to ${endEntry} of ${totalCount} entries` : "Showing 0 entries"}
+          </p>
           <div className="flex gap-2">
-            <button className="px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-bold text-slate-400 bg-white cursor-not-allowed">Previous</button>
-            <button className="px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-bold text-slate-400 bg-white cursor-not-allowed">Next</button>
+            <button 
+              onClick={handlePrevious} 
+              disabled={currentPage === 1} 
+              className={`px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-bold ${currentPage === 1 ? 'text-slate-400 bg-white cursor-not-allowed' : 'text-slate-700 bg-white hover:bg-slate-50 transition-colors'}`}
+            >
+              Previous
+            </button>
+            <button 
+              onClick={handleNext} 
+              disabled={currentPage * 10 >= totalCount} 
+              className={`px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-bold ${currentPage * 10 >= totalCount ? 'text-slate-400 bg-white cursor-not-allowed' : 'text-slate-700 bg-white hover:bg-slate-50 transition-colors'}`}
+            >
+              Next
+            </button>
           </div>
         </div>
       </div>

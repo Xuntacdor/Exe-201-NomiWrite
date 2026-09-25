@@ -212,6 +212,72 @@ public class NotificationServiceTests
 
     #endregion
 
+    #region U-N5 - read state and preferences
+
+    [Fact]
+    public async Task MarkAsRead_OwnNotification_MarksRead()
+    {
+        var db = TestNotificationDbContext.Create();
+        SeedNotification(db, UserA, "Unread", isRead: false);
+        var notificationId = db.Notifications.Single().Id;
+
+        var sut = Build(db);
+        await sut.MarkAsReadAsync(UserA, notificationId);
+
+        db.Notifications.Single().IsRead.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task MarkAsRead_OtherUsersNotification_Throws()
+    {
+        var db = TestNotificationDbContext.Create();
+        SeedNotification(db, UserA, "Alice only", isRead: false);
+        var notificationId = db.Notifications.Single().Id;
+
+        var sut = Build(db);
+        await FluentActions.Invoking(() => sut.MarkAsReadAsync(UserB, notificationId))
+            .Should().ThrowAsync<KeyNotFoundException>();
+    }
+
+    [Fact]
+    public async Task MarkAllAsRead_OnlyMarksPrivateUnreadNotifications()
+    {
+        var db = TestNotificationDbContext.Create();
+        SeedNotification(db, UserA, "Unread A1", isRead: false);
+        SeedNotification(db, UserA, "Unread A2", isRead: false);
+        SeedNotification(db, UserA, "Read A", isRead: true);
+        SeedNotification(db, UserB, "Unread B", isRead: false);
+        SeedNotification(db, null, "Broadcast", isRead: false);
+
+        var sut = Build(db);
+        var count = await sut.MarkAllAsReadAsync(UserA);
+
+        count.Should().Be(2);
+        db.Notifications.Where(n => n.UserId == UserA).Should().OnlyContain(n => n.IsRead);
+        db.Notifications.Single(n => n.UserId == UserB).IsRead.Should().BeFalse();
+        db.Notifications.Single(n => n.UserId == null).IsRead.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task UpdatePreferences_PartialUpdate_PreservesUnspecifiedValues()
+    {
+        var db = TestNotificationDbContext.Create();
+        var sut = Build(db);
+
+        var result = await sut.UpdatePreferencesAsync(UserA, new UpdatePreferencesRequestDto
+        {
+            InAppNotificationsEnabled = false,
+            MarketingAlerts = false
+        });
+
+        result.EmailNotificationsEnabled.Should().BeTrue();
+        result.InAppNotificationsEnabled.Should().BeFalse();
+        result.GradingAlerts.Should().BeTrue();
+        result.MarketingAlerts.Should().BeFalse();
+    }
+
+    #endregion
+
     private static async Task Consume<T>(IConsumer<T> consumer, T message) where T : class
     {
         var context = Substitute.For<ConsumeContext<T>>();

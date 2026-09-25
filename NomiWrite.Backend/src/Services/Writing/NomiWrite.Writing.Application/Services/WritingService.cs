@@ -15,6 +15,7 @@ namespace NomiWrite.Writing.Application.Services;
 
 public class WritingService : IWritingService
 {
+    private const int FreeDailyGradingLimit = 3;
     private readonly IWritingDbContext _dbContext;
     private readonly IValidator<CreateSubmissionRequestDto> _createSubmissionValidator;
     private readonly IValidator<UpdateSubmissionRequestDto> _updateSubmissionValidator;
@@ -236,7 +237,8 @@ public class WritingService : IWritingService
         Guid userId,
         Guid submissionId,
         string? ipAddress = null,
-        string? userAgent = null)
+        string? userAgent = null,
+        string? accessToken = null)
     {
         var submission = await GetOwnedSubmissionAsync(userId, submissionId);
         if (submission.Status != SubmissionStatus.Draft)
@@ -270,6 +272,17 @@ public class WritingService : IWritingService
 
         var now = DateTime.UtcNow;
 
+        var subscription = await GetSubscriptionStatusOrDefaultAsync(userId, accessToken);
+        if (!subscription.HasActiveSubscription)
+        {
+            var dayStart = now.Date;
+            var tomorrow = dayStart.AddDays(1);
+            var submittedToday = await _dbContext.WritingSubmissions.CountAsync(s =>
+                s.UserId == userId && s.SubmittedAt >= dayStart && s.SubmittedAt < tomorrow);
+            if (submittedToday >= FreeDailyGradingLimit)
+                throw new DailyGradingLimitExceededException();
+        }
+
         // Late submissions still go through (grading proceeds); flag the lateness so
         // grading feedback / the UI can reflect the penalty instead of hard-blocking.
         if (submission.IsTimed && submission.DeadlineAt.HasValue && submission.DeadlineAt.Value < now)
@@ -297,6 +310,21 @@ public class WritingService : IWritingService
     {
         var submission = await GetOwnedSubmissionAsync(userId, submissionId);
         return await ToSubmissionResponseAsync(submission);
+    }
+
+    public async Task RetryGradingAsync(Guid userId, Guid submissionId)
+    {
+        var submission = await GetOwnedSubmissionAsync(userId, submissionId);
+        if (submission.Status != SubmissionStatus.Submitted || !submission.SubmittedAt.HasValue)
+            throw new SubmissionNotEditableException(submissionId);
+
+        await _publishEndpoint.Publish(new WritingSubmittedEvent(
+            submission.Id,
+            submission.UserId,
+            submission.WritingPromptId,
+            submission.Content,
+            submission.WordCount,
+            submission.SubmittedAt.Value));
     }
 
     public async Task<IReadOnlyList<SubmissionListItemDto>> GetUserSubmissionsAsync(Guid userId)

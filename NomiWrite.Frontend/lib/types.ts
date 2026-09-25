@@ -354,6 +354,7 @@ export interface ApiClient {
   getSubmission(id: string): Promise<Submission>;
   getSubmissionTimeRemaining(id: string): Promise<SubmissionTimeRemaining>;
   gradeSubmission(id: string): Promise<WritingFeedback>;
+  retryGrading(id: string): Promise<void>;
   getFeedback(submissionId: string): Promise<WritingFeedback>;
   listGradingHistory(): Promise<GradingHistoryItem[]>;
   compareSubmissionFeedback(submissionId: string): Promise<FeedbackComparison>;

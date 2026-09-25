@@ -131,12 +131,8 @@ public class SubscriptionServiceTests
     #region U-S2 — Payment-activation idempotency (documents current behavior)
 
     [Fact]
-    public async Task Activate_SamePlan_SamePaymentOrder_ExtendsAgain()
+    public async Task Activate_SamePlan_SamePaymentOrder_DoesNotExtendAgain()
     {
-        // KNOWN GAP: ActivateSubscriptionFromPaymentAsync has no PaymentOrderId-based
-        // dedupe. A duplicate PaymentCompletedEvent for the same order therefore extends
-        // the subscription a second time (= double-extension / revenue leak). This test
-        // pins the CURRENT behavior per TEST_PLAN §3.1.6 P4 convention.
         var db = TestSubscriptionDbContext.Create();
         var plan = SeedPlan(db, durationDays: 30);
         var sut = Build(db);
@@ -146,7 +142,50 @@ public class SubscriptionServiceTests
 
         await sut.ActivateSubscriptionFromPaymentAsync(UserA, plan.Id, orderId);
 
-        db.UserSubscriptions.Single().EndDate.Should().Be(firstEnd.AddDays(30));
+        db.UserSubscriptions.Single().EndDate.Should().Be(firstEnd);
+        db.ProcessedPayments.Should().ContainSingle();
+    }
+
+    [Fact]
+    public async Task Activate_OlderPaymentReplayAfterRenewal_DoesNotExtendAgain()
+    {
+        var db = TestSubscriptionDbContext.Create();
+        var plan = SeedPlan(db);
+        var publish = Substitute.For<IPublishEndpoint>();
+        var sut = Build(db, publish);
+        var firstPayment = Guid.NewGuid();
+        await sut.ActivateSubscriptionFromPaymentAsync(UserA, plan.Id, firstPayment);
+        await sut.ActivateSubscriptionFromPaymentAsync(UserA, plan.Id, Guid.NewGuid());
+        var endDate = db.UserSubscriptions.Single().EndDate;
+
+        await sut.ActivateSubscriptionFromPaymentAsync(UserA, plan.Id, firstPayment);
+
+        db.UserSubscriptions.Single().EndDate.Should().Be(endDate);
+        db.ProcessedPayments.Should().HaveCount(2);
+        publish.ReceivedCalls().SelectMany(c => c.GetArguments())
+            .OfType<SubscriptionActivatedEvent>().Should().HaveCount(2);
+    }
+
+    [Fact]
+    public async Task Activate_PromoCode_IncrementsOnlyOnceForDuplicatePayment()
+    {
+        var db = TestSubscriptionDbContext.Create();
+        var plan = SeedPlan(db);
+        db.PromoCodes.Add(new PromoCode
+        {
+            Code = "SAVE10",
+            DiscountPercent = 10,
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow
+        });
+        db.SaveChanges();
+        var sut = Build(db);
+        var paymentId = Guid.NewGuid();
+
+        await sut.ActivateSubscriptionFromPaymentAsync(UserA, plan.Id, paymentId, "save10");
+        await sut.ActivateSubscriptionFromPaymentAsync(UserA, plan.Id, paymentId, "save10");
+
+        db.PromoCodes.Single().TimesRedeemed.Should().Be(1);
     }
 
     #endregion
@@ -282,9 +321,6 @@ public class SubscriptionServiceTests
     [Fact]
     public async Task ValidatePromo_ValidCode_DoesNotIncrementTimesRedeemed()
     {
-        // KNOWN GAP: TimesRedeemed is only incremented on a Payment Service callback
-        // that does not exist yet (see TEST_PLAN §3.1.6, U-S3 warning). Documenting the
-        // current behavior: validation alone never mutates TimesRedeemed.
         var db = TestSubscriptionDbContext.Create();
         db.PromoCodes.Add(new PromoCode
         {

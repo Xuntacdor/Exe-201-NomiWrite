@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AlertCircle, Globe2, Loader2 } from "lucide-react";
 import { apiClient } from "@/lib/api/client";
-import { saveSession } from "@/lib/auth/session";
+import { redirectAfterAuth, saveSession } from "@/lib/auth/session";
 
 declare global {
   interface Window {
@@ -93,7 +93,7 @@ export default function GoogleSignInButton({ mode }: GoogleSignInButtonProps) {
               setStatus("loading");
               const session = await apiClient.googleLogin({ idToken: response.credential });
               saveSession(session);
-              router.push("/dashboard");
+              redirectAfterAuth(session, router);
             } catch (err) {
               setStatus("error");
               setMessage(err instanceof Error ? err.message : "Google sign-in failed.");
@@ -135,9 +135,6 @@ export default function GoogleSignInButton({ mode }: GoogleSignInButtonProps) {
           <Globe2 className="h-4 w-4 text-blue-500" />
           {mode === "register" ? "Sign up with Google" : "Continue with Google"}
         </button>
-        <p className="text-center text-[11px] font-medium text-slate-500">
-          Google sign-in needs NEXT_PUBLIC_GOOGLE_CLIENT_ID.
-        </p>
       </div>
     );
   }
@@ -152,7 +149,7 @@ export default function GoogleSignInButton({ mode }: GoogleSignInButtonProps) {
         </div>
       )}
       {status === "error" && message && (
-        <div className="mt-2 flex items-start gap-2 rounded-xl border border-amber-400/30 bg-amber-500/10 px-3 py-2 text-[11px] font-medium text-amber-100">
+        <div className="mt-2 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] font-bold text-amber-700">
           <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
           <span>{message}</span>
         </div>

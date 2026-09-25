@@ -37,6 +37,11 @@ namespace NomiWrite.Payment.Infrastructure.Persistence.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("applied_discount_percent");
 
+                    b.Property<string>("AppliedPromoCode")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("applied_promo_code");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
@@ -118,6 +123,7 @@ namespace NomiWrite.Payment.Infrastructure.Persistence.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("PaymentId")
+                        .IsUnique()
                         .HasDatabaseName("ix_payment_transactions_payment_id");
 
                     b.ToTable("payment_transactions", (string)null);
@@ -165,6 +171,7 @@ namespace NomiWrite.Payment.Infrastructure.Persistence.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("PaymentOrderId")
+                        .IsUnique()
                         .HasDatabaseName("ix_refund_requests_payment_order_id");
 
                     b.HasIndex("UserId")

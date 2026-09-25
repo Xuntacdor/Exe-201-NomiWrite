@@ -557,7 +557,7 @@ export const realClient: ApiClient = {
   },
 
   getPromptSampleAnswer(id: string) {
-    return request<{ sampleAnswer?: string | null }>(apiRoutes.writing.sampleAnswer(id), { method: "GET" })
+    return request<{ sampleAnswer?: string | null }>(apiRoutes.writing.sampleAnswer(id), { method: "GET" }, true)
       .then(result => result.sampleAnswer ?? null);
   },
 
@@ -673,6 +673,10 @@ export const realClient: ApiClient = {
       method: "POST",
       body: JSON.stringify(requestBody),
     }, true).then(envelope => envelope.data);
+  },
+
+  async retryGrading(id: string) {
+    await request(apiRoutes.submissions.retryGrading(id), { method: "POST" }, true);
   },
 
   listQuizzes() {

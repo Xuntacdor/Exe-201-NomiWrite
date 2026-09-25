@@ -34,6 +34,7 @@ public class AdminPromptListItemDto
 {
     public Guid Id { get; set; }
     public Guid WritingTypeId { get; set; }
+    public string WritingTypeName { get; set; } = string.Empty;
     public string Title { get; set; } = string.Empty;
     public DifficultyLevel Difficulty { get; set; }
     public bool IsActive { get; set; }

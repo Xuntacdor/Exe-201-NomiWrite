@@ -87,7 +87,7 @@ public class VnPayGatewayService
         var receivedHash = vnpParams.FirstOrDefault(p =>
             string.Equals(p.Key, "vnp_SecureHash", StringComparison.OrdinalIgnoreCase)).Value;
 
-        if (string.IsNullOrEmpty(receivedHash))
+        if (string.IsNullOrEmpty(receivedHash) || string.IsNullOrWhiteSpace(_settings.HashSecret))
         {
             _logger.LogWarning("VNPay IPN received without a vnp_SecureHash.");
             return InvalidResult;

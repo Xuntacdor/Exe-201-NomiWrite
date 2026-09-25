@@ -60,6 +60,12 @@ public class ExceptionHandlingMiddleware
                 errors = Array.Empty<string>();
                 break;
 
+            case DailyGradingLimitExceededException:
+                statusCode = StatusCodes.Status429TooManyRequests;
+                message = exception.Message;
+                errors = Array.Empty<string>();
+                break;
+
             default:
                 statusCode = StatusCodes.Status500InternalServerError;
                 message = "An unexpected error occurred.";

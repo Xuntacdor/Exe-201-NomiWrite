@@ -15,6 +15,7 @@ import {
   Info,
   Loader2,
   MessagesSquare,
+  RotateCcw,
   Sparkles,
   SplitSquareHorizontal,
 } from "lucide-react";
@@ -43,10 +44,11 @@ function ResultContent() {
   const [reviewRequests, setReviewRequests] = useState<TutorReviewRequest[]>([]);
   const [flagDialogOpen, setFlagDialogOpen] = useState(false);
   const [essayExpanded, setEssayExpanded] = useState(false);
-  const [workingAction, setWorkingAction] = useState<"compare" | "tutor" | "flag" | "">("");
+  const [workingAction, setWorkingAction] = useState<"compare" | "tutor" | "flag" | "retry" | "">("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [waitingForGrading, setWaitingForGrading] = useState(false);
+  const [retryVersion, setRetryVersion] = useState(0);
 
   useEffect(() => {
     if (apiMode === "real" && !getSession()?.accessToken) {
@@ -98,21 +100,13 @@ function ResultContent() {
         });
     };
 
-    const stateTimer = window.setTimeout(() => {
-      if (ignore) return;
-      setFeedback(null);
-      setLoading(false);
-      setWaitingForGrading(true);
-      setError("");
-    }, 0);
-    checkTimer = window.setTimeout(checkFeedback, INITIAL_GRADING_CHECK_DELAY_MS);
+    checkFeedback();
 
     return () => {
       ignore = true;
-      if (stateTimer) window.clearTimeout(stateTimer);
       if (checkTimer) window.clearTimeout(checkTimer);
     };
-  }, [router, submissionId]);
+  }, [router, submissionId, retryVersion]);
 
   useEffect(() => {
     if (apiMode === "real" && !getSession()?.accessToken) return;
@@ -136,6 +130,22 @@ function ResultContent() {
   const criteriaScores = Object.entries(feedback?.criteriaScores ?? {}).filter(([, score]) => typeof score === "number");
   const excerpt = getExcerpt(submission?.content ?? "");
   const gradingResultId = feedback?.id;
+
+  async function handleRetryGrading() {
+    if (!submissionId) return;
+    setWorkingAction("retry");
+    setActionMessage("");
+    try {
+      await apiClient.retryGrading(submissionId);
+      setFeedback(null);
+      setWaitingForGrading(true);
+      setRetryVersion(value => value + 1);
+    } catch (err) {
+      setActionMessage(err instanceof Error ? err.message : "Could not retry grading.");
+    } finally {
+      setWorkingAction("");
+    }
+  }
 
   async function handleCompare() {
     if (!submissionId) return;
@@ -314,13 +324,28 @@ function ResultContent() {
                     <Info className="mt-0.5 h-4 w-4 shrink-0 text-blue-200" />
                     <p className="text-sm leading-relaxed text-blue-50">
                       {submission.status === "failed"
-                        ? feedback.errorMessage || "AI grading failed. Please try submitting again later."
+                        ? "AI grading is temporarily unavailable. Your essay is saved and can be graded again."
                         : submission.overallFeedback || "The backend grading service returned this submission without overall feedback."}
                     </p>
                   </div>
                 </div>
               </div>
             </div>
+
+            {submission.status === "failed" && (
+              <div className="flex flex-wrap items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4">
+                <button
+                  type="button"
+                  onClick={handleRetryGrading}
+                  disabled={Boolean(workingAction)}
+                  className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60"
+                >
+                  {workingAction === "retry" ? <Loader2 className="h-4 w-4 animate-spin" /> : <RotateCcw className="h-4 w-4" />}
+                  Grade again
+                </button>
+                {actionMessage && <p className="text-sm text-amber-800">{actionMessage}</p>}
+              </div>
+            )}
 
             <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3">
               <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
@@ -329,7 +354,7 @@ function ResultContent() {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            {submission.status !== "failed" && <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               {[
                 { label: "Compare", icon: SplitSquareHorizontal, action: handleCompare, key: "compare" as const },
                 { label: "Tutor review", icon: MessagesSquare, action: handleTutorReview, key: "tutor" as const },
@@ -346,7 +371,7 @@ function ResultContent() {
                   {label}
                 </button>
               ))}
-            </div>
+            </div>}
 
             {(comparisonMessage || actionMessage) && (
               <div className="rounded-xl border border-blue-100 bg-blue-50 p-3 text-xs font-semibold text-blue-700">
