@@ -42,12 +42,12 @@ public static class DependencyInjection
         services.AddHttpClient("GradingService", client =>
         {
             client.BaseAddress = new Uri(serviceUrls.GradingService);
-            client.Timeout = TimeSpan.FromSeconds(5);
+            client.Timeout = TimeSpan.FromSeconds(15);
         });
         services.AddHttpClient("WritingService", client =>
         {
             client.BaseAddress = new Uri(serviceUrls.WritingService);
-            client.Timeout = TimeSpan.FromSeconds(5);
+            client.Timeout = TimeSpan.FromSeconds(15);
         });
 
         services.AddHttpClient("Gemini", client =>

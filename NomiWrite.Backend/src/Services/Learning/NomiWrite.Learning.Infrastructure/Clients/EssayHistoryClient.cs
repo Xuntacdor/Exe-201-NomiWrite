@@ -38,16 +38,37 @@ public class EssayHistoryClient : IEssayHistoryClient
 
     public async Task<IReadOnlyList<GradedEssaySummaryDto>> GetGradingHistoryAsync(Guid userId, string? accessToken)
     {
-        using var request = BuildRequest(HttpMethod.Get, "/api/grading/history", accessToken);
-        using var response = await SendAsync(GradingClientName, request);
+        // Idempotent cross-service GET feeding the study plan. Transient connection
+        // failures (e.g. peer starting up / DNS churn) must not silently blank the
+        // essay history, so retry a bounded number of times with short backoff.
+        const int maxAttempts = 3;
+        var backoffMs = 300;
 
-        if (!response.IsSuccessStatusCode)
-            throw new HttpRequestException(
-                $"Grading service returned {(int)response.StatusCode} for user {userId}.");
+        for (var attempt = 1; ; attempt++)
+        {
+            try
+            {
+                using var request = BuildRequest(HttpMethod.Get, "/api/grading/history", accessToken);
+                using var response = await SendAsync(GradingClientName, request);
 
-        var payload = await response.Content.ReadFromJsonAsync<GradingHistoryEnvelope>(SerializerOptions);
+                if (!response.IsSuccessStatusCode)
+                    throw new HttpRequestException(
+                        $"Grading service returned {(int)response.StatusCode} for user {userId}.");
 
-        return payload?.Data ?? new List<GradedEssaySummaryDto>();
+                var payload = await response.Content.ReadFromJsonAsync<GradingHistoryEnvelope>(SerializerOptions);
+                return payload?.Data ?? new List<GradedEssaySummaryDto>();
+            }
+            catch (TaskCanceledException) when (attempt < maxAttempts)
+            {
+                await Task.Delay(backoffMs);
+                backoffMs *= 2;
+            }
+            catch (HttpRequestException) when (attempt < maxAttempts)
+            {
+                await Task.Delay(backoffMs);
+                backoffMs *= 2;
+            }
+        }
     }
 
     public async Task<IReadOnlyList<EssayTopicDto>> GetWrittenTopicsAsync(Guid userId, string? accessToken)
