@@ -187,7 +187,7 @@ public class GeminiGradingProviderTests
                 ? new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(GeminiBody(ValidGradingJson)) }
                 : new HttpResponseMessage(HttpStatusCode.ServiceUnavailable) { Content = new StringContent("unavailable") };
         });
-        var sut = new GeminiGradingProvider(
+        var sut = new NoBackoffGradingProvider(
             new HttpClient(handler),
             Options.Create(new GeminiSettings { ApiKey = ApiKey, Model = "gemini-3.5-flash", FallbackModel = "gemini-3.5-flash-lite", Endpoint = Endpoint }),
             TestGradingDbContext.Create(),
@@ -197,8 +197,8 @@ public class GeminiGradingProviderTests
         var result = await sut.GradeEssayAsync("essay");
 
         result.OverallBand.Should().Be(7.0m);
-        requestedModels.Should().HaveCount(4);
-        requestedModels.Take(3).Should().OnlyContain(path => path.Contains("gemini-3.5-flash:generateContent", StringComparison.Ordinal));
+        requestedModels.Should().HaveCount(6);
+        requestedModels.Take(5).Should().OnlyContain(path => path.Contains("gemini-3.5-flash:generateContent", StringComparison.Ordinal));
         requestedModels.Last().Should().Contain("gemini-3.5-flash-lite");
     }
 
@@ -265,6 +265,8 @@ public class GeminiGradingProviderTests
                 Content = new StringContent(body, Encoding.UTF8, "application/json")
             });
         }
+    }
+
     private sealed class CallbackHttpMessageHandler(Func<HttpRequestMessage, HttpResponseMessage> callback) : HttpMessageHandler
     {
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
