@@ -407,16 +407,34 @@ export interface GenerateStudyGuideRequest {
   forceRefresh?: boolean;
 }
 
+export interface StudyGuideInsight {
+  text: string;
+  explanationVi?: string;
+}
+
+export type StudyGuideActionType =
+  | "write_essay"
+  | "review_history"
+  | "practice_vocabulary"
+  | "practice_quiz"
+  | "none"
+  | string;
+
 export interface StudyGuideStep {
   title: string;
   description: string;
   focus: string;
+  explanationVi?: string;
+  actionType?: StudyGuideActionType;
+  actionTarget?: string;
 }
 
 export interface StudyGuideTopic {
   title: string;
   reason: string;
   suggestedPrompt: string;
+  ideaHints?: string[];
+  keyVocabulary?: string[];
 }
 
 export interface StudyGuide {
@@ -426,8 +444,8 @@ export interface StudyGuide {
   targetBand?: number | null;
   summary: string;
   estimatedBand: number;
-  strengths: string[];
-  weaknesses: string[];
+  strengths: StudyGuideInsight[];
+  weaknesses: StudyGuideInsight[];
   nextSteps: StudyGuideStep[];
   recommendedTopic: StudyGuideTopic;
   analyzedEssayCount: number;
