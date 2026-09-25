@@ -9,6 +9,7 @@ import {
   BookOpen,
   ChevronDown,
   Clock,
+  Lightbulb,
   Loader2,
   PenLine,
   Send,
@@ -29,10 +30,38 @@ function countWords(content: string) {
   return content.trim() ? content.trim().split(/\s+/).length : 0;
 }
 
+function parseJsonArray(raw: string | null): string[] {
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
+function buildScaffold(input: { prompt: string; hints: string[]; vocab: string }) {
+  const parts = [input.prompt];
+  if (input.hints.length > 0) {
+    parts.push("", "Ideas to develop:", ...input.hints.map(hint => `• ${hint}`));
+  }
+  if (input.vocab.trim()) {
+    parts.push("", `Topic vocabulary: ${input.vocab.trim()}`);
+  }
+  parts.push("", "Your essay:");
+  return parts.join("\n");
+}
+
 function WriteContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialType = searchParams.get("type");
+  const customTitle = searchParams.get("title");
+  const customPrompt = searchParams.get("prompt");
+  const customFocus = searchParams.get("focus");
+  const customVocab = searchParams.get("vocab");
+  const customHints = useMemo(() => parseJsonArray(searchParams.get("hints")), [searchParams]);
+  const hasCustomTopic = Boolean(customPrompt);
 
   const [types, setTypes] = useState<WritingType[]>([]);
   const [prompts, setPrompts] = useState<WritingPrompt[]>([]);
@@ -158,21 +187,30 @@ function WriteContent() {
   const canSubmit = Boolean(currentPrompt && content.trim()) && !submitting;
 
   const draftKey = useMemo(
-    () => `nomiwrite_draft_${selectedPromptId || selectedTypeId || "default"}`,
-    [selectedPromptId, selectedTypeId],
+    () => hasCustomTopic
+      ? `nomiwrite_draft_study_${customFocus || "custom"}`
+      : `nomiwrite_draft_${selectedPromptId || selectedTypeId || "default"}`,
+    [hasCustomTopic, customFocus, selectedPromptId, selectedTypeId],
   );
 
   useEffect(() => {
     const loadTimer = setTimeout(() => {
       try {
-        setContent(localStorage.getItem(draftKey) ?? "");
+        const saved = localStorage.getItem(draftKey);
+        if (saved) {
+          setContent(saved);
+        } else if (hasCustomTopic) {
+          setContent(buildScaffold({ prompt: customPrompt ?? "", hints: customHints, vocab: customVocab ?? "" }));
+        } else {
+          setContent("");
+        }
       } catch {
         setContent("");
       }
     }, 0);
 
     return () => clearTimeout(loadTimer);
-  }, [draftKey]);
+  }, [draftKey, hasCustomTopic, customPrompt, customHints, customVocab]);
 
   useEffect(() => {
     try {
@@ -306,6 +344,42 @@ function WriteContent() {
 
           {/* Prompt Area */}
           <div className="flex-1 overflow-y-auto p-8">
+            {hasCustomTopic && (
+              <div className="mb-6 overflow-hidden rounded-2xl border border-indigo-200 bg-gradient-to-br from-indigo-50 to-blue-50 shadow-sm">
+                <div className="flex items-center gap-2 border-b border-indigo-100 px-6 py-3.5">
+                  <Lightbulb className="h-4 w-4 text-indigo-600" />
+                  <p className="text-sm font-extrabold text-slate-900">{customTitle || "Topic from your Study Plan"}</p>
+                </div>
+                <div className="p-6">
+                  <p className="text-[15px] font-medium leading-relaxed text-slate-700">{customPrompt}</p>
+                  {customHints.length > 0 && (
+                    <div className="mt-4">
+                      <p className="text-xs font-bold uppercase tracking-wide text-indigo-600">Ideas to develop</p>
+                      <ul className="mt-2 space-y-1.5">
+                        {customHints.map((hint, index) => (
+                          <li key={index} className="flex items-start gap-2 text-sm leading-relaxed text-slate-600">
+                            <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-indigo-400" />
+                            {hint}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {customVocab && (
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      {customVocab.split(",").map((term, index) => (
+                        <span key={index} className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
+                          {term.trim()}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  <p className="mt-4 text-xs font-semibold text-slate-400">
+                    Choose a writing task above to submit for grading — or keep this topic as your reference while you type.
+                  </p>
+                </div>
+              </div>
+            )}
             {currentPrompt ? (
               <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
                 <div className="mb-6 flex items-center gap-3">

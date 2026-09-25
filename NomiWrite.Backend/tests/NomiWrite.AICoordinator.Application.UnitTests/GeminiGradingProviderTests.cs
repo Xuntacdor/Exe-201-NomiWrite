@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.Json;
 using FluentAssertions;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using NomiWrite.AICoordinator.Application.DTOs;
@@ -44,6 +45,17 @@ public class GeminiGradingProviderTests
         return new GeminiGradingProvider(
             httpClient,
             settings,
+            TestGradingDbContext.Create(),
+            new MemoryCache(new MemoryCacheOptions()),
+            NullLogger<GeminiGradingProvider>.Instance);
+    }
+
+    // Skips the real exponential backoff wait so retry-exhaustion tests stay fast.
+    private static GeminiGradingProvider BuildNoBackoff(HttpMessageHandler handler)
+    {
+        return new NoBackoffGradingProvider(
+            new HttpClient(handler),
+            Options.Create(new GeminiSettings { ApiKey = ApiKey, Model = "gemini-2.5-flash", Endpoint = Endpoint }),
             TestGradingDbContext.Create(),
             new MemoryCache(new MemoryCacheOptions()),
             NullLogger<GeminiGradingProvider>.Instance);
@@ -135,22 +147,32 @@ public class GeminiGradingProviderTests
     }
 
     [Fact]
-    public async Task GradeEssayAsync_NonSuccessHttp_Throws()
+    public async Task GradeEssayAsync_NonSuccessHttp_Throws_FriendlyMessage()
     {
-        var handler = new StubHttpMessageHandler(
+        var sut = BuildNoBackoff(new StubHttpMessageHandler(
             "{\"error\":{\"code\":429,\"message\":\"Quota exceeded\"}}",
-            HttpStatusCode.TooManyRequests);
-        var httpClient = new HttpClient(handler);
-        var sut = new GeminiGradingProvider(
-            httpClient,
-            Options.Create(new GeminiSettings { ApiKey = ApiKey, Model = "gemini-2.5-flash", Endpoint = Endpoint }),
-            TestGradingDbContext.Create(),
-            new MemoryCache(new MemoryCacheOptions()),
-            NullLogger<GeminiGradingProvider>.Instance);
+            HttpStatusCode.TooManyRequests));
 
         var act = () => sut.GradeEssayAsync("essay");
 
-        await act.Should().ThrowAsync<HttpRequestException>();
+        var exception = await act.Should().ThrowAsync<HttpRequestException>();
+        exception.And.Message.Should().Contain("temporarily unavailable");
+        exception.And.Message.Should().NotContain("Quota exceeded");
+    }
+
+    [Fact]
+    public async Task GradeEssayAsync_TransientThenSuccess_RetriesAndSucceeds()
+    {
+        var handler = new SequenceHttpMessageHandler(
+            (HttpStatusCode.TooManyRequests, "{\"error\":{\"code\":429}}"),
+            (HttpStatusCode.ServiceUnavailable, "{\"error\":{\"code\":503}}"),
+            (HttpStatusCode.OK, GeminiBody(ValidGradingJson)));
+        var sut = BuildNoBackoff(handler);
+
+        var result = await sut.GradeEssayAsync("essay");
+
+        result.OverallBand.Should().Be(7.0m);
+        handler.CallCount.Should().Be(3);
     }
 
     [Fact]
@@ -182,6 +204,22 @@ public class GeminiGradingProviderTests
 
     #endregion
 
+    private sealed class NoBackoffGradingProvider : GeminiGradingProvider
+    {
+        public NoBackoffGradingProvider(
+            HttpClient httpClient,
+            IOptions<GeminiSettings> settings,
+            NomiWrite.AICoordinator.Application.Interfaces.IGradingDbContext dbContext,
+            IMemoryCache cache,
+            ILogger<GeminiGradingProvider> logger)
+            : base(httpClient, settings, dbContext, cache, logger)
+        {
+        }
+
+        protected override Task DelayBackoffAsync(TimeSpan delay, CancellationToken cancellationToken) =>
+            Task.CompletedTask;
+    }
+
     private sealed class StubHttpMessageHandler : HttpMessageHandler
     {
         private readonly string _body;
@@ -204,6 +242,29 @@ public class GeminiGradingProviderTests
         }
     }
 
+    private sealed class SequenceHttpMessageHandler : HttpMessageHandler
+    {
+        private readonly (HttpStatusCode Status, string Body)[] _responses;
+        private int _callCount;
+
+        public SequenceHttpMessageHandler(params (HttpStatusCode Status, string Body)[] responses)
+        {
+            _responses = responses;
+        }
+
+        public int CallCount => _callCount;
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
+            CancellationToken cancellationToken)
+        {
+            var index = Math.Min(_callCount, _responses.Length - 1);
+            _callCount++;
+            var (status, body) = _responses[index];
+            return Task.FromResult(new HttpResponseMessage(status)
+            {
+                Content = new StringContent(body, Encoding.UTF8, "application/json")
+            });
+        }
     private sealed class CallbackHttpMessageHandler(Func<HttpRequestMessage, HttpResponseMessage> callback) : HttpMessageHandler
     {
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>

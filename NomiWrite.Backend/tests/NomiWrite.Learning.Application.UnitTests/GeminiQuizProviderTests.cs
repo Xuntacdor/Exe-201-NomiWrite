@@ -2,6 +2,7 @@ using System.Net;
 using System.Text;
 using System.Text.Json;
 using FluentAssertions;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using NomiWrite.Learning.Application.DTOs;
@@ -123,14 +124,58 @@ public class GeminiQuizProviderTests
     [Fact]
     public async Task GenerateQuestionsAsync_NonSuccessStatus_Throws()
     {
-        var sut = Build("{\"error\":{\"code\":429}}", HttpStatusCode.TooManyRequests);
+        var sut = BuildNoBackoff(new SequenceHttpMessageHandler(
+            (HttpStatusCode.TooManyRequests, "{\"error\":{\"code\":429}}")));
 
         var act = () => sut.GenerateQuestionsAsync(new QuizGenerationRequest(), 5);
 
         await act.Should().ThrowAsync<HttpRequestException>();
     }
 
+    [Fact]
+    public async Task GenerateQuestionsAsync_TransientThenSuccess_RetriesAndSucceeds()
+    {
+        var handler = new SequenceHttpMessageHandler(
+            (HttpStatusCode.ServiceUnavailable, "{\"error\":{\"code\":503}}"),
+            (HttpStatusCode.TooManyRequests, "{\"error\":{\"code\":429}}"),
+            (HttpStatusCode.OK, GeminiBody(QuestionsJson())));
+        var sut = BuildNoBackoff(handler);
+
+        var result = await sut.GenerateQuestionsAsync(new QuizGenerationRequest(), 5);
+
+        result.Should().ContainSingle(q => q.Id == "q1");
+        handler.CallCount.Should().Be(3);
+    }
+
     #endregion
+
+    // Skips the real exponential backoff wait so retry tests stay fast.
+    private static GeminiQuizProvider BuildNoBackoff(HttpMessageHandler handler)
+    {
+        var client = new HttpClient(handler);
+        var factory = new StubHttpClientFactory(client);
+        var options = Options.Create(new GeminiSettings
+        {
+            ApiKey = "test-key",
+            Model = "gemini-3.6-flash",
+            Endpoint = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+        });
+        return new NoBackoffQuizProvider(factory, options, NullLogger<GeminiQuizProvider>.Instance);
+    }
+
+    private sealed class NoBackoffQuizProvider : GeminiQuizProvider
+    {
+        public NoBackoffQuizProvider(
+            IHttpClientFactory httpClientFactory,
+            IOptions<GeminiSettings> geminiOptions,
+            ILogger<GeminiQuizProvider> logger)
+            : base(httpClientFactory, geminiOptions, logger)
+        {
+        }
+
+        protected override Task DelayBackoffAsync(TimeSpan delay, CancellationToken cancellationToken) =>
+            Task.CompletedTask;
+    }
 
     private sealed class StubHttpMessageHandler : HttpMessageHandler
     {
@@ -151,6 +196,31 @@ public class GeminiQuizProviderTests
                 Content = new StringContent(_body, Encoding.UTF8, "application/json")
             };
             return Task.FromResult(response);
+        }
+    }
+
+    private sealed class SequenceHttpMessageHandler : HttpMessageHandler
+    {
+        private readonly (HttpStatusCode Status, string Body)[] _responses;
+        private int _callCount;
+
+        public SequenceHttpMessageHandler(params (HttpStatusCode Status, string Body)[] responses)
+        {
+            _responses = responses;
+        }
+
+        public int CallCount => _callCount;
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
+            CancellationToken cancellationToken)
+        {
+            var index = Math.Min(_callCount, _responses.Length - 1);
+            _callCount++;
+            var (status, body) = _responses[index];
+            return Task.FromResult(new HttpResponseMessage(status)
+            {
+                Content = new StringContent(body, Encoding.UTF8, "application/json")
+            });
         }
     }
 

@@ -22,6 +22,10 @@ public class GeminiQuizProvider : IAiQuizProvider
 
     private const string AllowedTypes = "multiple_choice, fill_blank, rewrite";
 
+    private const int MaxAttempts = 5;
+    private const int BaseBackoffSeconds = 2;
+    private const int MaxBackoffSeconds = 16;
+
     private readonly HttpClient _httpClient;
     private readonly IOptions<GeminiSettings> _geminiOptions;
     private readonly ILogger<GeminiQuizProvider> _logger;
@@ -63,7 +67,7 @@ public class GeminiQuizProvider : IAiQuizProvider
 
         var endpoint = BuildEndpoint();
 
-        const int maxAttempts = 3;
+        const int maxAttempts = MaxAttempts;
         for (var attempt = 1; attempt <= maxAttempts; attempt++)
         {
             using var response = await _httpClient.PostAsJsonAsync(endpoint, body);
@@ -79,7 +83,7 @@ public class GeminiQuizProvider : IAiQuizProvider
                     response.StatusCode,
                     attempt,
                     maxAttempts);
-                await Task.Delay(TimeSpan.FromSeconds(attempt * 2));
+                await DelayBackoffAsync(GetBackoff(attempt), CancellationToken.None);
                 continue;
             }
 
@@ -92,6 +96,23 @@ public class GeminiQuizProvider : IAiQuizProvider
 
         throw new InvalidOperationException("Gemini quiz generation failed after all retry attempts.");
     }
+
+    // Transient Gemini overloads (429 / 503) typically clear within seconds, so
+    // back off exponentially (2s, 4s, 8s, 16s) with jitter instead of giving up
+    // after two quick retries.
+    private static TimeSpan GetBackoff(int attempt)
+    {
+        var exponentialSeconds = Math.Min(
+            MaxBackoffSeconds,
+            BaseBackoffSeconds * (1 << (attempt - 1)));
+        var jitterMs = Random.Shared.Next(0, 501);
+        return TimeSpan.FromSeconds(exponentialSeconds) + TimeSpan.FromMilliseconds(jitterMs);
+    }
+
+    // Virtual so unit tests can skip the real wait while still exercising the
+    // retry loop.
+    protected virtual Task DelayBackoffAsync(TimeSpan delay, CancellationToken cancellationToken) =>
+        Task.Delay(delay, cancellationToken);
 
     private string BuildEndpoint()
     {
