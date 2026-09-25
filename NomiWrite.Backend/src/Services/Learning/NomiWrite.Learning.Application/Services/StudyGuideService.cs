@@ -16,6 +16,12 @@ public class StudyGuideService : IStudyGuideService
     private const int MaxVocabularySnapshots = 10;
     private const int MaxTopics = 20;
 
+    private static readonly string[] AllowedActionTypes =
+        { "write_essay", "review_history", "practice_vocabulary", "practice_quiz", "none" };
+
+    private static readonly string[] AllowedActionPrefixes =
+        { "/write", "/history", "/quiz", "/vocabulary" };
+
     private readonly ILearningDbContext _dbContext;
     private readonly IEssayHistoryClient _essayHistoryClient;
     private readonly IStudyGuideAiProvider _aiProvider;
@@ -142,19 +148,22 @@ public class StudyGuideService : IStudyGuideService
     private static StudyGuideResult NormalizeResult(StudyGuideResult result, StudyGuideGenerationRequest request)
     {
         var strengths = result.Strengths
-            .Where(s => !string.IsNullOrWhiteSpace(s))
-            .Distinct()
+            .Where(s => !string.IsNullOrWhiteSpace(s.Text))
+            .GroupBy(s => s.Text, StringComparer.OrdinalIgnoreCase)
+            .Select(g => g.First())
             .Take(4)
             .ToList();
 
         var weaknesses = result.Weaknesses
-            .Where(w => !string.IsNullOrWhiteSpace(w))
-            .Distinct()
+            .Where(w => !string.IsNullOrWhiteSpace(w.Text))
+            .GroupBy(w => w.Text, StringComparer.OrdinalIgnoreCase)
+            .Select(g => g.First())
             .Take(4)
             .ToList();
 
         var steps = result.NextSteps
             .Where(s => !string.IsNullOrWhiteSpace(s.Title))
+            .Select(NormalizeStep)
             .Take(3)
             .ToList();
 
@@ -164,10 +173,20 @@ public class StudyGuideService : IStudyGuideService
             topic = new StudyGuideTopic
             {
                 Title = BuildFallbackTopicTitle(request),
-                Reason = "Practice writing in a controlled setting to turn your weakest criterion into a strength.",
+                Reason = "Practice writing in a controlled setting to turn your weakest criterion into a strength. Luyện viết có kiểm soát để biến điểm yếu thành thế mạnh.",
                 SuggestedPrompt = "Write an IELTS Writing Task 2 essay that directly addresses the prompt and develops each idea with a clear topic sentence."
             };
         }
+
+        topic.IdeaHints = topic.IdeaHints
+            .Where(h => !string.IsNullOrWhiteSpace(h))
+            .Take(3)
+            .ToList();
+
+        topic.KeyVocabulary = topic.KeyVocabulary
+            .Where(v => !string.IsNullOrWhiteSpace(v))
+            .Take(4)
+            .ToList();
 
         var estimatedBand = result.EstimatedBand;
         if (estimatedBand <= 0 && request.EssaySummaries.Count > 0)
@@ -186,6 +205,54 @@ public class StudyGuideService : IStudyGuideService
             Weaknesses = weaknesses,
             NextSteps = steps,
             RecommendedTopic = topic
+        };
+    }
+
+    private static StudyGuideStep NormalizeStep(StudyGuideStep step)
+    {
+        var actionType = CoerceActionType(step.ActionType);
+        var actionTarget = NormalizeActionTarget(actionType, step.ActionTarget);
+
+        return new StudyGuideStep
+        {
+            Title = step.Title.Trim(),
+            Description = step.Description.Trim(),
+            Focus = step.Focus.Trim(),
+            ExplanationVi = step.ExplanationVi.Trim(),
+            ActionType = actionType,
+            ActionTarget = actionTarget
+        };
+    }
+
+    private static string CoerceActionType(string? actionType)
+    {
+        var value = actionType?.Trim().ToLowerInvariant() ?? string.Empty;
+        return AllowedActionTypes.Contains(value, StringComparer.Ordinal)
+            ? value
+            : "none";
+    }
+
+    private static string NormalizeActionTarget(string actionType, string? actionTarget)
+    {
+        var target = actionTarget?.Trim() ?? string.Empty;
+
+        if (!string.IsNullOrWhiteSpace(target))
+        {
+            var lower = target.ToLowerInvariant();
+            var isSafeInternalRoute = !lower.StartsWith("http", StringComparison.Ordinal) &&
+                                      AllowedActionPrefixes.Any(prefix => lower.StartsWith(prefix, StringComparison.Ordinal));
+
+            if (isSafeInternalRoute)
+                return target.Length > 200 ? target[..200] : target;
+        }
+
+        return actionType switch
+        {
+            "write_essay" => "/write",
+            "review_history" => "/history",
+            "practice_vocabulary" => "/vocabulary",
+            "practice_quiz" => "/quiz",
+            _ => string.Empty
         };
     }
 
@@ -319,24 +386,36 @@ public class StudyGuideService : IStudyGuideService
             TargetBand = guide.TargetBand,
             Summary = guide.Summary,
             EstimatedBand = guide.EstimatedBand,
-            Strengths = guide.Strengths,
-            Weaknesses = guide.Weaknesses,
+            Strengths = guide.Strengths.Select(ToInsightDto).ToList(),
+            Weaknesses = guide.Weaknesses.Select(ToInsightDto).ToList(),
             NextSteps = guide.NextSteps
                 .Select(s => new StudyGuideStepDto
                 {
                     Title = s.Title,
                     Description = s.Description,
-                    Focus = s.Focus
+                    Focus = s.Focus,
+                    ExplanationVi = s.ExplanationVi,
+                    ActionType = s.ActionType,
+                    ActionTarget = s.ActionTarget
                 })
                 .ToList(),
             RecommendedTopic = new StudyGuideTopicDto
             {
                 Title = guide.RecommendedTopic.Title,
                 Reason = guide.RecommendedTopic.Reason,
-                SuggestedPrompt = guide.RecommendedTopic.SuggestedPrompt
+                SuggestedPrompt = guide.RecommendedTopic.SuggestedPrompt,
+                IdeaHints = guide.RecommendedTopic.IdeaHints,
+                KeyVocabulary = guide.RecommendedTopic.KeyVocabulary
             },
             AnalyzedEssayCount = guide.AnalyzedEssayCount,
             CreatedAt = guide.CreatedAt
         };
     }
+
+    private static StudyGuideInsightDto ToInsightDto(StudyGuideInsight insight) =>
+        new()
+        {
+            Text = insight.Text,
+            ExplanationVi = insight.ExplanationVi
+        };
 }

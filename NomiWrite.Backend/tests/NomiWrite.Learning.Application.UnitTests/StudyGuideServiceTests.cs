@@ -69,8 +69,8 @@ public class StudyGuideServiceTests
             {
                 Summary = "Solid foundations with clear room to grow.",
                 EstimatedBand = 6.5m,
-                Strengths = new List<string> { "Coherence and Cohesion is your strongest criterion." },
-                Weaknesses = new List<string> { "Lexical Resource holds back your band." },
+                Strengths = new List<StudyGuideInsight> { new() { Text = "Coherence and Cohesion is your strongest criterion." } },
+                Weaknesses = new List<StudyGuideInsight> { new() { Text = "Lexical Resource holds back your band." } },
                 NextSteps = new List<StudyGuideStep>
                 {
                     new() { Title = "Raise Lexical Resource", Description = "Use 5 new collocations.", Focus = "lexical" },
@@ -95,8 +95,8 @@ public class StudyGuideServiceTests
             {
                 Summary = "Fallback guide.",
                 EstimatedBand = 6.5m,
-                Strengths = new List<string> { "Consistent submission habit." },
-                Weaknesses = new List<string> { "Lexical Resource is the lowest criterion." },
+                Strengths = new List<StudyGuideInsight> { new() { Text = "Consistent submission habit." } },
+                Weaknesses = new List<StudyGuideInsight> { new() { Text = "Lexical Resource is the lowest criterion." } },
                 NextSteps = new List<StudyGuideStep>
                 {
                     new() { Title = "Raise Lexical Resource", Description = "Write daily.", Focus = "lexical" }
@@ -153,8 +153,8 @@ public class StudyGuideServiceTests
             TargetBand = 7m,
             Summary = "Existing cached summary.",
             EstimatedBand = 6.5m,
-            Strengths = new List<string> { "Old strength." },
-            Weaknesses = new List<string> { "Old weakness." },
+            Strengths = new List<StudyGuideInsight> { new() { Text = "Old strength." } },
+            Weaknesses = new List<StudyGuideInsight> { new() { Text = "Old weakness." } },
             NextSteps = new List<StudyGuideStep>
             {
                 new() { Title = "Old step", Description = "Old.", Focus = "grammar" }
@@ -217,8 +217,8 @@ public class StudyGuideServiceTests
             {
                 Summary = "Solid foundations.",
                 EstimatedBand = 6.5m,
-                Strengths = new List<string> { "Coherence 7.0 is your strongest criterion." },
-                Weaknesses = new List<string> { "Lexical Resource is lowest at 6.0." },
+                Strengths = new List<StudyGuideInsight> { new() { Text = "Coherence 7.0 is your strongest criterion." } },
+                Weaknesses = new List<StudyGuideInsight> { new() { Text = "Lexical Resource is lowest at 6.0." } },
                 NextSteps = new List<StudyGuideStep>
                 {
                     new() { Title = "Raise Lexical Resource", Description = "Use collocations.", Focus = "lexical" },
@@ -242,6 +242,7 @@ public class StudyGuideServiceTests
         dto.Summary.Should().Be("Solid foundations.");
         dto.NextSteps.Should().HaveCount(3);
         dto.EstimatedBand.Should().Be(6.5m);
+        dto.Strengths.Should().ContainSingle(s => s.Text == "Coherence 7.0 is your strongest criterion.");
 
         var stored = db.StudyGuides.Single();
         stored.UserId.Should().Be(UserA);
@@ -280,8 +281,8 @@ public class StudyGuideServiceTests
             {
                 Summary = "Your recent essays average band 6.5.",
                 EstimatedBand = 6.5m,
-                Strengths = new List<string> { "Consistent submission habit." },
-                Weaknesses = new List<string> { "'Tense' is your most recurring grammar issue." },
+                Strengths = new List<StudyGuideInsight> { new() { Text = "Consistent submission habit." } },
+                Weaknesses = new List<StudyGuideInsight> { new() { Text = "'Tense' is your most recurring grammar issue." } },
                 NextSteps = new List<StudyGuideStep>
                 {
                     new() { Title = "Fix 'Tense'", Description = "Correct every example.", Focus = "grammar" }
@@ -293,7 +294,7 @@ public class StudyGuideServiceTests
         var dto = await sut.GenerateGuideAsync(UserA, new GenerateStudyGuideRequestDto(), null);
 
         fallback.Received(1).GenerateGuide(Arg.Any<StudyGuideGenerationRequest>());
-        dto.Weaknesses.Should().Contain(w => w.Contains("Tense"));
+        dto.Weaknesses.Should().Contain(w => w.Text.Contains("Tense"));
     }
 
     [Fact]
@@ -316,8 +317,8 @@ public class StudyGuideServiceTests
             {
                 Summary = "Local-only guide.",
                 EstimatedBand = 0,
-                Strengths = new List<string> { "You build vocabulary." },
-                Weaknesses = new List<string> { "With local weak points." },
+                Strengths = new List<StudyGuideInsight> { new() { Text = "You build vocabulary." } },
+                Weaknesses = new List<StudyGuideInsight> { new() { Text = "With local weak points." } },
                 NextSteps = new List<StudyGuideStep> { new() { Title = "Practice", Description = ".", Focus = "grammar" } },
                 RecommendedTopic = new StudyGuideTopic { Title = "Topic", Reason = ".", SuggestedPrompt = "." }
             });
@@ -342,8 +343,8 @@ public class StudyGuideServiceTests
             {
                 Summary = "  ",
                 EstimatedBand = 0,
-                Strengths = new List<string>(),
-                Weaknesses = new List<string>(),
+                Strengths = new List<StudyGuideInsight>(),
+                Weaknesses = new List<StudyGuideInsight>(),
                 NextSteps = new List<StudyGuideStep>(),
                 RecommendedTopic = new StudyGuideTopic()
             });
@@ -393,6 +394,103 @@ public class StudyGuideServiceTests
         var other = await sut.GetLatestGuideAsync(UserB);
         other.Should().NotBeNull();
         other!.Id.Should().Be(bGuide.Id);
+    }
+
+    #endregion
+
+    #region U-L13 — bilingual + actionable enrichment
+
+    [Fact]
+    public async Task GenerateGuideAsync_CarriesBilingualAndTopicScaffoldingIntoDto()
+    {
+        var db = TestLearningDbContext.Create();
+        SeedGrammarError(db, UserA);
+
+        var ai = Substitute.For<IStudyGuideAiProvider>();
+        ai.GenerateGuideAsync(Arg.Any<StudyGuideGenerationRequest>())
+            .Returns(new StudyGuideResult
+            {
+                Summary = "Enriched.",
+                EstimatedBand = 6.5m,
+                Strengths = new List<StudyGuideInsight>
+                {
+                    new() { Text = "Coherence is strong at 7.0.", ExplanationVi = "Tính mạch lạc rất tốt." }
+                },
+                Weaknesses = new List<StudyGuideInsight>
+                {
+                    new() { Text = "Grammar range is limited.", ExplanationVi = "Cấu trúc ngữ pháp còn ít." }
+                },
+                NextSteps = new List<StudyGuideStep>
+                {
+                    new()
+                    {
+                        Title = "Rewrite intros",
+                        Description = "Rewrite 3 intros with clear topic sentences.",
+                        ExplanationVi = "Viết lại 3 phần mở bài theo câu chủ đề.",
+                        Focus = "task_response",
+                        ActionType = "write_essay",
+                        ActionTarget = "/write?focus=task_response"
+                    }
+                },
+                RecommendedTopic = new StudyGuideTopic
+                {
+                    Title = "Technology and stress",
+                    Reason = "Exercises your weakest area.",
+                    SuggestedPrompt = "Some people think technology makes life less stressful.",
+                    IdeaHints = new List<string> { "Point 1: saves time", "Point 2: causes overload" },
+                    KeyVocabulary = new List<string> { "information overload", "work-life balance" }
+                }
+            });
+
+        var sut = Build(db, ai: ai);
+        var dto = await sut.GenerateGuideAsync(UserA, new GenerateStudyGuideRequestDto(), null);
+
+        dto.Strengths.Single().Text.Should().Be("Coherence is strong at 7.0.");
+        dto.Strengths.Single().ExplanationVi.Should().Be("Tính mạch lạc rất tốt.");
+        dto.Weaknesses.Single().ExplanationVi.Should().NotBeNullOrWhiteSpace();
+
+        var step = dto.NextSteps.Single();
+        step.ExplanationVi.Should().Be("Viết lại 3 phần mở bài theo câu chủ đề.");
+        step.ActionType.Should().Be("write_essay");
+        step.ActionTarget.Should().Be("/write?focus=task_response");
+
+        dto.RecommendedTopic.IdeaHints.Should().Contain("Point 1: saves time");
+        dto.RecommendedTopic.KeyVocabulary.Should().Contain("information overload");
+    }
+
+    [Fact]
+    public async Task GenerateGuideAsync_UnsafeStepActions_AreSanitizedOrDefaults()
+    {
+        var db = TestLearningDbContext.Create();
+        SeedGrammarError(db, UserA);
+
+        var ai = Substitute.For<IStudyGuideAiProvider>();
+        ai.GenerateGuideAsync(Arg.Any<StudyGuideGenerationRequest>())
+            .Returns(new StudyGuideResult
+            {
+                Summary = "Actions.",
+                EstimatedBand = 6.5m,
+                Strengths = new List<StudyGuideInsight> { new() { Text = "S." } },
+                Weaknesses = new List<StudyGuideInsight> { new() { Text = "W." } },
+                NextSteps = new List<StudyGuideStep>
+                {
+                    new() { Title = "External link", Description = ".", Focus = "grammar", ActionType = "review_history", ActionTarget = "https://evil.example/x" },
+                    new() { Title = "Unknown type", Description = ".", Focus = "grammar", ActionType = "hack", ActionTarget = "/write" },
+                    new() { Title = "Direct vocab", Description = ".", Focus = "lexical", ActionType = "practice_vocabulary", ActionTarget = "/vocabulary" }
+                },
+                RecommendedTopic = new StudyGuideTopic { Title = "T", Reason = ".", SuggestedPrompt = "." }
+            });
+
+        var sut = Build(db, ai: ai);
+        var dto = await sut.GenerateGuideAsync(UserA, new GenerateStudyGuideRequestDto(), null);
+
+        var steps = dto.NextSteps;
+        steps[0].ActionType.Should().Be("review_history");
+        steps[0].ActionTarget.Should().Be("/history");
+        steps[1].ActionType.Should().Be("none");
+        steps[1].ActionTarget.Should().Be("/write");
+        steps[2].ActionType.Should().Be("practice_vocabulary");
+        steps[2].ActionTarget.Should().Be("/vocabulary");
     }
 
     #endregion

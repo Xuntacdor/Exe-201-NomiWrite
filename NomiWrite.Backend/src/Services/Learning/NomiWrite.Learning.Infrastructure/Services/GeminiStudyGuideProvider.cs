@@ -14,11 +14,21 @@ namespace NomiWrite.Learning.Infrastructure.Services;
 public class GeminiStudyGuideProvider : IStudyGuideAiProvider
 {
     private const string AllowedFocusValues = "grammar, vocabulary, coherence, task_response, lexical";
+    private const string AllowedActionTypes = "write_essay, review_history, practice_vocabulary, practice_quiz, none";
+
+    private const int MaxAttempts = 5;
+    private const int BaseBackoffSeconds = 2;
+    private const int MaxBackoffSeconds = 16;
 
     private const string SystemPrompt = """
         You are a senior IELTS / VSTEP writing examiner and a personalized learning-path coach.
         Your job is to analyze a learner's ENTIRE writing history and turn it into a concrete,
         prioritized improvement roadmap that closes the gap between their current level and their target.
+
+        YOUR LEARNER IS A VIETNAMESE UNIVERSITY STUDENT. English is their second language, so every
+        point you make must be immediately actionable in plain language, with a short Vietnamese
+        explanation attached. Never assume they understand examiner jargon like "Grammatical Range
+        and Accuracy" or "Lexical Resource targets".
 
         INPUT DATA (JSON) you will receive:
         - target: the exam/type the learner is preparing for and the target band score (may be absent).
@@ -36,17 +46,29 @@ public class GeminiStudyGuideProvider : IStudyGuideAiProvider
         {
           "summary": "2-3 sentence overall assessment, referencing real data (current band, strongest and weakest areas).",
           "estimatedBand": 6.5,
-          "strengths": ["...", "...", "..."],
-          "weaknesses": ["...", "...", "..."],
+          "strengths": [
+            { "text": "English statement naming the criterion explicitly", "explanationVi": "one-sentence Vietnamese explanation, plain language" }
+          ],
+          "weaknesses": [
+            { "text": "English statement naming the criterion/category explicitly", "explanationVi": "one-sentence Vietnamese explanation, plain language" }
+          ],
           "nextSteps": [
-            { "title": "...", "description": "one concrete, doable action", "focus": "grammar|vocabulary|coherence|task_response|lexical" },
-            { "title": "...", "description": "...", "focus": "..." },
-            { "title": "...", "description": "...", "focus": "..." }
+            {
+              "title": "< 12 words",
+              "description": "one concrete, doable action (< 30 words)",
+              "explanationVi": "one short Vietnamese sentence telling them exactly what to do today",
+              "focus": "grammar|vocabulary|coherence|task_response|lexical",
+              "actionType": "write_essay|review_history|practice_vocabulary|practice_quiz|none",
+              "actionTarget": "a relative route like /write?focus=grammar or /history or /vocabulary or /quiz"
+            },
+            { "... two more steps ..." }
           ],
           "recommendedTopic": {
             "title": "a specific next essay topic",
             "reason": "why this topic now (tie it to the learner's actual data)",
-            "suggestedPrompt": "a full IELTS Writing Task 2 style prompt for that topic"
+            "suggestedPrompt": "a full IELTS Writing Task 2 style prompt for that topic",
+            "ideaHints": ["Point 1: short argument", "Point 2: short counterargument", "Point 3: short supporting idea"],
+            "keyVocabulary": ["collocation or topic term", "another term", "another term"]
           }
         }
 
@@ -59,10 +81,19 @@ public class GeminiStudyGuideProvider : IStudyGuideAiProvider
         - nextSteps: EXACTLY 3 items, ordered by expected impact on the band. Each step must be so specific the
           learner can start today (e.g. "Rewrite your 3 recent Task 2 introductions using only topic sentences", not
           "practice more"). Focus must be one of: {AllowedFocusValues}.
-        - estimatedBand: your honest estimate from essaySummaries (average recent band). 0 if no essays are supplied.
+        - actionType/actionTarget: assign the SINGLE best action that executes this step. Prefer the most direct route:
+          write_essay -> /write (append ?focus=<focus> and optionally the topic), review_history -> /history,
+          practice_vocabulary -> /vocabulary, practice_quiz -> /quiz. Use "none" with an empty actionTarget
+          only when no built-in screen fits the step.
+        - explanationVi: EVERY strength, weakness, and step MUST carry a short Vietnamese (Tiếng Việt) sentence.
+          Translate the jargon into everyday Vietnamese for a student (e.g. "Grammatical Range and Accuracy" ->
+          "Ngữ pháp đa dạng và chính xác"). No English inside explanationVi.
         - recommendedTopic: pick a topic the learner has NOT already written about (or has written least), that
-          naturally exercises the weakest criterion. Do not repeat the most frequent past topic.
-        - All text in English. Keep every string reasonably short (titles < 12 words, descriptions < 30 words).
+          naturally exercises the weakest criterion. Do not repeat the most frequent past topic. Provide 2-3
+          ideaHints (each starting with "Point N:", a real argument the learner can develop) and 3-4 keyVocabulary
+          topic-specific collocations/terms the learner should reuse in the essay.
+        - All primary text in English; explanationVi always in Vietnamese. Keep every string reasonably short
+          (titles < 12 words, descriptions < 30 words, explanationVi < 20 words).
         """;
 
     private readonly HttpClient _httpClient;
@@ -104,8 +135,7 @@ public class GeminiStudyGuideProvider : IStudyGuideAiProvider
 
         var endpoint = BuildEndpoint();
 
-        const int maxAttempts = 3;
-        for (var attempt = 1; attempt <= maxAttempts; attempt++)
+        for (var attempt = 1; attempt <= MaxAttempts; attempt++)
         {
             using var response = await _httpClient.PostAsJsonAsync(endpoint, body);
 
@@ -113,14 +143,14 @@ public class GeminiStudyGuideProvider : IStudyGuideAiProvider
                 return await ParseGuideAsync(response);
 
             var errorPayload = await response.Content.ReadAsStringAsync();
-            if (IsTransientGeminiError(response.StatusCode) && attempt < maxAttempts)
+            if (IsTransientGeminiError(response.StatusCode) && attempt < MaxAttempts)
             {
                 _logger.LogWarning(
                     "Gemini study guide generation returned transient {StatusCode} on attempt {Attempt}/{MaxAttempts}; retrying.",
                     response.StatusCode,
                     attempt,
-                    maxAttempts);
-                await Task.Delay(TimeSpan.FromSeconds(attempt * 2));
+                    MaxAttempts);
+                await DelayBackoffAsync(GetBackoff(attempt), CancellationToken.None);
                 continue;
             }
 
@@ -133,6 +163,23 @@ public class GeminiStudyGuideProvider : IStudyGuideAiProvider
 
         throw new InvalidOperationException("Gemini study guide generation failed after all retry attempts.");
     }
+
+    // Transient Gemini overloads (429 / 503) typically clear within seconds, so
+    // back off exponentially (2s, 4s, 8s, 16s) with jitter instead of giving up
+    // after two quick retries.
+    private static TimeSpan GetBackoff(int attempt)
+    {
+        var exponentialSeconds = Math.Min(
+            MaxBackoffSeconds,
+            BaseBackoffSeconds * (1 << (attempt - 1)));
+        var jitterMs = Random.Shared.Next(0, 501);
+        return TimeSpan.FromSeconds(exponentialSeconds) + TimeSpan.FromMilliseconds(jitterMs);
+    }
+
+    // Virtual so unit tests can skip the real wait while still exercising the
+    // retry loop.
+    protected virtual Task DelayBackoffAsync(TimeSpan delay, CancellationToken cancellationToken) =>
+        Task.Delay(delay, cancellationToken);
 
     private string BuildEndpoint()
     {
@@ -165,8 +212,20 @@ public class GeminiStudyGuideProvider : IStudyGuideAiProvider
         {
             Summary = guide.Summary ?? string.Empty,
             EstimatedBand = guide.EstimatedBand,
-            Strengths = guide.Strengths ?? new List<string>(),
-            Weaknesses = guide.Weaknesses ?? new List<string>(),
+            Strengths = (guide.Strengths ?? new List<PayloadInsight>())
+                .Select(s => new StudyGuideInsight
+                {
+                    Text = s.Text ?? string.Empty,
+                    ExplanationVi = s.ExplanationVi ?? string.Empty
+                })
+                .ToList(),
+            Weaknesses = (guide.Weaknesses ?? new List<PayloadInsight>())
+                .Select(w => new StudyGuideInsight
+                {
+                    Text = w.Text ?? string.Empty,
+                    ExplanationVi = w.ExplanationVi ?? string.Empty
+                })
+                .ToList(),
             NextSteps = guide.NextSteps ?? new List<StudyGuideStep>(),
             RecommendedTopic = guide.RecommendedTopic ?? new StudyGuideTopic()
         };
@@ -284,9 +343,15 @@ public class GeminiStudyGuideProvider : IStudyGuideAiProvider
     {
         public string? Summary { get; set; }
         public decimal EstimatedBand { get; set; }
-        public List<string>? Strengths { get; set; }
-        public List<string>? Weaknesses { get; set; }
+        public List<PayloadInsight>? Strengths { get; set; }
+        public List<PayloadInsight>? Weaknesses { get; set; }
         public List<StudyGuideStep>? NextSteps { get; set; }
         public StudyGuideTopic? RecommendedTopic { get; set; }
+    }
+
+    private sealed class PayloadInsight
+    {
+        public string? Text { get; set; }
+        public string? ExplanationVi { get; set; }
     }
 }

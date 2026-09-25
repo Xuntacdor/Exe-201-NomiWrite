@@ -13,8 +13,8 @@ public class StudyGuide : Common.BaseEntity
     public decimal? TargetBand { get; set; }
     public string Summary { get; set; } = string.Empty;
     public decimal EstimatedBand { get; set; }
-    public List<string> Strengths { get; set; } = new();
-    public List<string> Weaknesses { get; set; } = new();
+    public List<StudyGuideInsight> Strengths { get; set; } = new();
+    public List<StudyGuideInsight> Weaknesses { get; set; } = new();
     public List<StudyGuideStep> NextSteps { get; set; } = new();
     public StudyGuideTopic RecommendedTopic { get; set; } = new();
     public int AnalyzedEssayCount { get; set; }

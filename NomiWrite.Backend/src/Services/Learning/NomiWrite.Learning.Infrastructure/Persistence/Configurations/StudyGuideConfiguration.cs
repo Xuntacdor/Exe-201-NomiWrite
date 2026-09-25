@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using NomiWrite.Learning.Domain.Entities;
+using NomiWrite.Learning.Infrastructure.Persistence.Converters;
 
 namespace NomiWrite.Learning.Infrastructure.Persistence.Configurations;
 
@@ -22,11 +23,17 @@ public class StudyGuideConfiguration : IEntityTypeConfiguration<StudyGuide>
 
         builder.Property(g => g.Strengths)
             .HasColumnType("jsonb")
-            .HasConversion(ForList<string>(), ListComparer<string>());
+            .HasConversion(
+                v => StudyGuideJsonConverters.ToJson(v),
+                v => StudyGuideJsonConverters.FromJson(v),
+                ListComparer<StudyGuideInsight>());
 
         builder.Property(g => g.Weaknesses)
             .HasColumnType("jsonb")
-            .HasConversion(ForList<string>(), ListComparer<string>());
+            .HasConversion(
+                v => StudyGuideJsonConverters.ToJson(v),
+                v => StudyGuideJsonConverters.FromJson(v),
+                ListComparer<StudyGuideInsight>());
 
         builder.Property(g => g.NextSteps)
             .HasColumnType("jsonb")
