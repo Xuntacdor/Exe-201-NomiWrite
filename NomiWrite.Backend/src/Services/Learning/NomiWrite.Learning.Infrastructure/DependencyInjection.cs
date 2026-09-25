@@ -4,6 +4,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using NomiWrite.Learning.Application.Interfaces;
 using NomiWrite.Learning.Application.Services;
+using NomiWrite.Learning.Infrastructure.Clients;
 using NomiWrite.Learning.Infrastructure.Consumers;
 using NomiWrite.Learning.Infrastructure.Options;
 using NomiWrite.Learning.Infrastructure.Persistence;
@@ -19,6 +20,8 @@ public static class DependencyInjection
     {
         services.Configure<GeminiSettings>(configuration.GetSection(GeminiSettings.SectionName));
 
+        var serviceUrls = configuration.GetSection(ServiceUrls.SectionName).Get<ServiceUrls>() ?? new ServiceUrls();
+
         services.AddDbContext<LearningDbContext>(options =>
             options.UseNpgsql(
                 configuration.GetConnectionString("LearningDb"),
@@ -28,9 +31,24 @@ public static class DependencyInjection
 
         services.AddScoped<IVocabularyService, VocabularyService>();
         services.AddScoped<IQuizService, QuizService>();
+        services.AddScoped<IStudyGuideService, StudyGuideService>();
 
         services.AddScoped<IAiQuizProvider, GeminiQuizProvider>();
         services.AddScoped<IFallbackQuizProvider, DeterministicQuizProvider>();
+        services.AddScoped<IStudyGuideAiProvider, GeminiStudyGuideProvider>();
+        services.AddScoped<IFallbackStudyGuideProvider, DeterministicStudyGuideProvider>();
+
+        services.AddScoped<IEssayHistoryClient, EssayHistoryClient>();
+        services.AddHttpClient("GradingService", client =>
+        {
+            client.BaseAddress = new Uri(serviceUrls.GradingService);
+            client.Timeout = TimeSpan.FromSeconds(15);
+        });
+        services.AddHttpClient("WritingService", client =>
+        {
+            client.BaseAddress = new Uri(serviceUrls.WritingService);
+            client.Timeout = TimeSpan.FromSeconds(15);
+        });
 
         services.AddHttpClient("Gemini", client =>
         {

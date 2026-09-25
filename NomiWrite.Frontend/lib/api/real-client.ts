@@ -4,13 +4,14 @@ import type {
   AuthResponse,
   CheckoutRequest,
   CheckoutResponse,
-  DashboardSummary,
+DashboardSummary,
   FeedbackComparison,
   FeedbackFlagConfirmation,
   FlagFeedbackRequest,
-  GradingHistoryItem,
   GenerateQuizRequest,
+  GenerateStudyGuideRequest,
   GoogleLoginRequest,
+  GradingHistoryItem,
   LoginRequest,
   PaymentHistoryItem,
   Quiz,
@@ -25,6 +26,7 @@ import type {
   SubscriptionPlan,
   SubscriptionStatus,
   SubmitSubmissionRequest,
+  StudyGuide,
   TutorReviewRequest,
   UpdateVocabularyMasteredRequest,
   User,
@@ -751,5 +753,24 @@ export const realClient: ApiClient = {
       { method: "GET" },
       true,
     );
+  },
+
+  async getStudyGuide(): Promise<StudyGuide | null> {
+    try {
+      const envelope = await request<BackendApiEnvelope<StudyGuide>>(apiRoutes.studyGuides.get, {
+        method: "GET",
+      }, true);
+      return envelope.data;
+    } catch (error) {
+      if (error instanceof ApiRequestError && error.status === 404) return null;
+      throw error;
+    }
+  },
+
+  generateStudyGuide(requestBody: GenerateStudyGuideRequest) {
+    return request<BackendApiEnvelope<StudyGuide>>(apiRoutes.studyGuides.generate, {
+      method: "POST",
+      body: JSON.stringify(requestBody),
+    }, true).then(envelope => envelope.data);
   },
 };

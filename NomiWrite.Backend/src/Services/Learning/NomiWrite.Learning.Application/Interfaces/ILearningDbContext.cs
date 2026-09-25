@@ -9,6 +9,7 @@ public interface ILearningDbContext
     DbSet<GrammarError> GrammarErrors { get; }
     DbSet<Quiz> Quizzes { get; }
     DbSet<QuizAttempt> QuizAttempts { get; }
+    DbSet<StudyGuide> StudyGuides { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

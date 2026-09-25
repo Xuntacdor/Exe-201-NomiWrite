@@ -302,6 +302,8 @@ services:
       - GeminiSettings__ApiKey=${GeminiSettings__ApiKey}
       - GeminiSettings__Model=${GeminiSettings__Model}
       - GeminiSettings__Endpoint=${GeminiSettings__Endpoint}
+      - ServiceUrls__GradingService=http://aicoordinator-service:8080
+      - ServiceUrls__WritingService=http://writing-service:8080
     depends_on:
       rabbitmq:
         condition: service_healthy
