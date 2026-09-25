@@ -2,7 +2,7 @@ name: backend
 
 on:
   pull_request:
-    branches: ["main"]
+    branches: ["main","develop"]
   push:
     branches: ["main"]
 
@@ -10,7 +10,7 @@ jobs:
   build:
     name: Backend build (warnaserror)
     runs-on: ubuntu-latest
-    steps:
+    steps:develop
       - uses: actions/checkout@v4
 
       - uses: actions/setup-dotnet@v4
