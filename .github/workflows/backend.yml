@@ -2,9 +2,9 @@ name: backend
 
 on:
   pull_request:
-    branches: ["main"]
+    branches: ["main", "develop"]
   push:
-    branches: ["main"]
+    branches: ["main", "develop"]
 
 jobs:
   build:
@@ -62,7 +62,7 @@ jobs:
           set -euo pipefail
           rm -rf artifacts/coverage-raw
           for proj in tests/NomiWrite.*.UnitTests; do
-            name=$(basename "$proj")
+            name="$(basename "$proj")"
             dotnet test "$proj" --no-restore --nologo \
               --collect:"XPlat Code Coverage" \
               --results-directory "artifacts/coverage-raw/$name"

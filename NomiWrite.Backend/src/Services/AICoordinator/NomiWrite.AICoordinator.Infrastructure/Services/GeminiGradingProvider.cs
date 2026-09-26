@@ -24,6 +24,10 @@ public class GeminiGradingProvider : IAiGradingProvider
     private const string ActiveConfigCacheKey = "ai_grading_active_config";
     private static readonly TimeSpan ActiveConfigCacheDuration = TimeSpan.FromSeconds(60);
 
+    private const int MaxAttempts = 5;
+    private const int BaseBackoffSeconds = 2;
+    private const int MaxBackoffSeconds = 16;
+
     private const string DefaultGradingPrompt = """
         You are an experienced IELTS Writing examiner. Grade the following IELTS Writing essay based on the official IELTS scoring criteria.
 
@@ -73,8 +77,7 @@ public class GeminiGradingProvider : IAiGradingProvider
             : _settings.Endpoint;
         var requestBody = BuildRequestBody(essayContent, systemPrompt, config);
 
-        const int maxAttempts = 3;
-        for (var attempt = 1; attempt <= maxAttempts; attempt++)
+        for (var attempt = 1; attempt <= MaxAttempts; attempt++)
         {
             var endpoint = endpointTemplate.Replace("{model}", modelName, StringComparison.OrdinalIgnoreCase);
             using var response = await _httpClient.PostAsJsonAsync(endpoint, requestBody);
@@ -83,14 +86,14 @@ public class GeminiGradingProvider : IAiGradingProvider
                 return await ParseGeminiResponseAsync(response);
 
             var errorBody = await response.Content.ReadAsStringAsync();
-            if (IsTransientGeminiError(response.StatusCode) && attempt < maxAttempts)
+            if (IsTransientGeminiError(response.StatusCode) && attempt < MaxAttempts)
             {
                 _logger.LogWarning(
                     "Gemini API returned transient {StatusCode} on attempt {Attempt}/{MaxAttempts}; retrying.",
                     response.StatusCode,
                     attempt,
-                    maxAttempts);
-                await Task.Delay(TimeSpan.FromSeconds(attempt * 2));
+                    MaxAttempts);
+                await DelayBackoffAsync(GetBackoff(attempt), CancellationToken.None);
                 continue;
             }
 
@@ -111,11 +114,29 @@ public class GeminiGradingProvider : IAiGradingProvider
             }
 
             _logger.LogError("Gemini API returned {StatusCode}: {ErrorBody}", response.StatusCode, errorBody);
-            throw new HttpRequestException($"Gemini API error: {(int)response.StatusCode} - {errorBody}");
+            throw new HttpRequestException(
+                $"Gemini AI grading is temporarily unavailable (HTTP {(int)response.StatusCode}). Please try again shortly.");
         }
 
         throw new InvalidOperationException("Gemini grading failed after all retry attempts.");
     }
+
+    // Transient Gemini overloads (429 / 503) typically clear within seconds, so
+    // back off exponentially (2s, 4s, 8s, 16s) with jitter instead of giving up
+    // after two quick retries.
+    private static TimeSpan GetBackoff(int attempt)
+    {
+        var exponentialSeconds = Math.Min(
+            MaxBackoffSeconds,
+            BaseBackoffSeconds * (1 << (attempt - 1)));
+        var jitterMs = Random.Shared.Next(0, 501);
+        return TimeSpan.FromSeconds(exponentialSeconds) + TimeSpan.FromMilliseconds(jitterMs);
+    }
+
+    // Virtual so unit tests can skip the real wait while still exercising the
+    // retry loop.
+    protected virtual Task DelayBackoffAsync(TimeSpan delay, CancellationToken cancellationToken) =>
+        Task.Delay(delay, cancellationToken);
 
     private static bool IsTransientGeminiError(HttpStatusCode statusCode) =>
         statusCode is HttpStatusCode.ServiceUnavailable or HttpStatusCode.TooManyRequests;

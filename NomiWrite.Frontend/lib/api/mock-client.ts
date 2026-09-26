@@ -6,6 +6,7 @@ import type {
   GradingHistoryItem,
   LoginRequest,
   RegisterRequest,
+  StudyGuide,
   Submission,
   WritingFeedback,
   SubmitSubmissionRequest,
@@ -16,6 +17,7 @@ import type {
 import {
   mockDashboardSummary,
   mockQuiz,
+  mockStudyGuide,
   mockSubmissions,
   mockVocabulary,
   mockWritingPrompts,
@@ -421,6 +423,20 @@ export const mockClient: ApiClient = {
     return {
       valid: code.trim().toUpperCase() === "NOMI20",
       discountPercent: code.trim().toUpperCase() === "NOMI20" ? 20 : null,
+    };
+  },
+
+  async getStudyGuide(): Promise<StudyGuide | null> {
+    await delay();
+    return mockStudyGuide;
+  },
+
+  async generateStudyGuide() {
+    await delay(1400);
+    return {
+      ...mockStudyGuide,
+      id: `study-guide-mock-${Date.now()}`,
+      createdAt: new Date().toISOString(),
     };
   },
 };

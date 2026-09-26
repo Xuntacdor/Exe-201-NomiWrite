@@ -54,6 +54,12 @@ public class ExceptionHandlingMiddleware
                 errors = Array.Empty<string>();
                 break;
 
+            case StudyGuideInsufficientDataException:
+                statusCode = StatusCodes.Status422UnprocessableEntity;
+                message = exception.Message;
+                errors = Array.Empty<string>();
+                break;
+
             case HttpRequestException:
                 statusCode = StatusCodes.Status502BadGateway;
                 message = "The AI quiz generation service is currently unavailable.";
