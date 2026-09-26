@@ -13,8 +13,8 @@ type Tab = "structure" | "connectors" | "tips" | "mistakes";
 const types = [
   {
     id: "ielts2", icon: GraduationCap,
-    gradient: "from-blue-500 to-indigo-600", gradientLight: "from-blue-50 to-indigo-50",
-    accent: "text-blue-600", bg: "bg-blue-50", border: "border-blue-200", pill: "bg-blue-100 text-blue-700",
+    gradient: "bg-accent ", gradientLight: "bg-accent ",
+    accent: "text-accent-ink", bg: "bg-accent", border: "border-line", pill: "bg-accent text-accent-ink",
     tag: "IELTS", label: "IELTS Writing Task 2",
     minWords: 250, time: "40 phút",
     criteria: [
@@ -49,15 +49,15 @@ const types = [
       { wrong: "Firstly,… Secondly,… Thirdly,… Lastly,…", fix: "The primary advantage is… Furthermore,… A further consideration is…", note: "Ordinal connectors bị coi là repetitive — dùng logical connectors thay thế." },
     ],
     bandTips: [
-      { band: "Band 6", color: "bg-orange-100 text-orange-700", req: "Có quan điểm, có luận điểm nhưng thiếu development. Từ vựng đủ nhưng lặp lại." },
-      { band: "Band 7", color: "bg-blue-100 text-blue-700",     req: "Luận điểm tốt, extended với examples cụ thể. Từ vựng đa dạng, ít lỗi ngữ pháp." },
-      { band: "Band 8", color: "bg-emerald-100 text-emerald-700", req: "Lập luận tinh tế, fully developed, vocabulary sophisticated, gần như không lỗi." },
+      { band: "Band 6", color: "bg-accent text-accent-ink", req: "Có quan điểm, có luận điểm nhưng thiếu development. Từ vựng đủ nhưng lặp lại." },
+      { band: "Band 7", color: "bg-accent text-accent-ink",     req: "Luận điểm tốt, extended với examples cụ thể. Từ vựng đa dạng, ít lỗi ngữ pháp." },
+      { band: "Band 8", color: "bg-success text-success-ink", req: "Lập luận tinh tế, fully developed, vocabulary sophisticated, gần như không lỗi." },
     ],
   },
   {
     id: "ielts1", icon: FileText,
-    gradient: "from-violet-500 to-purple-600", gradientLight: "from-violet-50 to-purple-50",
-    accent: "text-violet-600", bg: "bg-violet-50", border: "border-violet-200", pill: "bg-violet-100 text-violet-700",
+    gradient: "bg-rose ", gradientLight: "bg-rose ",
+    accent: "text-rose-ink", bg: "bg-rose", border: "border-line", pill: "bg-rose text-rose-ink",
     tag: "IELTS", label: "IELTS Writing Task 1",
     minWords: 150, time: "20 phút",
     criteria: [
@@ -92,15 +92,15 @@ const types = [
       { wrong: "I think the increase is due to government policies.", fix: "The data shows a steady upward trend in renewable energy adoption across all five countries.", note: "Task 1 không dùng 'I think' hoặc giải thích nguyên nhân — chỉ mô tả data." },
     ],
     bandTips: [
-      { band: "Band 6", color: "bg-orange-100 text-orange-700", req: "Có overview, có details nhưng liệt kê nhiều số liệu, chưa nhóm tốt." },
-      { band: "Band 7", color: "bg-blue-100 text-blue-700",     req: "Overview rõ ràng, data được nhóm theo trend, comparisons logic." },
-      { band: "Band 8", color: "bg-emerald-100 text-emerald-700", req: "Overview tinh tế, fully analysed, ngôn ngữ đa dạng và chính xác." },
+      { band: "Band 6", color: "bg-accent text-accent-ink", req: "Có overview, có details nhưng liệt kê nhiều số liệu, chưa nhóm tốt." },
+      { band: "Band 7", color: "bg-accent text-accent-ink",     req: "Overview rõ ràng, data được nhóm theo trend, comparisons logic." },
+      { band: "Band 8", color: "bg-success text-success-ink", req: "Overview tinh tế, fully analysed, ngôn ngữ đa dạng và chính xác." },
     ],
   },
   {
     id: "vstep", icon: Star,
-    gradient: "from-emerald-500 to-teal-600", gradientLight: "from-emerald-50 to-teal-50",
-    accent: "text-emerald-600", bg: "bg-emerald-50", border: "border-emerald-200", pill: "bg-emerald-100 text-emerald-700",
+    gradient: "bg-success ", gradientLight: "bg-success ",
+    accent: "text-success-ink", bg: "bg-success", border: "border-line", pill: "bg-success text-success-ink",
     tag: "VSTEP", label: "VSTEP Writing",
     minWords: 200, time: "35 phút",
     criteria: [
@@ -134,15 +134,15 @@ const types = [
       { wrong: "This is very important and very helpful for society today.", fix: "This proves particularly significant for contemporary societies striving to balance growth with sustainability.", note: "Tránh 'very + adjective' — chọn từ mạnh hơn trực tiếp." },
     ],
     bandTips: [
-      { band: "Level 3", color: "bg-orange-100 text-orange-700", req: "Có thesis, có luận điểm nhưng ví dụ còn chung chung, từ nối đơn giản." },
-      { band: "Level 4", color: "bg-blue-100 text-blue-700",     req: "Luận điểm tốt, ví dụ cụ thể, từ vựng đa dạng, ít lỗi ngữ pháp cơ bản." },
-      { band: "Level 5", color: "bg-emerald-100 text-emerald-700", req: "Fully developed, academic vocabulary, sophisticated structure, near error-free." },
+      { band: "Level 3", color: "bg-accent text-accent-ink", req: "Có thesis, có luận điểm nhưng ví dụ còn chung chung, từ nối đơn giản." },
+      { band: "Level 4", color: "bg-accent text-accent-ink",     req: "Luận điểm tốt, ví dụ cụ thể, từ vựng đa dạng, ít lỗi ngữ pháp cơ bản." },
+      { band: "Level 5", color: "bg-success text-success-ink", req: "Fully developed, academic vocabulary, sophisticated structure, near error-free." },
     ],
   },
   {
     id: "email", icon: Mail,
-    gradient: "from-orange-500 to-amber-500", gradientLight: "from-orange-50 to-amber-50",
-    accent: "text-orange-600", bg: "bg-orange-50", border: "border-orange-200", pill: "bg-orange-100 text-orange-700",
+    gradient: "bg-accent ", gradientLight: "bg-accent ",
+    accent: "text-accent-ink", bg: "bg-accent", border: "border-line", pill: "bg-accent text-accent-ink",
     tag: "Workplace", label: "Email công việc",
     minWords: 100, time: "10–15 phút",
     criteria: [
@@ -177,15 +177,15 @@ const types = [
       { wrong: "I will need the report by tomorrow or else the project will fail.", fix: "Could you please send the report by end of day tomorrow? The project timeline depends on this milestone.", note: "Tone aggressive không phù hợp workplace — diễn đạt urgency mà vẫn respectful." },
     ],
     bandTips: [
-      { band: "Cơ bản",        color: "bg-orange-100 text-orange-700", req: "Có đủ các phần, nhưng tone chưa phù hợp, CTA còn mơ hồ." },
-      { band: "Chuyên nghiệp", color: "bg-blue-100 text-blue-700",     req: "Subject rõ, tone phù hợp, CTA cụ thể, format đẹp." },
-      { band: "Xuất sắc",      color: "bg-emerald-100 text-emerald-700", req: "Mỗi câu có mục đích, reader-centric, persuasive mà không aggressive." },
+      { band: "Cơ bản",        color: "bg-accent text-accent-ink", req: "Có đủ các phần, nhưng tone chưa phù hợp, CTA còn mơ hồ." },
+      { band: "Chuyên nghiệp", color: "bg-accent text-accent-ink",     req: "Subject rõ, tone phù hợp, CTA cụ thể, format đẹp." },
+      { band: "Xuất sắc",      color: "bg-success text-success-ink", req: "Mỗi câu có mục đích, reader-centric, persuasive mà không aggressive." },
     ],
   },
   {
     id: "cover", icon: Briefcase,
-    gradient: "from-pink-500 to-rose-600", gradientLight: "from-pink-50 to-rose-50",
-    accent: "text-pink-600", bg: "bg-pink-50", border: "border-pink-200", pill: "bg-pink-100 text-pink-700",
+    gradient: "bg-rose ", gradientLight: "bg-rose ",
+    accent: "text-rose-ink", bg: "bg-rose", border: "border-line", pill: "bg-rose text-rose-ink",
     tag: "Career", label: "Cover Letter / Luận học bổng",
     minWords: 250, time: "30–60 phút",
     criteria: [
@@ -220,15 +220,15 @@ const types = [
       { wrong: "I believe I am a good fit for this position and would love to join your team.", fix: "With 3 years of React experience and a track record of shipping products used by 200K+ users, I am confident I can contribute meaningfully to the engineering team from day one.", note: "Vague belief vs. specific evidence — luôn chọn evidence." },
     ],
     bandTips: [
-      { band: "Trung bình", color: "bg-orange-100 text-orange-700", req: "Có đủ các phần, nhưng generic — không đề cập tên công ty, không có số liệu." },
-      { band: "Tốt",        color: "bg-blue-100 text-blue-700",     req: "Cá nhân hóa, có số liệu, động lực thuyết phục, hook tốt." },
-      { band: "Xuất sắc",   color: "bg-emerald-100 text-emerald-700", req: "Từng câu có purpose, hook memorable, story-driven, vừa confident vừa humble." },
+      { band: "Trung bình", color: "bg-accent text-accent-ink", req: "Có đủ các phần, nhưng generic — không đề cập tên công ty, không có số liệu." },
+      { band: "Tốt",        color: "bg-accent text-accent-ink",     req: "Cá nhân hóa, có số liệu, động lực thuyết phục, hook tốt." },
+      { band: "Xuất sắc",   color: "bg-success text-success-ink", req: "Từng câu có purpose, hook memorable, story-driven, vừa confident vừa humble." },
     ],
   },
   {
     id: "academic", icon: BookOpen,
-    gradient: "from-slate-600 to-slate-800", gradientLight: "from-slate-50 to-slate-100",
-    accent: "text-slate-600", bg: "bg-slate-50", border: "border-slate-200", pill: "bg-slate-100 text-slate-700",
+    gradient: "bg-surface-muted ", gradientLight: "bg-canvas ",
+    accent: "text-muted", bg: "bg-canvas", border: "border-line", pill: "bg-surface-muted text-ink",
     tag: "Academic", label: "Văn bản học thuật",
     minWords: 300, time: "Linh hoạt",
     criteria: [
@@ -264,9 +264,9 @@ const types = [
       { wrong: "In conclusion, we should all work together to solve this problem in the future.", fix: "In conclusion, this paper has demonstrated that… Future research should investigate… to address the limitation of…", note: "Academic conclusion không phải call-to-action chung chung — phải link về research contribution và gap." },
     ],
     bandTips: [
-      { band: "Pass",        color: "bg-orange-100 text-orange-700", req: "Có thesis, có sources, nhưng analysis còn descriptive, ít critical thinking." },
-      { band: "Merit",       color: "bg-blue-100 text-blue-700",     req: "Thesis rõ, sources được phân tích critically, structure mạch lạc." },
-      { band: "Distinction", color: "bg-emerald-100 text-emerald-700", req: "Argument tinh tế, critical synthesis mạnh, contribution rõ ràng, near error-free." },
+      { band: "Pass",        color: "bg-accent text-accent-ink", req: "Có thesis, có sources, nhưng analysis còn descriptive, ít critical thinking." },
+      { band: "Merit",       color: "bg-accent text-accent-ink",     req: "Thesis rõ, sources được phân tích critically, structure mạch lạc." },
+      { band: "Distinction", color: "bg-success text-success-ink", req: "Argument tinh tế, critical synthesis mạnh, contribution rõ ràng, near error-free." },
     ],
   },
 ];
@@ -299,48 +299,48 @@ export default function GuideModal({ typeId, onClose, hideCTA }: GuideModalProps
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[88vh] flex flex-col overflow-hidden">
+      <div className="absolute inset-0 bg-black/55" onClick={onClose} />
+      <div className="relative bg-surface rounded-xl shadow-sm w-full max-w-2xl max-h-[88vh] flex flex-col overflow-hidden">
 
         {/* Header */}
-        <div className={`bg-gradient-to-r ${openType.gradientLight} border-b border-slate-100 p-5 shrink-0`}>
+        <div className={` ${openType.gradientLight} border-b border-line p-5 shrink-0`}>
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-center gap-3">
-              <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${openType.gradient} flex items-center justify-center shadow-md shrink-0`}>
-                {(() => { const Icon = openType.icon; return <Icon className="w-5 h-5 text-white" />; })()}
+              <div className={`w-10 h-10 rounded-xl  ${openType.gradient} flex items-center justify-center shadow-sm shrink-0`}>
+                {(() => { const Icon = openType.icon; return <Icon className="w-5 h-5 text-ink" />; })()}
               </div>
               <div>
                 <div className="flex items-center gap-2 mb-0.5">
-                  <h2 className="text-sm font-extrabold text-slate-900">{openType.label}</h2>
-                  <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${openType.pill}`}>{openType.tag}</span>
+                  <h2 className="text-sm font-bold text-ink">{openType.label}</h2>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${openType.pill}`}>{openType.tag}</span>
                 </div>
-                <div className="flex items-center gap-3 text-xs text-slate-500">
+                <div className="flex items-center gap-3 text-xs text-muted">
                   <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{openType.time}</span>
-                  <span className="w-px h-3 bg-slate-200" />
+                  <span className="w-px h-3 bg-surface-muted" />
                   <span className="flex items-center gap-1"><Target className="w-3 h-3" />≥ {openType.minWords} từ</span>
                 </div>
               </div>
             </div>
-            <button onClick={onClose} className="w-8 h-8 rounded-full bg-white/80 border border-slate-200 flex items-center justify-center text-slate-400 hover:bg-white hover:text-slate-600 transition-all shrink-0">
+            <button onClick={onClose} className="w-8 h-8 rounded-full bg-surface border border-line flex items-center justify-center text-muted hover:bg-surface hover:text-muted transition-all shrink-0">
               <X className="w-4 h-4" />
             </button>
           </div>
           <div className="flex flex-wrap gap-2 mt-3">
             {openType.criteria.map((c) => (
-              <div key={c.label} title={c.tip} className="flex items-center gap-1.5 px-2.5 py-1.5 bg-white/70 border border-white/80 rounded-xl cursor-help hover:bg-white transition-colors">
-                <span className={`text-[10px] font-extrabold ${openType.accent}`}>{c.weight}</span>
-                <span className="text-[10px] font-semibold text-slate-600">{c.label}</span>
+              <div key={c.label} title={c.tip} className="flex items-center gap-1.5 px-2.5 py-1.5 bg-surface border border-line rounded-xl cursor-help hover:bg-surface transition-colors">
+                <span className={`text-[10px] font-bold ${openType.accent}`}>{c.weight}</span>
+                <span className="text-[10px] font-semibold text-muted">{c.label}</span>
               </div>
             ))}
           </div>
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b border-slate-100 bg-slate-50/50 shrink-0">
+        <div className="flex border-b border-line bg-canvas shrink-0">
           {tabDefs.map(({ key, icon: TabIcon, label }) => (
             <button key={key} onClick={() => setActiveTab(key)}
               className={`flex items-center gap-1.5 px-4 py-3 text-xs font-bold transition-all border-b-2 ${
-                activeTab === key ? `border-current ${openType.accent} bg-white` : "border-transparent text-slate-400 hover:text-slate-600 hover:bg-white/60"
+                activeTab === key ? `border-current ${openType.accent} bg-surface` : "border-transparent text-muted hover:text-muted hover:bg-surface"
               }`}
             >
               <TabIcon className="w-3.5 h-3.5" />{label}
@@ -356,28 +356,28 @@ export default function GuideModal({ typeId, onClose, hideCTA }: GuideModalProps
                 {openType.structure.map((s, i) => (
                   <div key={i} className="flex gap-4">
                     <div className="flex flex-col items-center gap-1">
-                      <div className={`w-7 h-7 rounded-xl bg-gradient-to-br ${openType.gradient} text-white text-[11px] font-extrabold flex items-center justify-center shrink-0 shadow-sm`}>{i + 1}</div>
-                      {i < openType.structure.length - 1 && <div className="w-px flex-1 bg-slate-100 min-h-[16px]" />}
+                      <div className={`w-7 h-7 rounded-xl  ${openType.gradient} text-ink text-[11px] font-bold flex items-center justify-center shrink-0 shadow-sm`}>{i + 1}</div>
+                      {i < openType.structure.length - 1 && <div className="w-px flex-1 bg-surface-muted min-h-[16px]" />}
                     </div>
                     <div className="pb-3 flex-1">
                       <div className="flex items-baseline gap-2 mb-1.5">
-                        <p className="text-sm font-extrabold text-slate-900">{s.step}</p>
-                        <p className="text-xs text-slate-500">{s.detail}</p>
+                        <p className="text-sm font-bold text-ink">{s.step}</p>
+                        <p className="text-xs text-muted">{s.detail}</p>
                       </div>
                       <div className={`p-3 rounded-xl ${openType.bg} border ${openType.border}`}>
-                        <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-1">Ví dụ mẫu</p>
+                        <p className="text-[10px] font-bold text-muted uppercase tracking-widest mb-1">Ví dụ mẫu</p>
                         <p className={`text-xs ${openType.accent} font-medium italic leading-relaxed`}>&ldquo;{s.example}&rdquo;</p>
                       </div>
                     </div>
                   </div>
                 ))}
               </div>
-              <div className="pt-2 border-t border-slate-100">
-                <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-2.5 flex items-center gap-1.5"><Zap className="w-3 h-3" />Yêu cầu theo mức điểm</p>
+              <div className="pt-2 border-t border-line">
+                <p className="text-[10px] font-bold text-muted uppercase tracking-widest mb-2.5 flex items-center gap-1.5"><Zap className="w-3 h-3" />Yêu cầu theo mức điểm</p>
                 <div className="grid grid-cols-3 gap-2">
                   {openType.bandTips.map((b) => (
                     <div key={b.band} className={`px-3 py-2.5 rounded-xl ${b.color}`}>
-                      <p className="text-[10px] font-extrabold uppercase tracking-wide mb-1">{b.band}</p>
+                      <p className="text-[10px] font-bold uppercase tracking-wide mb-1">{b.band}</p>
                       <p className="text-[11px] leading-snug">{b.req}</p>
                     </div>
                   ))}
@@ -390,14 +390,14 @@ export default function GuideModal({ typeId, onClose, hideCTA }: GuideModalProps
             <div className="space-y-4">
               {openType.connectors.map((group) => (
                 <div key={group.label}>
-                  <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-2">{group.label}</p>
+                  <p className="text-[10px] font-bold text-muted uppercase tracking-widest mb-2">{group.label}</p>
                   <div className="flex flex-wrap gap-2">
                     {group.phrases.map((phrase) => (
                       <button key={phrase} onClick={() => copyPhrase(phrase)}
                         className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium transition-all ${
                           copied === phrase
-                            ? "bg-emerald-50 border border-emerald-200 text-emerald-700"
-                            : `${openType.bg} border ${openType.border} text-slate-700 hover:shadow-sm`
+                            ? "bg-success border border-line text-success-ink"
+                            : `${openType.bg} border ${openType.border} text-ink hover:shadow-sm`
                         }`}
                       >
                         {copied === phrase ? <><Check className="w-3 h-3" />Đã copy</> : <><Copy className="w-3 h-3 opacity-50" />{phrase}</>}
@@ -406,20 +406,20 @@ export default function GuideModal({ typeId, onClose, hideCTA }: GuideModalProps
                   </div>
                 </div>
               ))}
-              <p className="text-[10px] text-slate-400 text-center pt-2 flex items-center justify-center gap-1"><Copy className="w-3 h-3" />Bấm vào phrase để copy vào clipboard</p>
+              <p className="text-[10px] text-muted text-center pt-2 flex items-center justify-center gap-1"><Copy className="w-3 h-3" />Bấm vào phrase để copy vào clipboard</p>
             </div>
           )}
 
           {activeTab === "tips" && (
             <div className="space-y-3">
               {openType.tips.map((item, i) => (
-                <div key={i} className="flex gap-3 p-4 rounded-2xl bg-slate-50 border border-slate-100">
-                  <div className={`w-6 h-6 rounded-full bg-gradient-to-br ${openType.gradient} flex items-center justify-center shrink-0 mt-0.5 shadow-sm`}>
-                    <Check className="w-3.5 h-3.5 text-white" />
+                <div key={i} className="flex gap-3 p-4 rounded-xl bg-canvas border border-line">
+                  <div className={`w-6 h-6 rounded-full  ${openType.gradient} flex items-center justify-center shrink-0 mt-0.5 shadow-sm`}>
+                    <Check className="w-3.5 h-3.5 text-ink" />
                   </div>
                   <div>
-                    <p className="text-sm font-bold text-slate-800 mb-1">{item.tip}</p>
-                    <p className="text-xs text-slate-500 leading-relaxed"><span className="font-semibold text-slate-600">Tại sao: </span>{item.why}</p>
+                    <p className="text-sm font-bold text-ink mb-1">{item.tip}</p>
+                    <p className="text-xs text-muted leading-relaxed"><span className="font-semibold text-muted">Tại sao: </span>{item.why}</p>
                   </div>
                 </div>
               ))}
@@ -429,28 +429,28 @@ export default function GuideModal({ typeId, onClose, hideCTA }: GuideModalProps
           {activeTab === "mistakes" && (
             <div className="space-y-4">
               {openType.mistakes.map((item, i) => (
-                <div key={i} className="rounded-2xl border border-slate-100 overflow-hidden">
-                  <div className="flex items-start gap-3 p-4 bg-red-50 border-b border-red-100">
-                    <div className="w-5 h-5 rounded-full bg-red-100 flex items-center justify-center shrink-0 mt-0.5">
-                      <span className="text-red-500 text-[10px] font-extrabold">✕</span>
+                <div key={i} className="rounded-xl border border-line overflow-hidden">
+                  <div className="flex items-start gap-3 p-4 bg-danger border-b border-line">
+                    <div className="w-5 h-5 rounded-full bg-danger flex items-center justify-center shrink-0 mt-0.5">
+                      <span className="text-danger-ink text-[10px] font-bold">✕</span>
                     </div>
                     <div>
-                      <p className="text-[10px] font-extrabold text-red-400 uppercase tracking-widest mb-1">Cách viết kém</p>
-                      <p className="text-sm text-red-700 italic leading-relaxed">&ldquo;{item.wrong}&rdquo;</p>
+                      <p className="text-[10px] font-bold text-danger-ink uppercase tracking-widest mb-1">Cách viết kém</p>
+                      <p className="text-sm text-danger-ink italic leading-relaxed">&ldquo;{item.wrong}&rdquo;</p>
                     </div>
                   </div>
-                  <div className="flex items-start gap-3 p-4 bg-emerald-50">
-                    <div className="w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center shrink-0 mt-0.5">
-                      <Check className="w-3 h-3 text-emerald-600" />
+                  <div className="flex items-start gap-3 p-4 bg-success">
+                    <div className="w-5 h-5 rounded-full bg-success flex items-center justify-center shrink-0 mt-0.5">
+                      <Check className="w-3 h-3 text-success-ink" />
                     </div>
                     <div>
-                      <p className="text-[10px] font-extrabold text-emerald-500 uppercase tracking-widest mb-1">Cách viết tốt hơn</p>
-                      <p className="text-sm text-emerald-800 font-medium italic leading-relaxed">&ldquo;{item.fix}&rdquo;</p>
+                      <p className="text-[10px] font-bold text-success-ink uppercase tracking-widest mb-1">Cách viết tốt hơn</p>
+                      <p className="text-sm text-success-ink font-medium italic leading-relaxed">&ldquo;{item.fix}&rdquo;</p>
                     </div>
                   </div>
-                  <div className="px-4 py-2.5 bg-amber-50 border-t border-amber-100 flex items-start gap-2">
-                    <Lightbulb className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
-                    <p className="text-xs text-amber-700 leading-relaxed">{item.note}</p>
+                  <div className="px-4 py-2.5 bg-warning border-t border-line flex items-start gap-2">
+                    <Lightbulb className="w-3.5 h-3.5 text-warning-ink shrink-0 mt-0.5" />
+                    <p className="text-xs text-warning-ink leading-relaxed">{item.note}</p>
                   </div>
                 </div>
               ))}
@@ -459,11 +459,11 @@ export default function GuideModal({ typeId, onClose, hideCTA }: GuideModalProps
         </div>
 
         {/* Footer */}
-        <div className="shrink-0 px-5 py-4 border-t border-slate-100 flex items-center justify-between bg-white">
-          <button onClick={onClose} className="text-xs text-slate-400 hover:text-slate-600 font-semibold transition-colors">← Đóng</button>
+        <div className="shrink-0 px-5 py-4 border-t border-line flex items-center justify-between bg-surface">
+          <button onClick={onClose} className="text-xs text-muted hover:text-muted font-semibold transition-colors">← Đóng</button>
           {!hideCTA && (
             <Link href={`/write?type=${openType.id}`}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r ${openType.gradient} text-white text-xs font-bold hover:opacity-90 transition-opacity shadow-sm`}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl  ${openType.gradient} text-ink text-xs font-bold hover:opacity-90 transition-opacity shadow-sm`}
             >
               Bắt đầu viết loại này <ArrowRight className="w-3.5 h-3.5" />
             </Link>

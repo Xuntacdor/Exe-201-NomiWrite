@@ -130,9 +130,9 @@ export default function GoogleSignInButton({ mode }: GoogleSignInButtonProps) {
           type="button"
           disabled
           title="Set NEXT_PUBLIC_GOOGLE_CLIENT_ID to enable Google sign-in"
-          className="mb-2 flex w-full cursor-not-allowed items-center justify-center gap-3 rounded-xl bg-white/70 py-3 text-sm font-semibold text-slate-500 shadow-sm"
+          className="mb-2 flex w-full cursor-not-allowed items-center justify-center gap-3 rounded-xl bg-surface py-3 text-sm font-semibold text-muted shadow-sm"
         >
-          <Globe2 className="h-4 w-4 text-blue-500" />
+          <Globe2 className="h-4 w-4 text-accent-ink" />
           {mode === "register" ? "Sign up with Google" : "Continue with Google"}
         </button>
       </div>
@@ -141,15 +141,15 @@ export default function GoogleSignInButton({ mode }: GoogleSignInButtonProps) {
 
   return (
     <div className="mb-6">
-      <div ref={containerRef} className="min-h-11 w-full overflow-hidden rounded-xl bg-white" />
+      <div ref={containerRef} className="min-h-11 w-full overflow-hidden rounded-xl bg-surface" />
       {status === "loading" && (
-        <div className="mt-2 flex items-center justify-center gap-2 text-[11px] font-medium text-slate-500">
+        <div className="mt-2 flex items-center justify-center gap-2 text-[11px] font-medium text-muted">
           <Loader2 className="h-3 w-3 animate-spin" />
           Connecting to Google
         </div>
       )}
       {status === "error" && message && (
-        <div className="mt-2 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] font-bold text-amber-700">
+        <div className="mt-2 flex items-start gap-2 rounded-xl border border-line bg-warning px-3 py-2 text-[11px] font-bold text-warning-ink">
           <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
           <span>{message}</span>
         </div>

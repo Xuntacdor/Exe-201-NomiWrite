@@ -56,13 +56,13 @@ export default function VocabularyPage() {
 
   return (
     <AppShell activePath="/vocabulary">
-      <div className="sticky top-0 z-10 flex h-14 items-center justify-between border-b border-slate-100 bg-white/90 px-6 backdrop-blur">
+      <div className="sticky top-0 z-10 flex h-14 items-center justify-between border-b border-line bg-surface px-6">
         <div className="flex items-center gap-2">
-          <BookOpen className="h-4 w-4 text-emerald-500" />
-          <h1 className="text-sm font-extrabold text-slate-900">Vocabulary</h1>
+          <BookOpen className="h-4 w-4 text-success-ink" />
+          <h1 className="text-sm font-bold text-ink">Vocabulary</h1>
         </div>
-        <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-500">
-          <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+        <div className="flex items-center gap-1.5 text-xs font-semibold text-muted">
+          <CheckCircle2 className="h-3.5 w-3.5 text-success-ink" />
           {masteredCount}/{words.length} mastered
         </div>
       </div>
@@ -70,57 +70,57 @@ export default function VocabularyPage() {
       <div className="w-full space-y-5 p-6">
         <div className="grid grid-cols-3 gap-3">
           {[
-            { label: "Total", value: words.length, color: "text-slate-900" },
-            { label: "Learning", value: words.length - masteredCount, color: "text-blue-600" },
-            { label: "Mastered", value: masteredCount, color: "text-emerald-600" },
+            { label: "Total", value: words.length, color: "text-ink" },
+            { label: "Learning", value: words.length - masteredCount, color: "text-accent-ink" },
+            { label: "Mastered", value: masteredCount, color: "text-success-ink" },
           ].map(item => (
-            <div key={item.label} className="rounded-2xl border border-slate-100 bg-white p-4 text-center shadow-sm">
-              <p className={`text-2xl font-extrabold ${item.color}`}>{item.value}</p>
-              <p className="mt-0.5 text-xs text-slate-500">{item.label}</p>
+            <div key={item.label} className="rounded-xl border border-line bg-surface p-4 text-center shadow-sm">
+              <p className={`text-2xl font-bold ${item.color}`}>{item.value}</p>
+              <p className="mt-0.5 text-xs text-muted">{item.label}</p>
             </div>
           ))}
         </div>
 
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
           <input
             value={search}
             onChange={event => setSearch(event.target.value)}
             placeholder="Search original word, suggestion, or topic"
-            className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm text-slate-700 placeholder:text-slate-400 focus:border-blue-400 focus:outline-none"
+            className="w-full rounded-xl border border-line bg-surface py-2.5 pl-10 pr-4 text-sm text-ink placeholder:text-muted focus:border-focus focus:outline-none"
           />
         </div>
 
         {loading && (
-          <div className="flex items-center justify-center gap-2 rounded-2xl border border-slate-100 bg-white p-8 text-sm font-semibold text-slate-500 shadow-sm">
+          <div className="flex items-center justify-center gap-2 rounded-xl border border-line bg-surface p-8 text-sm font-semibold text-muted shadow-sm">
             <Loader2 className="h-4 w-4 animate-spin" />
             Loading vocabulary
           </div>
         )}
 
-        {error && <p className="rounded-2xl border border-red-100 bg-red-50 p-4 text-sm font-semibold text-red-600">{error}</p>}
+        {error && <p className="rounded-xl border border-line bg-danger p-4 text-sm font-semibold text-danger-ink">{error}</p>}
 
         {!loading && filtered.length === 0 && (
-          <div className="rounded-2xl border border-slate-100 bg-white p-8 text-center shadow-sm">
-            <BookOpen className="mx-auto mb-3 h-8 w-8 text-slate-300" />
-            <p className="text-sm font-bold text-slate-800">No vocabulary found</p>
-            <p className="mt-1 text-xs text-slate-500">Suggestions appear after grading returns vocabulary feedback.</p>
+          <div className="rounded-xl border border-line bg-surface p-8 text-center shadow-sm">
+            <BookOpen className="mx-auto mb-3 h-8 w-8 text-muted" />
+            <p className="text-sm font-bold text-ink">No vocabulary found</p>
+            <p className="mt-1 text-xs text-muted">Suggestions appear after grading returns vocabulary feedback.</p>
           </div>
         )}
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {filtered.map(word => (
-            <div key={word.id} className={`rounded-2xl border p-5 shadow-sm ${word.isMastered ? "border-emerald-200 bg-emerald-50" : "border-slate-100 bg-white"}`}>
+            <div key={word.id} className={`rounded-xl border p-5 shadow-sm ${word.isMastered ? "border-line bg-success" : "border-line bg-surface"}`}>
               <div className="mb-3 flex items-center gap-2">
-                <span className="text-sm font-medium text-slate-400 line-through">{word.originalWord}</span>
-                <span className="text-slate-300">-&gt;</span>
-                <span className="text-base font-extrabold text-slate-900">{word.suggestedWord}</span>
+                <span className="text-sm font-medium text-muted line-through">{word.originalWord}</span>
+                <span className="text-muted">-&gt;</span>
+                <span className="text-base font-bold text-ink">{word.suggestedWord}</span>
               </div>
-              <p className="mb-4 text-xs leading-relaxed text-slate-500">{word.exampleSentence}</p>
+              <p className="mb-4 text-xs leading-relaxed text-muted">{word.exampleSentence}</p>
               <button
                 type="button"
                 onClick={() => toggleMastered(word)}
-                className={`flex items-center gap-2 text-xs font-bold ${word.isMastered ? "text-emerald-700" : "text-blue-600"}`}
+                className={`flex items-center gap-2 text-xs font-bold ${word.isMastered ? "text-success-ink" : "text-accent-ink"}`}
               >
                 {word.isMastered ? <CheckCircle2 className="h-4 w-4" /> : <Circle className="h-4 w-4" />}
                 {word.isMastered ? "Mastered" : "Mark as mastered"}

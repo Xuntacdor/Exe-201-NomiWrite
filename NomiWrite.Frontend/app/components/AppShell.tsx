@@ -7,9 +7,9 @@ interface AppShellProps {
 
 export default function AppShell({ children, activePath }: AppShellProps) {
   return (
-    <div className="flex h-screen overflow-hidden bg-[#FFFAF6]">
+    <div className="app-shell flex bg-canvas">
       <AppSidebar activePath={activePath} />
-      <main className="flex-1 overflow-y-auto">
+      <main className="app-main flex-1">
         {children}
       </main>
     </div>

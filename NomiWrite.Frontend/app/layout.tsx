@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Nunito } from "next/font/google";
 import "./globals.css";
+import { themeScript } from "@/lib/theme-script";
 
 const nunito = Nunito({
   subsets: ["latin", "vietnamese"],
@@ -20,7 +21,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="vi" className={`${nunito.variable} h-full antialiased`}>
+    <html lang="vi" className={`${nunito.variable} h-full antialiased`} suppressHydrationWarning>
+      <head><script dangerouslySetInnerHTML={{ __html: themeScript }} /></head>
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
   );

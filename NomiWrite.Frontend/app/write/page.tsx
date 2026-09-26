@@ -246,14 +246,14 @@ function WriteContent() {
   return (
     <AppShell activePath="/write">
       {/* Sticky Header */}
-      <div className="sticky top-0 z-50 flex h-[72px] items-center justify-between border-b border-slate-200/50 bg-white/80 px-8 backdrop-blur-xl">
+      <div className="write-heading sticky top-0 z-20 flex min-h-[72px] items-center justify-between border-b border-line bg-surface px-8">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent text-accent-ink">
             <PenLine className="h-5 w-5" strokeWidth={2.5} />
           </div>
           <div>
-            <h1 className="text-lg font-extrabold text-slate-900">IELTS Writing Practice</h1>
-            <p className="text-xs font-semibold text-slate-500">Computer-delivered format</p>
+            <h1 className="text-lg font-bold text-ink">IELTS Writing Practice</h1>
+            <p className="text-xs font-semibold text-muted">Computer-delivered format</p>
           </div>
         </div>
         <div className="flex items-center gap-4">
@@ -261,7 +261,7 @@ function WriteContent() {
             type="button"
             onClick={() => setTimerOn(value => !value)}
             className={`flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-bold transition-all ${
-              timerOn ? "border-orange-200 bg-orange-50 text-orange-600" : "border-slate-200 bg-white text-slate-500 hover:border-slate-300 hover:bg-slate-50"
+              timerOn ? "border-line bg-accent text-accent-ink" : "border-line bg-surface text-muted hover:border-line hover:bg-canvas"
             }`}
           >
             <Clock className="h-4 w-4" />
@@ -271,7 +271,7 @@ function WriteContent() {
             type="button"
             onClick={handleSubmit}
             disabled={!canSubmit}
-            className="flex items-center gap-2 rounded-xl bg-blue-600 px-6 py-2 text-sm font-bold text-white shadow-md shadow-blue-200 transition-all hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex items-center gap-2 rounded-xl bg-accent px-6 py-2 text-sm font-bold text-ink shadow-sm transition-all hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
           >
             {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
             Submit for Grading
@@ -280,15 +280,15 @@ function WriteContent() {
       </div>
 
       {/* Split Screen Container */}
-      <div className="flex h-[calc(100vh-72px)] flex-col lg:flex-row">
-        
+      <div className="write-layout">
+
         {/* Left Column: Prompt & Controls */}
-        <div className="flex w-full flex-col border-r border-slate-200 bg-slate-50 lg:w-1/2">
+        <div className="write-prompt flex flex-col">
           {/* Controls Bar */}
-          <div className="border-b border-slate-200 bg-white p-6 shadow-sm z-10">
-            <div className="grid grid-cols-2 gap-4">
+          <div className="border-b border-line bg-surface p-6 shadow-sm z-10">
+            <div className="write-controls grid grid-cols-2 gap-4">
               <div>
-                <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-500">Writing Task</label>
+                <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-muted">Writing Task</label>
                 <div className="relative">
                   <select
                     value={selectedTypeId}
@@ -297,20 +297,20 @@ function WriteContent() {
                       setSelectedTypeId(event.target.value);
                     }}
                     disabled={loadingTypes}
-                    className="w-full cursor-pointer appearance-none rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 pr-10 text-[15px] font-semibold text-slate-800 outline-none transition-all focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 disabled:opacity-50"
+                    className="w-full cursor-pointer appearance-none rounded-xl border border-line bg-canvas px-4 py-3 pr-10 text-[15px] font-semibold text-ink outline-none transition-all focus:border-focus focus:bg-surface focus:ring-4 focus:ring-focus disabled:opacity-50"
                   >
                     {types.map(type => (
                       <option key={type.id} value={type.id}>{type.label}</option>
                     ))}
                   </select>
-                  <ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
                 </div>
               </div>
               <div>
-                <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-500">Select Prompt</label>
+                <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-muted">Select Prompt</label>
                 <div className="relative">
                   {loadingPrompts ? (
-                    <div className="flex w-full items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-[15px] font-semibold text-slate-400">
+                    <div className="flex w-full items-center gap-2 rounded-xl border border-line bg-canvas px-4 py-3 text-[15px] font-semibold text-muted">
                       <Loader2 className="h-4 w-4 animate-spin" />
                       Loading...
                     </div>
@@ -318,24 +318,24 @@ function WriteContent() {
                     <select
                       value={selectedPromptId}
                       onChange={event => setSelectedPromptId(event.target.value)}
-                      className="w-full cursor-pointer appearance-none rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 pr-10 text-[15px] font-semibold text-slate-800 outline-none transition-all focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
+                      className="w-full cursor-pointer appearance-none rounded-xl border border-line bg-canvas px-4 py-3 pr-10 text-[15px] font-semibold text-ink outline-none transition-all focus:border-focus focus:bg-surface focus:ring-4 focus:ring-focus"
                     >
                       {prompts.map(prompt => (
                         <option key={prompt.id} value={prompt.id}>{prompt.topic}</option>
                       ))}
                     </select>
                   ) : (
-                    <div className="flex w-full items-center rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-[15px] font-semibold text-amber-600">
+                    <div className="flex w-full items-center rounded-xl border border-line bg-warning px-4 py-3 text-[15px] font-semibold text-warning-ink">
                       No prompts available
                     </div>
                   )}
-                  <ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
                 </div>
               </div>
             </div>
-            
+
             {error && (
-              <div className="mt-4 flex items-center gap-2 rounded-lg bg-red-50 p-3 text-sm font-semibold text-red-600">
+              <div className="mt-4 flex items-center gap-2 rounded-lg bg-danger p-3 text-sm font-semibold text-danger-ink">
                 <AlertCircle className="h-4 w-4" />
                 {error}
               </div>
@@ -345,20 +345,20 @@ function WriteContent() {
           {/* Prompt Area */}
           <div className="flex-1 overflow-y-auto p-8">
             {hasCustomTopic && (
-              <div className="mb-6 overflow-hidden rounded-2xl border border-indigo-200 bg-gradient-to-br from-indigo-50 to-blue-50 shadow-sm">
-                <div className="flex items-center gap-2 border-b border-indigo-100 px-6 py-3.5">
-                  <Lightbulb className="h-4 w-4 text-indigo-600" />
-                  <p className="text-sm font-extrabold text-slate-900">{customTitle || "Topic from your Study Plan"}</p>
+              <div className="mb-6 overflow-hidden rounded-xl border border-line bg-accent shadow-sm">
+                <div className="flex items-center gap-2 border-b border-line px-6 py-3.5">
+                  <Lightbulb className="h-4 w-4 text-accent-ink" />
+                  <p className="text-sm font-bold text-ink">{customTitle || "Topic from your Study Plan"}</p>
                 </div>
                 <div className="p-6">
-                  <p className="text-[15px] font-medium leading-relaxed text-slate-700">{customPrompt}</p>
+                  <p className="text-[15px] font-medium leading-relaxed text-ink">{customPrompt}</p>
                   {customHints.length > 0 && (
                     <div className="mt-4">
-                      <p className="text-xs font-bold uppercase tracking-wide text-indigo-600">Ideas to develop</p>
+                      <p className="text-xs font-bold uppercase tracking-wide text-accent-ink">Ideas to develop</p>
                       <ul className="mt-2 space-y-1.5">
                         {customHints.map((hint, index) => (
-                          <li key={index} className="flex items-start gap-2 text-sm leading-relaxed text-slate-600">
-                            <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-indigo-400" />
+                          <li key={index} className="flex items-start gap-2 text-sm leading-relaxed text-muted">
+                            <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-accent" />
                             {hint}
                           </li>
                         ))}
@@ -368,51 +368,51 @@ function WriteContent() {
                   {customVocab && (
                     <div className="mt-4 flex flex-wrap gap-2">
                       {customVocab.split(",").map((term, index) => (
-                        <span key={index} className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
+                        <span key={index} className="rounded-full bg-success px-3 py-1 text-xs font-bold text-success-ink">
                           {term.trim()}
                         </span>
                       ))}
                     </div>
                   )}
-                  <p className="mt-4 text-xs font-semibold text-slate-400">
+                  <p className="mt-4 text-xs font-semibold text-muted">
                     Choose a writing task above to submit for grading — or keep this topic as your reference while you type.
                   </p>
                 </div>
               </div>
             )}
             {currentPrompt ? (
-              <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
+              <div className="rounded-xl border border-line bg-surface p-8 shadow-sm">
                 <div className="mb-6 flex items-center gap-3">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-600">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-surface-muted text-muted">
                     <AlignLeft className="h-4 w-4" />
                   </div>
-                  <h2 className="text-lg font-extrabold text-slate-900">Topic: {currentPrompt.topic}</h2>
+                  <h2 className="text-lg font-bold text-ink">Topic: {currentPrompt.topic}</h2>
                 </div>
-                <div className="prose prose-slate max-w-none text-[15px] leading-relaxed text-slate-700">
+                <div className="prose prose-slate max-w-none text-[15px] leading-relaxed text-ink">
                   {currentPrompt.prompt.split('\n').map((paragraph, idx) => (
                     <p key={idx} className="mb-4">{paragraph}</p>
                   ))}
                 </div>
               </div>
             ) : (
-              <div className="flex h-full flex-col items-center justify-center text-slate-400">
+              <div className="flex h-full flex-col items-center justify-center text-muted">
                 <BookOpen className="mb-4 h-12 w-12 opacity-20" />
-                <p className="font-semibold text-slate-500">Select a prompt to start practicing</p>
+                <p className="font-semibold text-muted">Select a prompt to start practicing</p>
               </div>
             )}
 
             {sampleAnswer && (
-              <div className="mt-6 overflow-hidden rounded-2xl border border-blue-100 bg-blue-50/50">
+              <div className="mt-6 overflow-hidden rounded-xl border border-line bg-accent">
                 <details className="group">
-                  <summary className="flex cursor-pointer items-center justify-between p-6 font-extrabold text-blue-900 outline-none transition-colors hover:bg-blue-50">
+                  <summary className="flex cursor-pointer items-center justify-between p-6 font-bold text-accent-ink outline-none transition-colors hover:bg-accent-hover">
                     <div className="flex items-center gap-2">
-                      <Sparkles className="h-5 w-5 text-blue-600" />
+                      <Sparkles className="h-5 w-5 text-accent-ink" />
                       Show Sample Answer
                     </div>
-                    <ChevronDown className="h-5 w-5 text-blue-400 transition-transform group-open:rotate-180" />
+                    <ChevronDown className="h-5 w-5 text-accent-ink transition-transform group-open:rotate-180" />
                   </summary>
-                  <div className="border-t border-blue-100 bg-white p-6">
-                    <div className="prose prose-slate max-w-none text-[15px] leading-relaxed text-slate-700">
+                  <div className="border-t border-line bg-surface p-6">
+                    <div className="prose prose-slate max-w-none text-[15px] leading-relaxed text-ink">
                       {sampleAnswer.split('\n').map((paragraph, idx) => (
                         <p key={idx} className="mb-4">{paragraph}</p>
                       ))}
@@ -425,57 +425,58 @@ function WriteContent() {
         </div>
 
         {/* Right Column: Writing Area */}
-        <div className="flex w-full flex-col bg-white lg:w-1/2">
-          <div className="flex-1 p-8">
+        <div className="write-editor">
+          <div className="write-editor-body">
             <textarea
+              aria-label="B?i vi?t c?a b?n"
               value={content}
               onChange={event => setContent(event.target.value)}
-              placeholder="Type your essay here... 
+              placeholder="Type your essay here...
 
 Remember to:
 - Read the prompt carefully
 - Plan your paragraphs
 - Check for grammar and vocabulary
 - Reach the minimum word count"
-              className="h-full w-full resize-none text-[16px] leading-loose text-slate-800 placeholder:text-slate-300 outline-none focus:ring-0"
+              className="h-full w-full resize-none text-[16px] leading-loose text-ink placeholder:text-muted outline-none focus:ring-0"
               spellCheck="false"
             />
           </div>
-          
+
           {error && (
-            <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+            <p className="rounded-xl border border-line bg-danger px-4 py-3 text-sm font-semibold text-danger-ink">
               {error}
             </p>
           )}
-          
+
           {/* Bottom Bar: Word Count & Status */}
-          <div className="flex items-center justify-between border-t border-slate-200 bg-slate-50 px-8 py-4 z-10">
+          <div className="write-toolbar">
             <div className="flex items-center gap-4">
               <div>
-                <span className={`text-2xl font-extrabold ${wordCount >= minimumWords ? "text-emerald-600" : "text-slate-700"}`}>
+                <span className={`text-2xl font-bold ${wordCount >= minimumWords ? "text-success-ink" : "text-ink"}`}>
                   {wordCount}
                 </span>
-                <span className="ml-1.5 text-xs font-bold uppercase tracking-wide text-slate-500">Words</span>
+                <span className="ml-1.5 text-xs font-bold uppercase tracking-wide text-muted">Words</span>
               </div>
-              <div className="h-8 w-px bg-slate-200"></div>
+              <div className="h-8 w-px bg-surface-muted"></div>
               <div>
-                <p className={`text-[13px] font-semibold ${shortContent ? "text-amber-600" : "text-slate-500"}`}>
-                  {wordCount === 0 
-                    ? "Start writing to track progress" 
-                    : shortContent 
-                      ? `${minimumWords - wordCount} more words to reach target (${minimumWords})` 
+                <p className={`text-[13px] font-semibold ${shortContent ? "text-warning-ink" : "text-muted"}`}>
+                  {wordCount === 0
+                    ? "Start writing to track progress"
+                    : shortContent
+                      ? `${minimumWords - wordCount} more words to reach target (${minimumWords})`
                       : `Target of ${minimumWords} words reached!`}
                 </p>
-                <div className="mt-1.5 h-1.5 w-48 overflow-hidden rounded-full bg-slate-200">
-                  <div 
-                    className={`h-full rounded-full transition-all duration-300 ${wordCount >= minimumWords ? "bg-emerald-500" : "bg-blue-500"}`} 
-                    style={{ width: `${progress}%` }} 
+                <div className="mt-1.5 h-1.5 w-48 overflow-hidden rounded-full bg-surface-muted">
+                  <div
+                    className={`h-full rounded-full transition-all duration-300 ${wordCount >= minimumWords ? "bg-success" : "bg-accent"}`}
+                    style={{ width: `${progress}%` }}
                   />
                 </div>
               </div>
             </div>
             {apiMode === "mock" && (
-              <div className="flex items-center gap-1.5 rounded-lg bg-amber-100 px-2.5 py-1 text-[11px] font-bold text-amber-700">
+              <div className="flex items-center gap-1.5 rounded-lg bg-warning px-2.5 py-1 text-[11px] font-bold text-warning-ink">
                 <AlertCircle className="h-3 w-3" />
                 MOCK MODE
               </div>

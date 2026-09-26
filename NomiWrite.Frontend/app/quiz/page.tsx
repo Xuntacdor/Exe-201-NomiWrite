@@ -129,64 +129,64 @@ function QuizContent() {
     const pct = total ? Math.round((score / total) * 100) : 0;
     return (
       <AppShell activePath="/quiz">
-        <div className="sticky top-0 z-10 flex h-14 items-center gap-2 border-b border-slate-100 bg-white/90 px-6 backdrop-blur">
-          <button type="button" onClick={resetQuiz} className="text-slate-400 hover:text-slate-600">
+        <div className="sticky top-0 z-10 flex h-14 items-center gap-2 border-b border-line bg-surface px-6">
+          <button type="button" onClick={resetQuiz} className="text-muted hover:text-muted">
             <Home className="h-4 w-4" />
           </button>
-          <span className="text-sm font-extrabold text-slate-900">Quiz result</span>
+          <span className="text-sm font-bold text-ink">Quiz result</span>
         </div>
         <div className="mx-auto w-full max-w-4xl space-y-8 p-6 lg:p-10">
-          <div className="overflow-hidden rounded-xl border border-slate-300 bg-white shadow-sm">
-            <div className="bg-[#19325B] p-8 text-center text-white">
-              <Trophy className="mx-auto mb-4 h-12 w-12 text-yellow-400" />
+          <div className="overflow-hidden rounded-xl border border-line bg-surface shadow-sm">
+            <div className="bg-accent p-8 text-center text-ink">
+              <Trophy className="mx-auto mb-4 h-12 w-12 text-warning-ink" />
               <p className="text-4xl font-bold tracking-tight">{score} / {questions.length}</p>
-              <p className="mt-2 text-lg font-medium text-blue-100">Total Score ({pct}%)</p>
+              <p className="mt-2 text-lg font-medium text-accent-ink">Total Score ({pct}%)</p>
             </div>
-            
+
             {submittedAttempt.questionBreakdown?.length ? (
-              <div className="divide-y divide-slate-200">
+              <div className="divide-y divide-line">
                 {submittedAttempt.questionBreakdown.map((item, index) => (
                   <div key={item.questionId} className="p-8 lg:p-10">
                     <div className="mb-4 flex items-center justify-between">
-                      <span className="text-sm font-bold tracking-wider text-slate-500 uppercase">Question {index + 1}</span>
+                      <span className="text-sm font-bold tracking-wider text-muted uppercase">Question {index + 1}</span>
                       <span className={`inline-flex items-center rounded px-3 py-1 text-sm font-bold ${
-                        item.isCorrect ? "bg-emerald-100 text-emerald-800" : "bg-red-100 text-red-800"
+                        item.isCorrect ? "bg-success text-success-ink" : "bg-danger text-danger-ink"
                       }`}>
                         {item.isCorrect ? "Correct" : "Incorrect"}
                       </span>
                     </div>
-                    
-                    <p className="mb-6 text-lg font-semibold text-slate-900">{item.question}</p>
-                    
+
+                    <p className="mb-6 text-lg font-semibold text-ink">{item.question}</p>
+
                     <div className="grid gap-6 md:grid-cols-2">
-                      <div className="rounded-lg border border-slate-200 bg-slate-50 p-5">
-                        <p className="mb-2 text-xs font-bold uppercase tracking-wider text-slate-500">Your Answer</p>
-                        <p className={`text-lg font-semibold ${item.isCorrect ? "text-emerald-700" : "text-red-700"}`}>
+                      <div className="rounded-lg border border-line bg-canvas p-5">
+                        <p className="mb-2 text-xs font-bold uppercase tracking-wider text-muted">Your Answer</p>
+                        <p className={`text-lg font-semibold ${item.isCorrect ? "text-success-ink" : "text-danger-ink"}`}>
                           {item.userAnswer || "No answer"}
                         </p>
                       </div>
-                      <div className="rounded-lg border border-emerald-200 bg-emerald-50/50 p-5">
-                        <p className="mb-2 text-xs font-bold uppercase tracking-wider text-emerald-600">Correct Answer</p>
-                        <p className="text-lg font-semibold text-emerald-800">{item.correctAnswer}</p>
+                      <div className="rounded-lg border border-line bg-success p-5">
+                        <p className="mb-2 text-xs font-bold uppercase tracking-wider text-success-ink">Correct Answer</p>
+                        <p className="text-lg font-semibold text-success-ink">{item.correctAnswer}</p>
                       </div>
                     </div>
-                    
+
                     {item.explanation && (
-                      <div className="mt-6 rounded-lg bg-blue-50 p-5 border border-blue-100">
-                        <p className="text-sm font-bold text-blue-800 mb-2">Explanation</p>
-                        <p className="text-base text-blue-900 leading-relaxed">{item.explanation}</p>
+                      <div className="mt-6 rounded-lg bg-accent p-5 border border-line">
+                        <p className="text-sm font-bold text-accent-ink mb-2">Explanation</p>
+                        <p className="text-base text-accent-ink leading-relaxed">{item.explanation}</p>
                       </div>
                     )}
                   </div>
                 ))}
               </div>
             ) : null}
-            
-            <div className="bg-slate-50 p-8 border-t border-slate-200 flex justify-center">
+
+            <div className="bg-canvas p-8 border-t border-line flex justify-center">
               <button
                 type="button"
                 onClick={resetQuiz}
-                className="flex items-center gap-3 rounded bg-[#19325B] px-8 py-3 text-lg font-semibold text-white transition-colors hover:bg-blue-900 active:bg-blue-950"
+                className="flex items-center gap-3 rounded bg-accent px-8 py-3 text-lg font-semibold text-ink transition-colors hover:bg-accent-hover active:bg-accent-hover"
               >
                 <RotateCcw className="h-5 w-5" />
                 Practice Again
@@ -200,52 +200,52 @@ function QuizContent() {
 
   return (
     <AppShell activePath="/quiz">
-      <div className="sticky top-0 z-10 flex h-14 items-center justify-between border-b border-slate-100 bg-white/90 px-6 backdrop-blur">
+      <div className="sticky top-0 z-10 flex h-14 items-center justify-between border-b border-line bg-surface px-6">
         <div className="flex items-center gap-2">
-          <BrainCircuit className="h-4 w-4 text-violet-500" />
-          <h1 className="text-sm font-extrabold text-slate-900">Quiz practice</h1>
+          <BrainCircuit className="h-4 w-4 text-rose-ink" />
+          <h1 className="text-sm font-bold text-ink">Quiz practice</h1>
         </div>
         {!loading && question && !submittedAttempt && (
-          <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-1 rounded-lg bg-slate-100 p-1 hidden sm:flex">
+          <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-1 rounded-lg bg-surface-muted p-1 hidden sm:flex">
             <button
               onClick={() => setMode("test")}
-              className={`rounded-md px-4 py-1 text-xs font-bold transition ${mode === "test" ? "bg-white shadow-sm text-slate-900" : "text-slate-500 hover:text-slate-700"}`}
+              className={`rounded-md px-4 py-1 text-xs font-bold transition ${mode === "test" ? "bg-surface shadow-sm text-ink" : "text-muted hover:text-ink"}`}
             >
               Test Mode
             </button>
             <button
               onClick={() => setMode("flashcards")}
-              className={`rounded-md px-4 py-1 text-xs font-bold transition ${mode === "flashcards" ? "bg-white shadow-sm text-slate-900" : "text-slate-500 hover:text-slate-700"}`}
+              className={`rounded-md px-4 py-1 text-xs font-bold transition ${mode === "flashcards" ? "bg-surface shadow-sm text-ink" : "text-muted hover:text-ink"}`}
             >
               Flashcards
             </button>
           </div>
         )}
-        <span className="text-xs font-semibold text-slate-400">{questions.length} questions</span>
+        <span className="text-xs font-semibold text-muted">{questions.length} questions</span>
       </div>
 
       <div className="mx-auto flex min-h-[calc(100vh-3.5rem)] w-full max-w-[1400px] flex-col p-6 lg:p-10">
         {loading && (
-          <div className="mt-4 flex items-center justify-center gap-2 rounded-2xl border border-slate-100 bg-white p-8 text-sm font-semibold text-slate-500 shadow-sm">
+          <div className="mt-4 flex items-center justify-center gap-2 rounded-xl border border-line bg-surface p-8 text-sm font-semibold text-muted shadow-sm">
             <Loader2 className="h-4 w-4 animate-spin" />
             Preparing quiz
           </div>
         )}
 
-        {error && <p className="mt-4 rounded-2xl border border-red-100 bg-red-50 p-4 text-sm font-semibold text-red-600">{error}</p>}
+        {error && <p className="mt-4 rounded-xl border border-line bg-danger p-4 text-sm font-semibold text-danger-ink">{error}</p>}
 
         {!loading && !error && !submissionId && !question && (
           <div className="w-full space-y-5 mt-2">
             {loadingHistory ? (
-              <div className="flex items-center justify-center gap-2 rounded-2xl border border-slate-100 bg-white p-8 text-sm font-semibold text-slate-500 shadow-sm">
+              <div className="flex items-center justify-center gap-2 rounded-xl border border-line bg-surface p-8 text-sm font-semibold text-muted shadow-sm">
                 <Loader2 className="h-4 w-4 animate-spin" />
                 Loading saved quizzes
               </div>
             ) : quizHistory.length ? (
               <div className="space-y-3">
-                <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
-                  <p className="text-sm font-extrabold text-slate-900">Saved quizzes</p>
-                  <p className="mt-1 text-xs leading-relaxed text-slate-500">
+                <div className="rounded-xl border border-line bg-surface p-5 shadow-sm">
+                  <p className="text-sm font-bold text-ink">Saved quizzes</p>
+                  <p className="mt-1 text-xs leading-relaxed text-muted">
                     Practice again from quizzes generated from your previous writing feedback.
                   </p>
                 </div>
@@ -254,22 +254,22 @@ function QuizContent() {
                     key={item.id}
                     type="button"
                     onClick={() => void startSavedQuiz(item.id)}
-                    className="w-full rounded-2xl border border-slate-100 bg-white p-5 text-left shadow-sm transition-all hover:border-violet-200 hover:bg-violet-50/40"
+                    className="w-full rounded-xl border border-line bg-surface p-5 text-left shadow-sm transition-all hover:border-line hover:bg-rose"
                   >
                     <div className="mb-2 flex items-center justify-between gap-3">
-                      <span className="rounded-full bg-violet-50 px-3 py-1 text-xs font-bold text-violet-700">
+                      <span className="rounded-full bg-rose px-3 py-1 text-xs font-bold text-rose-ink">
                         {item.category || "Quiz practice"}
                       </span>
-                      <span className="text-xs font-semibold text-slate-400">
+                      <span className="text-xs font-semibold text-muted">
                         {item.questionCount} questions
                       </span>
                     </div>
-                    <p className="text-sm font-extrabold text-slate-900">
+                    <p className="text-sm font-bold text-ink">
                       {item.latestScore == null
                         ? "Not attempted yet"
                         : `Last score: ${item.latestScore}/${item.latestTotalQuestions ?? item.questionCount}`}
                     </p>
-                    <p className="mt-1 text-xs text-slate-500">
+                    <p className="mt-1 text-xs text-muted">
                       {item.latestAttemptedAt
                         ? `Last practiced ${new Date(item.latestAttemptedAt).toLocaleString()}`
                         : `Created ${new Date(item.createdAt).toLocaleString()}`}
@@ -278,12 +278,12 @@ function QuizContent() {
                 ))}
               </div>
             ) : (
-              <div className="rounded-2xl border border-slate-100 bg-white p-8 text-center shadow-sm">
-                <p className="text-sm font-extrabold text-slate-900">Choose a graded writing first</p>
-                <p className="mt-1 mb-6 text-xs leading-relaxed text-slate-500">
+              <div className="rounded-xl border border-line bg-surface p-8 text-center shadow-sm">
+                <p className="text-sm font-bold text-ink">Choose a graded writing first</p>
+                <p className="mt-1 mb-6 text-xs leading-relaxed text-muted">
                   Personalized quizzes are generated from a submitted writing after AI feedback is ready.
                 </p>
-                <Link href="/history" className="inline-flex items-center justify-center gap-2 rounded-full bg-violet-600 px-6 py-3 text-sm font-bold text-white transition-all hover:bg-violet-700">
+                <Link href="/history" className="inline-flex items-center justify-center gap-2 rounded-full bg-rose px-6 py-3 text-sm font-bold text-ink transition-all hover:bg-rose">
                   Go to History
                   <ArrowRight className="h-4 w-4" />
                 </Link>
@@ -293,9 +293,9 @@ function QuizContent() {
         )}
 
         {!loading && question && mode === "test" && (
-          <div className="w-full overflow-hidden rounded-xl border border-slate-300 bg-white shadow-sm mt-2">
+          <div className="w-full overflow-hidden rounded-xl border border-line bg-surface shadow-sm mt-2">
             {/* Header: Solid blue background with white text, typical of test software */}
-            <div className="flex items-center justify-between bg-[#19325B] px-8 py-5 text-white">
+            <div className="flex items-center justify-between bg-accent px-8 py-5 text-ink">
               <div className="flex items-center gap-4">
                 <BrainCircuit className="h-6 w-6" />
                 <span className="text-xl font-semibold tracking-wide">{question.category}</span>
@@ -306,15 +306,15 @@ function QuizContent() {
             </div>
 
             {/* Split Content Area */}
-            <div className="flex flex-col lg:flex-row lg:divide-x lg:divide-slate-200">
+            <div className="flex flex-col lg:flex-row lg:divide-x lg:divide-line">
               {/* Left Side: Question and Context */}
-              <div className="flex-1 bg-slate-50 p-10 lg:p-14">
-                <h2 className="mb-8 text-xl font-semibold leading-relaxed text-slate-800 lg:text-2xl">
+              <div className="flex-1 bg-canvas p-10 lg:p-14">
+                <h2 className="mb-8 text-xl font-semibold leading-relaxed text-ink lg:text-2xl">
                   {question.question}
                 </h2>
                 {question.sentence && (
-                  <div className="border-l-4 border-[#19325B] bg-white p-6 shadow-sm">
-                    <p className="text-lg leading-relaxed text-slate-700 italic">
+                  <div className="border-l-4 border-line bg-surface p-6 shadow-sm">
+                    <p className="text-lg leading-relaxed text-ink italic">
                       &quot;{question.sentence}&quot;
                     </p>
                   </div>
@@ -322,11 +322,11 @@ function QuizContent() {
               </div>
 
               {/* Right Side: Options & Actions */}
-              <div className="flex flex-1 flex-col justify-between bg-white p-10 lg:p-14">
+              <div className="flex flex-1 flex-col justify-between bg-surface p-10 lg:p-14">
                 <div className="space-y-8">
                   {isFreeTextQuestion ? (
                     <div className="space-y-5">
-                      <label htmlFor={`quiz-answer-${question.id}`} className="block text-base font-semibold text-slate-700">
+                      <label htmlFor={`quiz-answer-${question.id}`} className="block text-base font-semibold text-ink">
                         Your Answer:
                       </label>
                       <input
@@ -340,7 +340,7 @@ function QuizContent() {
                             goNextOrFinish();
                           }
                         }}
-                        className="w-full border-b-2 border-slate-300 bg-slate-50 px-5 py-4 text-xl font-medium text-slate-800 transition-colors focus:border-[#19325B] focus:bg-white focus:outline-none"
+                        className="w-full border-b-2 border-line bg-canvas px-5 py-4 text-xl font-medium text-ink transition-colors focus:border-line focus:bg-surface focus:outline-none"
                         placeholder={question.type === "rewrite" ? "Type your rewritten sentence..." : "Type the missing word or phrase..."}
                         autoFocus
                       />
@@ -357,16 +357,16 @@ function QuizContent() {
                             disabled={isAnswered}
                             className={`flex w-full items-center gap-5 border p-5 text-left transition-colors ${
                               active
-                                ? "border-[#19325B] bg-blue-50/50"
-                                : "border-slate-300 bg-white hover:bg-slate-50"
+                                ? "border-line bg-accent"
+                                : "border-line bg-surface hover:bg-canvas"
                             } ${isAnswered && !active ? 'opacity-50' : ''}`}
                           >
                             <div className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border ${
-                              active ? "border-[#19325B] bg-[#19325B]" : "border-slate-400 bg-white"
+                              active ? "border-line bg-accent" : "border-line bg-surface"
                             }`}>
-                              {active && <div className="h-2.5 w-2.5 rounded-full bg-white" />}
+                              {active && <div className="h-2.5 w-2.5 rounded-full bg-surface" />}
                             </div>
-                            <span className={`text-lg ${active ? "font-semibold text-[#19325B]" : "text-slate-700"}`}>
+                            <span className={`text-lg ${active ? "font-semibold text-accent-ink" : "text-ink"}`}>
                               {option}
                             </span>
                           </button>
@@ -376,9 +376,9 @@ function QuizContent() {
                   )}
 
                   {isAnswered && question.explanation && (
-                    <div className="mt-8 rounded border border-emerald-200 bg-emerald-50 p-6">
-                      <p className="mb-3 text-base font-bold text-emerald-800">Feedback / Explanation</p>
-                      <p className="text-base leading-relaxed text-emerald-900">{question.explanation}</p>
+                    <div className="mt-8 rounded border border-line bg-success p-6">
+                      <p className="mb-3 text-base font-bold text-success-ink">Feedback / Explanation</p>
+                      <p className="text-base leading-relaxed text-success-ink">{question.explanation}</p>
                     </div>
                   )}
                 </div>
@@ -388,7 +388,7 @@ function QuizContent() {
                     <button
                       type="button"
                       onClick={goNextOrFinish}
-                      className="flex items-center justify-center gap-3 rounded bg-[#19325B] px-10 py-4 text-lg font-semibold text-white transition-colors hover:bg-blue-900 active:bg-blue-950"
+                      className="flex items-center justify-center gap-3 rounded bg-accent px-10 py-4 text-lg font-semibold text-ink transition-colors hover:bg-accent-hover active:bg-accent-hover"
                     >
                       {current + 1 === questions.length ? "Finish Quiz" : "Next Question"}
                       <ArrowRight className="h-5 w-5" />
@@ -403,16 +403,16 @@ function QuizContent() {
         {!loading && question && mode === "flashcards" && (
           <div className="flex w-full flex-col items-center justify-start space-y-8 py-6 mt-2">
             {/* Mobile Mode Switcher (Visible only on small screens) */}
-            <div className="flex sm:hidden items-center gap-1 rounded-lg bg-slate-100 p-1 mb-2">
+            <div className="flex sm:hidden items-center gap-1 rounded-lg bg-surface-muted p-1 mb-2">
               <button
                 onClick={() => setMode("test")}
-                className="rounded-md px-4 py-1.5 text-sm font-bold transition text-slate-500 hover:text-slate-700"
+                className="rounded-md px-4 py-1.5 text-sm font-bold transition text-muted hover:text-ink"
               >
                 Test Mode
               </button>
               <button
                 onClick={() => setMode("flashcards")}
-                className="rounded-md px-4 py-1.5 text-sm font-bold transition bg-white shadow-sm text-slate-900"
+                className="rounded-md px-4 py-1.5 text-sm font-bold transition bg-surface shadow-sm text-ink"
               >
                 Flashcards
               </button>
@@ -424,26 +424,26 @@ function QuizContent() {
               onClick={() => setIsFlipped(!isFlipped)}
             >
               <div
-                className="relative h-full w-full rounded-3xl shadow-lg transition-all duration-500"
+                className="relative h-full w-full rounded-xl shadow-sm transition-all duration-500"
                 style={{ transformStyle: "preserve-3d", transform: isFlipped ? "rotateY(180deg)" : "rotateY(0deg)" }}
               >
                 {/* Front */}
                 <div
-                  className="absolute inset-0 flex flex-col items-center justify-center rounded-3xl border border-slate-200 bg-white p-10 lg:p-16"
+                  className="absolute inset-0 flex flex-col items-center justify-center rounded-xl border border-line bg-surface p-10 lg:p-16"
                   style={{ backfaceVisibility: "hidden" }}
                 >
-                  <p className="mb-6 text-center text-sm font-bold tracking-widest text-violet-500 uppercase">
+                  <p className="mb-6 text-center text-sm font-bold tracking-widest text-rose-ink uppercase">
                     {question.category}
                   </p>
-                  <h2 className="text-center text-2xl font-bold leading-relaxed text-slate-800 lg:text-3xl">
+                  <h2 className="text-center text-2xl font-bold leading-relaxed text-ink lg:text-3xl">
                     {question.question}
                   </h2>
                   {question.sentence && (
-                    <p className="mt-8 rounded-xl bg-slate-50 p-6 text-center text-lg italic text-slate-600 border border-slate-100">
+                    <p className="mt-8 rounded-xl bg-canvas p-6 text-center text-lg italic text-muted border border-line">
                       &quot;{question.sentence}&quot;
                     </p>
                   )}
-                  <p className="absolute bottom-8 flex items-center gap-2 text-sm font-bold text-slate-400">
+                  <p className="absolute bottom-8 flex items-center gap-2 text-sm font-bold text-muted">
                     <RotateCcw className="h-4 w-4" />
                     Click card to flip
                   </p>
@@ -451,21 +451,21 @@ function QuizContent() {
 
                 {/* Back */}
                 <div
-                  className="absolute inset-0 flex flex-col items-center justify-center rounded-3xl border border-[#19325B] bg-[#19325B] p-10 lg:p-16 text-white"
+                  className="absolute inset-0 flex flex-col items-center justify-center rounded-xl border border-line bg-accent p-10 lg:p-16 text-ink"
                   style={{ backfaceVisibility: "hidden", transform: "rotateY(180deg)" }}
                 >
-                  <p className="mb-6 text-center text-sm font-bold tracking-widest text-blue-200/80 uppercase">
+                  <p className="mb-6 text-center text-sm font-bold tracking-widest text-accent-ink uppercase">
                     Answer
                   </p>
                   <h2 className="text-center text-2xl font-bold leading-relaxed lg:text-3xl">
                     {question.correctAnswer || "Check explanation for details"}
                   </h2>
                   {question.explanation && (
-                    <div className="mt-8 max-h-[12rem] overflow-y-auto rounded-xl bg-white/10 p-6 text-center text-lg text-blue-50 backdrop-blur-sm scrollbar-thin scrollbar-thumb-white/20">
+                    <div className="mt-8 max-h-[12rem] overflow-y-auto rounded-xl bg-surface p-6 text-center text-lg text-accent-ink scrollbar-thin scrollbar-thumb-line">
                       {question.explanation}
                     </div>
                   )}
-                  <p className="absolute bottom-8 flex items-center gap-2 text-sm font-bold text-blue-300">
+                  <p className="absolute bottom-8 flex items-center gap-2 text-sm font-bold text-accent-ink">
                     <RotateCcw className="h-4 w-4" />
                     Click card to flip back
                   </p>
@@ -483,13 +483,13 @@ function QuizContent() {
                   }
                 }}
                 disabled={current === 0}
-                className="flex h-14 items-center justify-center rounded-full border border-slate-200 bg-white px-8 font-bold text-slate-700 shadow-sm transition-all hover:bg-slate-50 hover:shadow disabled:opacity-50 disabled:hover:shadow-sm"
+                className="flex h-14 items-center justify-center rounded-full border border-line bg-surface px-8 font-bold text-ink shadow-sm transition-all hover:bg-canvas hover:shadow disabled:opacity-50 disabled:hover:shadow-sm"
               >
                 Previous
               </button>
-              <div className="flex items-center gap-3 font-bold text-slate-500">
-                <span className="text-lg text-slate-900">{current + 1}</span>
-                <span className="text-slate-300">/</span>
+              <div className="flex items-center gap-3 font-bold text-muted">
+                <span className="text-lg text-ink">{current + 1}</span>
+                <span className="text-muted">/</span>
                 <span>{questions.length}</span>
               </div>
               <button
@@ -502,7 +502,7 @@ function QuizContent() {
                     void handleFinish();
                   }
                 }}
-                className="flex h-14 items-center justify-center rounded-full bg-violet-600 px-8 font-bold text-white shadow-md transition-all hover:bg-violet-700 hover:shadow-lg active:scale-95"
+                className="flex h-14 items-center justify-center rounded-full bg-rose px-8 font-bold text-ink shadow-sm transition-all hover:bg-rose hover:shadow-sm active:scale-95"
               >
                 {current === questions.length - 1 ? "Finish" : "Next"}
               </button>
