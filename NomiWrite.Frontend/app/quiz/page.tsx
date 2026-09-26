@@ -6,7 +6,7 @@ import Link from "next/link";
 import AppShell from "../components/AppShell";
 import { apiClient } from "@/lib/api/client";
 import type { Quiz, QuizAttempt, QuizSummary } from "@/lib/types";
-import { ArrowRight, BrainCircuit, Check, Home, Loader2, RotateCcw, Sparkles, Trophy, Zap } from "lucide-react";
+import { ArrowRight, BrainCircuit, Home, Loader2, RotateCcw, Trophy } from "lucide-react";
 
 function QuizContent() {
   const params = useSearchParams();
@@ -294,7 +294,7 @@ function QuizContent() {
                 {question.sentence && (
                   <div className="border-l-4 border-[#19325B] bg-white p-6 shadow-sm">
                     <p className="text-lg leading-relaxed text-slate-700 italic">
-                      "{question.sentence}"
+                      &quot;{question.sentence}&quot;
                     </p>
                   </div>
                 )}

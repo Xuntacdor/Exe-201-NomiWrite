@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import AppShell from "../components/AppShell";
 import {
@@ -79,12 +79,9 @@ export default function DashboardPage() {
   const averageScore = gradedScores.length
     ? (gradedScores.reduce((sum, score) => sum + score, 0) / gradedScores.length).toFixed(1)
     : "--";
-  const recentSubmissions = useMemo(
-    () => [...submissions].sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime()).slice(0, 5),
-    [submissions],
-  );
-  const bandHistory = gradedScores.slice(-12);
-  const maxBand = 9.0;
+  const recentSubmissions = [...submissions]
+    .sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime())
+    .slice(0, 5);
 
   return (
     <AppShell activePath="/dashboard">
