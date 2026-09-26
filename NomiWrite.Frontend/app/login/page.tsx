@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { PenLine, Mail, Lock, ArrowRight } from "lucide-react";
-import { apiClient, apiMode } from "@/lib/api/client";
+import { apiClient } from "@/lib/api/client";
 import { redirectAfterAuth, saveSession } from "@/lib/auth/session";
 import GoogleSignInButton from "../components/GoogleSignInButton";
 

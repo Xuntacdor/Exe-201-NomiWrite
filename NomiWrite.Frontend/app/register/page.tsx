@@ -4,8 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { PenLine, Mail, Lock, User, ArrowRight, Check } from "lucide-react";
-import { apiClient, apiMode } from "@/lib/api/client";
-import { saveSession } from "@/lib/auth/session";
+import { apiClient } from "@/lib/api/client";
 import { levelOptions, writingGoalOptions } from "@/lib/constants/profile-options";
 import GoogleSignInButton from "../components/GoogleSignInButton";
 
@@ -36,7 +35,7 @@ export default function RegisterPage() {
 
     try {
       setSubmitting(true);
-      const session = await apiClient.register({
+      await apiClient.register({
         fullName: fullName.trim(),
         email: email.trim(),
         password,

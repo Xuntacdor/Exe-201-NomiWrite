@@ -6,7 +6,7 @@ import Link from "next/link";
 import AppShell from "../components/AppShell";
 import { apiClient } from "@/lib/api/client";
 import type { Quiz, QuizAttempt, QuizSummary } from "@/lib/types";
-import { ArrowRight, BrainCircuit, Check, Home, Loader2, RotateCcw, Sparkles, Trophy, Zap } from "lucide-react";
+import { ArrowRight, BrainCircuit, Home, Loader2, RotateCcw, Trophy } from "lucide-react";
 
 function QuizContent() {
   const params = useSearchParams();
@@ -315,7 +315,7 @@ function QuizContent() {
                 {question.sentence && (
                   <div className="border-l-4 border-[#19325B] bg-white p-6 shadow-sm">
                     <p className="text-lg leading-relaxed text-slate-700 italic">
-                      "{question.sentence}"
+                      &quot;{question.sentence}&quot;
                     </p>
                   </div>
                 )}
@@ -406,13 +406,13 @@ function QuizContent() {
             <div className="flex sm:hidden items-center gap-1 rounded-lg bg-slate-100 p-1 mb-2">
               <button
                 onClick={() => setMode("test")}
-                className={`rounded-md px-4 py-1.5 text-sm font-bold transition ${mode === "test" ? "bg-white shadow-sm text-slate-900" : "text-slate-500 hover:text-slate-700"}`}
+                className="rounded-md px-4 py-1.5 text-sm font-bold transition text-slate-500 hover:text-slate-700"
               >
                 Test Mode
               </button>
               <button
                 onClick={() => setMode("flashcards")}
-                className={`rounded-md px-4 py-1.5 text-sm font-bold transition ${mode === "flashcards" ? "bg-white shadow-sm text-slate-900" : "text-slate-500 hover:text-slate-700"}`}
+                className="rounded-md px-4 py-1.5 text-sm font-bold transition bg-white shadow-sm text-slate-900"
               >
                 Flashcards
               </button>
@@ -440,7 +440,7 @@ function QuizContent() {
                   </h2>
                   {question.sentence && (
                     <p className="mt-8 rounded-xl bg-slate-50 p-6 text-center text-lg italic text-slate-600 border border-slate-100">
-                      "{question.sentence}"
+                      &quot;{question.sentence}&quot;
                     </p>
                   )}
                   <p className="absolute bottom-8 flex items-center gap-2 text-sm font-bold text-slate-400">

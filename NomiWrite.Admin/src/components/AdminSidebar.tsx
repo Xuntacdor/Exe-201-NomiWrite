@@ -5,7 +5,6 @@ import {
   Users,
   FileText,
   MessageSquare,
-  Settings,
   ChevronLeft,
   ChevronRight,
   LogOut,

@@ -30,7 +30,6 @@ function getExcerpt(content: string): string {
   return normalized.length > 180 ? `${normalized.slice(0, 180)}...` : normalized;
 }
 
-const INITIAL_GRADING_CHECK_DELAY_MS = 15000;
 const GRADING_CHECK_INTERVAL_MS = 20000;
 const GRADING_WAIT_TIMEOUT_MS = 10 * 60 * 1000;
 
