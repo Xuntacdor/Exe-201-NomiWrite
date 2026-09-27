@@ -1,6 +1,17 @@
 # Mini plan — khôi phục UI NomiWrite
 
-Mục tiêu: giao diện luyện TOEIC/IELTS gần gũi, nhất quán, dễ tập trung viết và đọc phản hồi lâu; hỗ trợ sáng/tối đầy đủ. Đây là kế hoạch triển khai, chưa thay đổi UI.
+Mục tiêu: giao diện luyện TOEIC/IELTS gần gũi, nhất quán, dễ tập trung viết và đọc phản hồi lâu; hỗ trợ sáng/tối đầy đủ. UI đã triển khai trên nhánh riêng và đang điều chỉnh theo phản hồi thực tế.
+
+## Điều chỉnh mới nhất theo phản hồi
+
+Các lựa chọn dưới đây thay thế bảng màu và bố cục đề xuất trước đó:
+
+- Light: nền hồng phấn `#fff3f7`, card trắng, accent hồng `#f7c9dd`, chữ gần đen `#19171c`; bỏ sắc nâu/cam làm màu chủ đạo.
+- Dark: nền xanh than `#101522`, card `#192132`, accent xanh đậm `#2d4167`, chữ sáng `#f0f4fc` và chữ phụ `#bdc9dd`.
+- Dashboard dùng chiều ngang linh hoạt, lề 24px (16px mobile), khoảng cách khối 16–24px; giảm padding card và sửa grid lịch sử trên màn hình nhỏ.
+- Guide thu gọn thư viện, căn nội dung cùng lề, bỏ giới hạn chiều ngang gây trống; thư viện vẫn truy cập được khi màn hình hẹp, tab được xuống dòng.
+- Writing có khoảng cách 20px giữa hai cột, các khung cùng lề; editor có nhãn, chiều cao thích ứng và hướng dẫn placeholder xuống dòng đúng.
+- Kiểm tra CSS thực sự được server phục vụ để tránh lặp lại lỗi cache cũ. Kiểm tra trực quan qua Browser vẫn chưa thực hiện được do chưa có kết nối.
 
 ## Phạm vi và hiện trạng
 

@@ -246,7 +246,7 @@ function WriteContent() {
   return (
     <AppShell activePath="/write">
       {/* Sticky Header */}
-      <div className="write-heading sticky top-0 z-20 flex min-h-[72px] items-center justify-between border-b border-line bg-surface px-8">
+      <div className="write-heading sticky top-0 z-20 flex min-h-[72px] items-center justify-between border-b border-line bg-surface px-6">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent text-accent-ink">
             <PenLine className="h-5 w-5" strokeWidth={2.5} />
@@ -285,7 +285,7 @@ function WriteContent() {
         {/* Left Column: Prompt & Controls */}
         <div className="write-prompt flex flex-col">
           {/* Controls Bar */}
-          <div className="border-b border-line bg-surface p-6 shadow-sm z-10">
+          <div className="rounded-xl border border-line bg-surface p-5">
             <div className="write-controls grid grid-cols-2 gap-4">
               <div>
                 <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-muted">Writing Task</label>
@@ -343,7 +343,7 @@ function WriteContent() {
           </div>
 
           {/* Prompt Area */}
-          <div className="flex-1 overflow-y-auto p-8">
+          <div className="min-w-0">
             {hasCustomTopic && (
               <div className="mb-6 overflow-hidden rounded-xl border border-line bg-accent shadow-sm">
                 <div className="flex items-center gap-2 border-b border-line px-6 py-3.5">
@@ -381,8 +381,8 @@ function WriteContent() {
               </div>
             )}
             {currentPrompt ? (
-              <div className="rounded-xl border border-line bg-surface p-8 shadow-sm">
-                <div className="mb-6 flex items-center gap-3">
+              <div className="rounded-xl border border-line bg-surface p-5 shadow-sm">
+                <div className="mb-4 flex items-center gap-3">
                   <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-surface-muted text-muted">
                     <AlignLeft className="h-4 w-4" />
                   </div>
@@ -426,18 +426,13 @@ function WriteContent() {
 
         {/* Right Column: Writing Area */}
         <div className="write-editor">
+          <label htmlFor="writing-content" className="write-editor-label">Bài viết của bạn</label>
           <div className="write-editor-body">
             <textarea
-              aria-label="B?i vi?t c?a b?n"
+              id="writing-content"
               value={content}
               onChange={event => setContent(event.target.value)}
-              placeholder="Type your essay here...
-
-Remember to:
-- Read the prompt carefully
-- Plan your paragraphs
-- Check for grammar and vocabulary
-- Reach the minimum word count"
+              placeholder={"Type your essay here...\n\nRemember to:\n- Read the prompt carefully\n- Plan your paragraphs\n- Check for grammar and vocabulary\n- Reach the minimum word count"}
               className="h-full w-full resize-none text-[16px] leading-loose text-ink placeholder:text-muted outline-none focus:ring-0"
               spellCheck="false"
             />

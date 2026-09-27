@@ -85,7 +85,7 @@ export default function DashboardPage() {
 
   return (
     <AppShell activePath="/dashboard">
-      <div className="sticky top-0 z-50 flex h-[72px] items-center justify-between border-b border-line bg-surface px-8">
+      <div className="sticky top-0 z-50 flex h-[72px] items-center justify-between border-b border-line bg-surface px-6">
         <div>
           <h1 className="text-xl font-bold tracking-tight text-ink">
             Welcome back, {user?.displayName ?? "Writer"}! 👋
@@ -106,7 +106,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <div className="mx-auto max-w-6xl space-y-8 p-8">
+      <div className="dashboard-content">
         {loading && (
           <div className="flex items-center justify-center gap-3 rounded-xl border border-line bg-surface p-12 text-[15px] font-semibold text-muted shadow-sm">
             <Loader2 className="h-5 w-5 animate-spin text-accent-ink" />
@@ -123,14 +123,14 @@ export default function DashboardPage() {
         {!loading && !error && (
           <>
             {/* Stats Row */}
-            <div className="grid grid-cols-2 gap-5 lg:grid-cols-4">
+            <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
               {[
                 { label: "Avg. Writing Band", value: averageScore, sub: "Based on AI grading", color: "text-accent-ink", bg: "bg-accent", Icon: TrendingUp },
                 { label: "Essays Graded", value: gradedScores.length, sub: "Total completed", color: "text-success-ink", bg: "bg-success", Icon: Award },
                 { label: "Current Plan", value: user?.plan === "premium" ? "PRO" : "Free", sub: "Upgrade for full AI feedback", color: "text-rose-ink", bg: "bg-rose", Icon: Sparkles },
                 { label: "Target Band", value: "7.0+", sub: "Set your goal in Profile", color: "text-accent-ink", bg: "bg-accent", Icon: Flame },
               ].map(({ label, value, sub, color, bg, Icon }) => (
-                <div key={label} className="relative overflow-hidden rounded-xl border border-line bg-surface p-6 shadow-sm transition-all hover:shadow-sm">
+                <div key={label} className="relative overflow-hidden rounded-xl border border-line bg-surface p-5 shadow-sm transition-all hover:shadow-sm">
                   <div className={`mb-4 flex h-12 w-12 items-center justify-center rounded-xl ${bg}`}>
                     <Icon className={color} strokeWidth={2.5} style={{ width: 22, height: 22 }} />
                   </div>
@@ -143,13 +143,13 @@ export default function DashboardPage() {
 
             {/* Practice Modules */}
             <div>
-              <div className="mb-5 flex items-center justify-between">
+              <div className="mb-4 flex flex-wrap gap-3 items-center justify-between">
                 <h2 className="text-xl font-bold text-ink">Luyện Tập IELTS Writing</h2>
                 <Link href="/write" className="text-sm font-bold text-accent-ink hover:text-accent-ink">View all prompts →</Link>
               </div>
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 {/* Task 1 Card */}
-                <div className="group relative flex flex-col justify-between overflow-hidden rounded-xl border border-line bg-surface p-8 shadow-sm transition-all hover:border-line hover:shadow-sm">
+                <div className="group relative flex flex-col justify-between overflow-hidden rounded-xl border border-line bg-surface p-5 shadow-sm transition-all hover:border-line hover:shadow-sm">
                   <div className="relative z-10">
                     <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-accent text-accent-ink">
                       <BarChart strokeWidth={2.5} className="h-6 w-6" />
@@ -161,14 +161,14 @@ export default function DashboardPage() {
                   </div>
                   <Link
                     href="/write?task=1"
-                    className="relative z-10 mt-8 inline-flex items-center justify-center gap-2 rounded-xl bg-surface-muted px-6 py-3.5 text-[15px] font-bold text-ink transition-all hover:bg-surface-muted"
+                    className="relative z-10 mt-5 inline-flex items-center justify-center gap-2 rounded-xl bg-surface-muted px-6 py-3.5 text-[15px] font-bold text-ink transition-all hover:bg-surface-muted"
                   >
                     Bắt đầu làm bài <ArrowRight className="h-4 w-4" />
                   </Link>
                 </div>
 
                 {/* Task 2 Card */}
-                <div className="group relative flex flex-col justify-between overflow-hidden rounded-xl border border-line bg-surface p-8 shadow-sm transition-all hover:border-line hover:shadow-sm">
+                <div className="group relative flex flex-col justify-between overflow-hidden rounded-xl border border-line bg-surface p-5 shadow-sm transition-all hover:border-line hover:shadow-sm">
                   <div className="relative z-10">
                     <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-rose text-rose-ink">
                       <MessageSquare strokeWidth={2.5} className="h-6 w-6" />
@@ -180,7 +180,7 @@ export default function DashboardPage() {
                   </div>
                   <Link
                     href="/write?task=2"
-                    className="relative z-10 mt-8 inline-flex items-center justify-center gap-2 rounded-xl bg-accent px-6 py-3.5 text-[15px] font-bold text-ink shadow-sm transition-all  hover:bg-accent-hover"
+                    className="relative z-10 mt-5 inline-flex items-center justify-center gap-2 rounded-xl bg-accent px-6 py-3.5 text-[15px] font-bold text-ink shadow-sm transition-all  hover:bg-accent-hover"
                   >
                     Bắt đầu làm bài <ArrowRight className="h-4 w-4" />
                   </Link>
@@ -189,9 +189,9 @@ export default function DashboardPage() {
             </div>
 
             {/* Bottom Section */}
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
               {/* Recent History */}
-              <div className="col-span-2 overflow-hidden rounded-xl border border-line bg-surface shadow-sm">
+              <div className="lg:col-span-2 min-w-0 overflow-hidden rounded-xl border border-line bg-surface shadow-sm">
                 <div className="flex items-center justify-between border-b border-line p-6">
                   <div>
                     <h3 className="text-lg font-bold text-ink">Lịch sử làm bài</h3>
@@ -211,7 +211,7 @@ export default function DashboardPage() {
                           </div>
                           <div>
                             <p className="line-clamp-1 font-bold text-ink group-hover:text-accent-ink transition-colors">{submission.topic}</p>
-                            <div className="mt-1 flex items-center gap-2 text-sm text-muted">
+                            <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted">
                               <span className="font-medium text-ink">{submission.writingType}</span>
                               <span>•</span>
                               <span>{formatDate(submission.submittedAt)}</span>
@@ -238,7 +238,7 @@ export default function DashboardPage() {
               </div>
 
               {/* PRO Banner */}
-              <div className="flex flex-col gap-6">
+              <div className="flex flex-col gap-4">
                 <div className="rounded-xl bg-surface-muted p-6 text-ink shadow-sm">
                   <div className="flex items-center gap-2 mb-3">
                     <Sparkles className="h-5 w-5 text-warning-ink" />

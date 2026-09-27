@@ -311,7 +311,7 @@ export default function GuidePage() {
   return (
     <AppShell activePath="/guide">
       {/* Sticky Header */}
-      <div className="sticky top-0 z-50 flex h-[72px] items-center justify-between border-b border-line bg-surface px-8">
+      <div className="sticky top-0 z-50 flex h-[72px] items-center justify-between border-b border-line bg-surface px-6">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent text-accent-ink">
             <GraduationCap className="h-5 w-5" strokeWidth={2.5} />
@@ -323,9 +323,9 @@ export default function GuidePage() {
         </div>
       </div>
 
-      <div className="flex min-h-[calc(100vh-72px)] bg-canvas">
+      <div className="guide-layout">
         {/* Left Sidebar Navigation */}
-        <div className="hidden w-80 flex-shrink-0 border-r border-line bg-surface p-6 lg:block">
+        <div className="guide-library">
           <h2 className="mb-4 px-2 text-[11px] font-bold uppercase tracking-widest text-muted">Library</h2>
           <div className="space-y-1">
             {types.map((t) => {
@@ -356,7 +356,7 @@ export default function GuidePage() {
             })}
           </div>
 
-          <div className="mt-8 rounded-xl border border-line bg-accent p-4">
+          <div className="guide-tip mt-4 rounded-xl border border-line bg-accent p-4">
             <div className="mb-2 flex items-center gap-2">
               <Zap className="h-4 w-4 text-accent-ink" />
               <p className="text-xs font-bold text-accent-ink">Pro Tip</p>
@@ -368,15 +368,15 @@ export default function GuidePage() {
         </div>
 
         {/* Main Content Area */}
-        <div className="flex-1 p-6 lg:p-12 max-w-5xl mx-auto w-full">
+        <div className="guide-content">
           {/* Content Header */}
-          <div className="mb-8 rounded-xl border border-line bg-surface p-8 shadow-sm">
-            <div className="mb-6 flex items-start gap-5">
+          <div className="rounded-xl border border-line bg-surface p-5 shadow-sm">
+            <div className="mb-4 flex items-start gap-4">
               <div className={`flex h-16 w-16 shrink-0 items-center justify-center rounded-xl  ${openType.gradient} shadow-sm`}>
                 {(() => { const Icon = openType.icon; return <Icon className="h-8 w-8 text-ink" />; })()}
               </div>
               <div>
-                <div className="mb-2 flex items-center gap-3">
+                <div className="mb-2 flex flex-wrap items-center gap-3">
                   <h2 className="text-2xl font-bold text-ink">{openType.label}</h2>
                   <span className={`rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-widest ${openType.pill}`}>
                     {openType.tag}
@@ -387,7 +387,7 @@ export default function GuidePage() {
             </div>
 
             {/* Criteria Grid */}
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 2xl:grid-cols-4">
               {openType.criteria.map((c) => (
                 <div key={c.label} className="rounded-xl border border-line bg-canvas p-4">
                   <div className={`mb-1 text-lg font-bold ${openType.accent}`}>{c.weight}</div>
@@ -399,7 +399,7 @@ export default function GuidePage() {
           </div>
 
           {/* Tabs */}
-          <div className="mb-6 flex gap-2 border-b border-line pb-px">
+          <div className="guide-tabs">
             {tabDefs.map(({ key, icon: TabIcon, label }) => {
               const isActive = activeTab === key;
               return (
@@ -420,12 +420,12 @@ export default function GuidePage() {
           </div>
 
           {/* Tab Content Panels */}
-          <div className="min-h-[400px]">
+          <div className="min-w-0">
             {/* Structure Tab */}
             {activeTab === "structure" && (
-              <div className="space-y-8">
-                <div className="rounded-xl border border-line bg-surface p-8 shadow-sm">
-                  <h3 className="mb-6 text-lg font-bold text-ink">Recommended Paragraph Structure</h3>
+              <div className="space-y-5">
+                <div className="rounded-xl border border-line bg-surface p-5 shadow-sm">
+                  <h3 className="mb-4 text-lg font-bold text-ink">Recommended Paragraph Structure</h3>
                   <div className="space-y-6">
                     {openType.structure.map((s, i) => (
                       <div key={i} className="flex gap-5">
@@ -435,8 +435,8 @@ export default function GuidePage() {
                           </div>
                           {i < openType.structure.length - 1 && <div className="w-px flex-1 bg-surface-muted min-h-[24px]" />}
                         </div>
-                        <div className="pb-4 pt-1 flex-1">
-                          <div className="mb-2 flex items-baseline gap-3">
+                        <div className="pt-1 min-w-0 flex-1">
+                          <div className="mb-2 flex flex-wrap items-baseline gap-x-3 gap-y-1">
                             <h4 className="text-[15px] font-bold text-ink">{s.step}</h4>
                             <p className="text-[13px] text-muted">{s.detail}</p>
                           </div>
@@ -452,8 +452,8 @@ export default function GuidePage() {
                   </div>
                 </div>
 
-                <div className="rounded-xl border border-line bg-surface p-8 shadow-sm">
-                  <h3 className="mb-6 text-lg font-bold text-ink">Scoring Requirements</h3>
+                <div className="rounded-xl border border-line bg-surface p-5 shadow-sm">
+                  <h3 className="mb-4 text-lg font-bold text-ink">Scoring Requirements</h3>
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                     {openType.bandTips.map((b) => (
                       <div key={b.band} className={`rounded-xl px-5 py-4 ${b.color}`}>
@@ -468,14 +468,14 @@ export default function GuidePage() {
 
             {/* Connectors Tab */}
             {activeTab === "connectors" && (
-              <div className="rounded-xl border border-line bg-surface p-8 shadow-sm">
+              <div className="rounded-xl border border-line bg-surface p-5 shadow-sm">
                 <div className="mb-6 flex items-center justify-between">
                   <div>
                     <h3 className="text-lg font-bold text-ink">Vocabulary & Connectors</h3>
                     <p className="mt-1 text-[13px] text-muted">Click any phrase to copy it to your clipboard.</p>
                   </div>
                 </div>
-                <div className="space-y-8">
+                <div className="space-y-5">
                   {openType.connectors.map((group) => (
                     <div key={group.label}>
                       <h4 className="mb-3 text-[11px] font-bold uppercase tracking-widest text-muted">
@@ -508,8 +508,8 @@ export default function GuidePage() {
 
             {/* Tips Tab */}
             {activeTab === "tips" && (
-              <div className="rounded-xl border border-line bg-surface p-8 shadow-sm">
-                <h3 className="mb-6 text-lg font-bold text-ink">Pro Tips for {openType.tag}</h3>
+              <div className="rounded-xl border border-line bg-surface p-5 shadow-sm">
+                <h3 className="mb-4 text-lg font-bold text-ink">Pro Tips for {openType.tag}</h3>
                 <div className="space-y-4">
                   {openType.tips.map((item, i) => (
                     <div key={i} className="flex gap-4 rounded-xl border border-line bg-canvas p-5 transition-all hover:border-line hover:shadow-sm">
@@ -530,8 +530,8 @@ export default function GuidePage() {
 
             {/* Mistakes Tab */}
             {activeTab === "mistakes" && (
-              <div className="rounded-xl border border-line bg-surface p-8 shadow-sm">
-                <h3 className="mb-6 text-lg font-bold text-ink">Common Mistakes to Avoid</h3>
+              <div className="rounded-xl border border-line bg-surface p-5 shadow-sm">
+                <h3 className="mb-4 text-lg font-bold text-ink">Common Mistakes to Avoid</h3>
                 <div className="space-y-6">
                   {openType.mistakes.map((item, i) => (
                     <div key={i} className="overflow-hidden rounded-xl border border-line shadow-sm">
