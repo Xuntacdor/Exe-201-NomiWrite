@@ -18,6 +18,9 @@ import {
   RotateCcw,
   Sparkles,
   SplitSquareHorizontal,
+  Check,
+  FolderPlus,
+  X,
 } from "lucide-react";
 import { apiClient, apiMode } from "@/lib/api/client";
 import { ApiRequestError } from "@/lib/api/real-client";
@@ -48,6 +51,17 @@ function ResultContent() {
   const [error, setError] = useState("");
   const [waitingForGrading, setWaitingForGrading] = useState(false);
   const [retryVersion, setRetryVersion] = useState(0);
+
+  // Vocab grouping state
+  const [isGrouping, setIsGrouping] = useState(false);
+  const [selectedVocabIds, setSelectedVocabIds] = useState<Set<string>>(new Set());
+  const [createGroupOpen, setCreateGroupOpen] = useState(false);
+  const [creatingGroup, setCreatingGroup] = useState(false);
+  const [vocabGroups, setVocabGroups] = useState<any[]>([]);
+  const [realVocabs, setRealVocabs] = useState<any[]>([]);
+  const [selectedExistingGroupId, setSelectedExistingGroupId] = useState("");
+  const [newGroupName, setNewGroupName] = useState("");
+  const [groupError, setGroupError] = useState("");
 
   useEffect(() => {
     if (apiMode === "real" && !getSession()?.accessToken) {
@@ -106,6 +120,18 @@ function ResultContent() {
       if (checkTimer) window.clearTimeout(checkTimer);
     };
   }, [router, submissionId, retryVersion]);
+
+  useEffect(() => {
+    if (!submissionId || !feedback?.submission?.id) return;
+    let ignore = false;
+    apiClient.listVocabGroups().then(groups => {
+      if (!ignore) setVocabGroups(groups);
+    }).catch(console.error);
+    apiClient.listVocabularyBySubmission(feedback.submission.id).then(vocabs => {
+      if (!ignore) setRealVocabs(vocabs);
+    }).catch(console.error);
+    return () => { ignore = true; };
+  }, [feedback?.submission?.id, submissionId]);
 
   useEffect(() => {
     if (apiMode === "real" && !getSession()?.accessToken) return;
@@ -207,6 +233,113 @@ function ResultContent() {
     }
   }
 
+  async function submitGroupSelection() {
+    setCreatingGroup(true);
+    try {
+      const selectedArr = Array.from(selectedVocabIds);
+      const realGuidsToGroup: string[] = [];
+      
+      for (const fakeId of selectedArr) {
+        const fakeVocab = feedback?.vocabSuggestions.find(v => v.id === fakeId);
+        if (fakeVocab) {
+          const realVocab = realVocabs.find(v => 
+            v.originalWord === fakeVocab.originalWord && 
+            v.suggestedWord.includes(fakeVocab.suggestedWord)
+          );
+          if (realVocab) {
+            realGuidsToGroup.push(realVocab.id);
+          }
+        }
+      }
+      
+      const uniqueRealGuids = Array.from(new Set(realGuidsToGroup));
+      if (uniqueRealGuids.length === 0 && selectedArr.length > 0) {
+        throw new Error("Could not find the vocabulary in your notebook. Please try again in a few seconds.");
+      }
+
+      if (selectedExistingGroupId) {
+        // Add to existing group
+        const group = vocabGroups.find(g => g.id === selectedExistingGroupId);
+        if (!group) throw new Error("Selected group not found");
+        
+        // Filter out ones already in the group
+        const newIds = uniqueRealGuids.filter(id => !group.vocabularyIds.includes(id));
+        if (newIds.length === 0) {
+          throw new Error("All selected words are already in this group.");
+        }
+        await apiClient.addVocabGroupItems(selectedExistingGroupId, { vocabularyIds: newIds });
+      } else if (newGroupName.trim()) {
+        // Create new group
+        await apiClient.createVocabGroup({
+          name: newGroupName.trim(),
+          vocabularyIds: uniqueRealGuids
+        });
+      } else {
+        throw new Error("Please select an existing group or enter a new group name.");
+      }
+
+      // Refresh groups
+      const updatedGroups = await apiClient.listVocabGroups();
+      setVocabGroups(updatedGroups);
+
+      setCreateGroupOpen(false);
+      setIsGrouping(false);
+      setSelectedVocabIds(new Set());
+      setNewGroupName("");
+      setSelectedExistingGroupId("");
+      setGroupError("");
+    } catch (err) {
+      console.error(err);
+      setGroupError(err instanceof Error ? err.message : "Failed to group vocabulary");
+    } finally {
+      setCreatingGroup(false);
+    }
+  }
+
+  function toggleVocabSelection(id: string) {
+    const next = new Set(selectedVocabIds);
+    if (next.has(id)) {
+      next.delete(id);
+    } else {
+      next.add(id);
+    }
+    setSelectedVocabIds(next);
+  }
+
+  function getGroupsForFakeId(fakeId: string) {
+    const fakeVocab = feedback?.vocabSuggestions.find(v => v.id === fakeId);
+    if (!fakeVocab) return [];
+    const realVocab = realVocabs.find(v => 
+      v.originalWord === fakeVocab.originalWord && 
+      v.suggestedWord.includes(fakeVocab.suggestedWord)
+    );
+    if (!realVocab) return [];
+    return vocabGroups.filter(g => g.vocabularyIds.includes(realVocab.id));
+  }
+
+  async function handleRemoveGroupItem(groupId: string, fakeId: string) {
+    try {
+      const realId = getGroupsForFakeId(fakeId)[0]?.vocabularyIds.find(id => realVocabs.find(rv => rv.id === id)?.originalWord === feedback?.vocabSuggestions.find(v => v.id === fakeId)?.originalWord);
+      // Wait, a better way to find the realId is:
+      const fakeVocab = feedback?.vocabSuggestions.find(v => v.id === fakeId);
+      const realVocab = realVocabs.find(v => v.originalWord === fakeVocab?.originalWord && v.suggestedWord.includes(fakeVocab?.suggestedWord ?? ""));
+      if (!realVocab) return;
+
+      await apiClient.removeVocabGroupItem(groupId, realVocab.id);
+      
+      // Update local state to reflect removal immediately
+      setVocabGroups(groups => groups.map(g => {
+        if (g.id === groupId) {
+          return { ...g, vocabularyIds: g.vocabularyIds.filter(id => id !== realVocab.id) };
+        }
+        return g;
+      }));
+    } catch (err) {
+      console.error(err);
+      alert(err instanceof Error ? err.message : "Failed to remove from group");
+    }
+  }
+
   return (
     <AppShell activePath="/write">
       <AppDialog
@@ -219,6 +352,48 @@ function ResultContent() {
         onCancel={() => setFlagDialogOpen(false)}
         onConfirm={value => submitFlag(value ?? "")}
       />
+      
+      <AppDialog
+        open={createGroupOpen}
+        title="Group Vocabulary"
+        description={`Select an existing group or create a new one for the ${selectedVocabIds.size} selected words.`}
+        confirmLabel={creatingGroup ? "Saving..." : "Save"}
+        onCancel={() => { setCreateGroupOpen(false); setNewGroupName(""); setSelectedExistingGroupId(""); setGroupError(""); }}
+        onConfirm={() => submitGroupSelection()}
+      >
+        <div className="space-y-4">
+          {groupError && (
+            <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-600">
+              {groupError}
+            </div>
+          )}
+          {vocabGroups.length > 0 && (
+            <div>
+              <label className="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-500">Add to existing group</label>
+              <select
+                value={selectedExistingGroupId}
+                onChange={e => { setSelectedExistingGroupId(e.target.value); setNewGroupName(""); setGroupError(""); }}
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-medium text-slate-800 focus:border-blue-400 focus:bg-white focus:outline-none"
+              >
+                <option value="">-- Select a group --</option>
+                {vocabGroups.map(g => (
+                  <option key={g.id} value={g.id}>{g.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
+          <div>
+            <label className="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-500">Or create new group</label>
+            <input
+              type="text"
+              value={newGroupName}
+              onChange={e => { setNewGroupName(e.target.value); setSelectedExistingGroupId(""); setGroupError(""); }}
+              placeholder="e.g., Academic words"
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-medium text-slate-800 placeholder:text-slate-400 focus:border-blue-400 focus:bg-white focus:outline-none"
+            />
+          </div>
+        </div>
+      </AppDialog>
       <div className="sticky top-0 z-10 flex h-14 items-center justify-between border-b border-slate-100 bg-white/90 px-6 backdrop-blur">
         <div className="flex items-center gap-2 text-sm">
           <Link href="/dashboard" className="text-slate-400 hover:text-slate-600">Dashboard</Link>
@@ -466,15 +641,78 @@ function ResultContent() {
                     <h3 className="text-sm font-extrabold text-slate-900">Vocabulary suggestions</h3>
                     <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-bold text-emerald-600">{feedback.vocabSuggestions.length}</span>
                   </div>
+                  {feedback.vocabSuggestions.length > 0 && (
+                    <div className="flex items-center gap-2">
+                      {isGrouping ? (
+                        <>
+                          <button
+                            onClick={() => { setIsGrouping(false); setSelectedVocabIds(new Set()); }}
+                            className="text-xs font-semibold text-slate-500 hover:text-slate-700"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            onClick={() => setCreateGroupOpen(true)}
+                            disabled={selectedVocabIds.size === 0}
+                            className="flex items-center gap-1 rounded-full bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-emerald-700 disabled:opacity-50"
+                          >
+                            <FolderPlus className="h-3 w-3" />
+                            Group ({selectedVocabIds.size})
+                          </button>
+                        </>
+                      ) : (
+                        <button
+                          onClick={() => setIsGrouping(true)}
+                          className="flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-200"
+                        >
+                          Select & Group
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
                 <div className="divide-y divide-slate-50">
-                  {feedback.vocabSuggestions.length ? feedback.vocabSuggestions.map(item => (
-                    <div key={item.id} className="p-5">
+                  {feedback.vocabSuggestions.length ? feedback.vocabSuggestions.map(item => {
+                    const existingGroups = getGroupsForFakeId(item.id);
+                    return (
+                    <div 
+                      key={item.id} 
+                      className={`relative p-5 transition-colors ${isGrouping ? 'cursor-pointer hover:bg-slate-50' : ''} ${selectedVocabIds.has(item.id) ? 'bg-emerald-50/50' : ''}`}
+                      onClick={() => {
+                        if (isGrouping) toggleVocabSelection(item.id);
+                      }}
+                    >
+                      {isGrouping && (
+                        <div className={`absolute right-5 top-5 flex h-5 w-5 items-center justify-center rounded-md border ${selectedVocabIds.has(item.id) ? 'border-emerald-600 bg-emerald-600 text-white' : 'border-slate-300'}`}>
+                          {selectedVocabIds.has(item.id) && <Check className="h-3.5 w-3.5" />}
+                        </div>
+                      )}
                       <p className="text-xs font-semibold text-slate-400">{item.originalWord}</p>
                       <p className="mt-1 text-sm font-extrabold text-emerald-700">{item.suggestedWord}</p>
-                      {item.exampleSentence && <p className="mt-2 text-xs leading-relaxed text-slate-500">{item.exampleSentence}</p>}
+                      {item.exampleSentence && <p className="mt-2 text-xs leading-relaxed text-slate-500 pr-8">{item.exampleSentence}</p>}
+                      {existingGroups.length > 0 && (
+                        <div className="mt-3 flex flex-wrap gap-1.5">
+                          {existingGroups.map(g => (
+                            <span key={g.id} className="inline-flex items-center gap-1 rounded bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-600 group/badge">
+                              <FolderPlus className="h-3 w-3" />
+                              {g.name}
+                              <button
+                                onClick={e => {
+                                  e.stopPropagation();
+                                  handleRemoveGroupItem(g.id, item.id);
+                                }}
+                                className="ml-1 rounded hover:bg-slate-200"
+                                title="Remove from group"
+                              >
+                                <X className="h-3 w-3 text-slate-400 hover:text-red-500 transition-colors" />
+                              </button>
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                  )) : (
+                    );
+                  }) : (
                     <p className="p-5 text-sm text-slate-500">No vocabulary suggestions were returned.</p>
                   )}
                 </div>
