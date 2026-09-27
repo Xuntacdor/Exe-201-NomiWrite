@@ -6,9 +6,10 @@ import AppSidebar from "./AppSidebar";
 interface AppShellProps {
   children: React.ReactNode;
   activePath?: string;
+  writingWorkspace?: boolean;
 }
 
-export default function AppShell({ children, activePath }: AppShellProps) {
+export default function AppShell({ children, activePath, writingWorkspace = false }: AppShellProps) {
   const shellRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -29,7 +30,7 @@ export default function AppShell({ children, activePath }: AppShellProps) {
   return (
     <div ref={shellRef} className="app-shell flex bg-canvas">
       <AppSidebar activePath={activePath} />
-      <main className={`app-main flex-1${activePath === "/write" ? " app-main--writing" : ""}`}>
+      <main className={`app-main flex-1${writingWorkspace ? " app-main--writing" : ""}`}>
         {children}
       </main>
     </div>

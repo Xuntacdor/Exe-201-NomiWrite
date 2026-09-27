@@ -219,3 +219,11 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--focus); }
   .guide-layout { gap: 1rem; }
   .guide-library > .space-y-1 { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* Share pricing rows so translated copy cannot offset the adjacent plan. */
+.pricing-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1.5rem; }
+.pricing-card { display: grid; grid-template-rows: auto auto auto auto 1fr; gap: 0.75rem; padding: 4rem 2rem 2rem; min-width: 0; }
+@media (min-width: 768px) {
+  .pricing-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: 0.75rem; }
+  .pricing-card { grid-row: span 5; grid-template-rows: subgrid; }
+}

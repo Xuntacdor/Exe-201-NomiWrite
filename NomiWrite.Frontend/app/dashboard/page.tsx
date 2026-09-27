@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import AppShell from "../components/AppShell";
+import WritingCalendar from "../components/WritingCalendar";
 import {
   ArrowRight,
   Bell,
@@ -239,6 +240,7 @@ export default function DashboardPage() {
 
               {/* PRO Banner */}
               <div className="flex flex-col gap-4">
+                <WritingCalendar submissions={submissions} />
                 <div className="rounded-xl bg-surface-muted p-6 text-ink shadow-sm">
                   <div className="flex items-center gap-2 mb-3">
                     <Sparkles className="h-5 w-5 text-warning-ink" />

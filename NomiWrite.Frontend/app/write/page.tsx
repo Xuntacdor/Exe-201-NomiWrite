@@ -252,7 +252,7 @@ function WriteContent() {
   }
 
   return (
-    <AppShell activePath="/write">
+    <AppShell activePath="/write" writingWorkspace>
       {/* Sticky Header */}
       <div className="write-heading sticky top-0 z-20 flex min-h-[72px] items-center justify-between border-b border-line bg-surface px-6">
         <div className="flex items-center gap-3">

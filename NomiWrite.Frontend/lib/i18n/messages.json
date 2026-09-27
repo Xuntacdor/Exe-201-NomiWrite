@@ -8334,5 +8334,33 @@
   "Work": {
     "en": "Work",
     "vi": "Công việc"
+  },
+  "Writing activity": {
+    "en": "Writing activity",
+    "vi": "Lịch luyện viết"
+  },
+  "Previous month": {
+    "en": "Previous month",
+    "vi": "Tháng trước"
+  },
+  "Next month": {
+    "en": "Next month",
+    "vi": "Tháng sau"
+  },
+  "{count} essays": {
+    "en": "{count} essays",
+    "vi": "{count} bài viết"
+  },
+  "{days} active days · {count} essays this month": {
+    "en": "{days} active days · {count} essays this month",
+    "vi": "{days} ngày luyện tập · {count} bài trong tháng"
+  },
+  "Submitted essays only, shown in your local time.": {
+    "en": "Submitted essays only, shown in your local time.",
+    "vi": "Chỉ tính bài đã nộp, theo giờ địa phương của bạn."
+  },
+  "Your 5 free essays for this month have been used. Try again next month or upgrade to Premium.": {
+    "en": "Your 5 free essays for this month have been used. Try again next month or upgrade to Premium.",
+    "vi": "Bạn đã dùng hết 5 bài miễn phí trong tháng này. Hãy quay lại vào tháng sau hoặc nâng cấp gói."
   }
 }

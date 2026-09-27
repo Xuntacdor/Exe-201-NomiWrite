@@ -108,7 +108,7 @@ export default function VocabularyPage() {
 
         {error && <p className="rounded-xl border border-line bg-danger p-4 text-sm font-semibold text-danger-ink">{errorText(error)}</p>}
 
-        {!loading && !selectedGroup && filteredGroups.length === 0 && (
+        {!loading && !error && !selectedGroup && filteredGroups.length === 0 && (
           <div className="rounded-2xl border border-line bg-surface p-8 text-center shadow-sm">
             <Layers className="mx-auto mb-3 h-8 w-8 text-muted" />
             <p className="text-sm font-bold text-ink">No vocabulary groups found</p>
@@ -116,7 +116,7 @@ export default function VocabularyPage() {
           </div>
         )}
 
-        {!loading && !selectedGroup && (
+        {!loading && !error && !selectedGroup && (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {filteredGroups.map(group => (
               <button
@@ -141,14 +141,14 @@ export default function VocabularyPage() {
           </div>
         )}
 
-        {!loading && selectedGroup && activeWords.length === 0 && (
+        {!loading && !error && selectedGroup && activeWords.length === 0 && (
           <div className="rounded-2xl border border-line bg-surface p-8 text-center shadow-sm">
             <BookOpen className="mx-auto mb-3 h-8 w-8 text-muted" />
             <p className="text-sm font-bold text-ink">No words in this group</p>
           </div>
         )}
 
-        {!loading && selectedGroup && activeWords.length > 0 && (
+        {!loading && !error && selectedGroup && activeWords.length > 0 && (
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {activeWords.map(word => (
               <div key={word.id} className={`rounded-2xl border p-5 shadow-sm ${word.isMastered ? "border-line bg-success" : "border-line bg-surface"}`}>

@@ -30,7 +30,7 @@ const proFeatures = [
 ];
 
 export default function Pricing() {
-  const { t: translateUi } = useLocale();
+  const { t: translateUi, locale } = useLocale();
   return (
     <section id="pricing" className="py-20 sm:py-28 bg-canvas">
       <div className="max-w-5xl mx-auto px-4 sm:px-6">
@@ -38,23 +38,23 @@ export default function Pricing() {
         <div className="text-center mb-16">
           <span className="inline-block px-3 py-1 text-xs font-bold text-accent-ink bg-accent rounded-full uppercase tracking-widest mb-4">
             {translateUi("Bảng giá")}</span>
-          <h2 className="text-4xl sm:text-5xl font-bold text-ink leading-tight">
+          <h2 className="text-4xl sm:whitespace-nowrap text-4xl lg:text-5xl font-bold text-ink leading-tight">
             {translateUi("Đơn giản và minh bạch")}</h2>
           <p className="mt-5 text-lg text-muted max-w-xl mx-auto">
             {translateUi("Bắt đầu miễn phí. Nâng cấp khi bạn thấy giá trị và muốn học không giới hạn.")}</p>
         </div>
 
         {/* Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
+        <div className="pricing-grid max-w-3xl mx-auto">
 
           {/* Free card */}
-          <div className="rounded-xl border-2 border-line bg-surface p-8 flex flex-col">
-            <div className="mb-7">
-              <p className="text-xs font-bold text-muted uppercase tracking-widest mb-3">
+          <div className="pricing-card rounded-xl border-2 border-line bg-surface">
+            <div className="contents">
+              <p className="text-xs font-bold text-muted uppercase tracking-widest">
                 {translateUi("Miễn phí")}</p>
-              <div className="flex items-end gap-1 mb-3">
-                <span className="text-5xl font-bold text-ink">{translateUi("0đ")}</span>
-                <span className="text-sm text-muted mb-1.5">{translateUi("mãi mãi")}</span>
+              <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                <span className="whitespace-nowrap text-4xl lg:text-5xl font-bold text-ink">{translateUi("0đ")}</span>
+                <span className="whitespace-nowrap text-sm text-muted">{translateUi("mãi mãi")}</span>
               </div>
               <p className="text-sm text-muted leading-relaxed">
                 {translateUi("Đủ để trải nghiệm vòng lặp học tập và thấy giá trị thật.")}</p>
@@ -62,7 +62,7 @@ export default function Pricing() {
 
             <a
               href="/register"
-              className="block w-full py-3.5 text-sm font-bold text-center text-accent-ink bg-surface border-2 border-focus rounded-full hover:bg-accent-hover transition-colors mb-7"
+              className="block w-full py-3.5 text-sm font-bold text-center text-accent-ink bg-surface border-2 border-focus rounded-full hover:bg-accent-hover transition-colors my-3"
             >
               {translateUi("Bắt đầu ngay")}</a>
 
@@ -87,25 +87,21 @@ export default function Pricing() {
           </div>
 
           {/* Premium card */}
-          <div className="relative rounded-xl overflow-hidden flex flex-col">
-            {/* Gradient background */}
-            <div className="absolute inset-0 bg-accent" />
-            <div className="absolute inset-0 bg-surface-muted" />
-
+          <div className="pricing-card relative rounded-xl border-2 border-transparent bg-surface-muted">
             {/* Badge */}
-            <div className="relative flex justify-center pt-4">
+            <div className="absolute inset-x-0 top-3 flex justify-center">
               <div className="inline-flex items-center gap-1.5 px-4 py-1 bg-warning text-warning-ink text-xs font-bold rounded-full shadow-sm">
                 <Zap className="w-3 h-3 fill-warning-ink" />
                 {translateUi("Phổ biến nhất")}</div>
             </div>
 
-            <div className="relative p-8 flex flex-col flex-1">
-              <div className="mb-7">
-                <p className="text-xs font-bold text-accent-ink uppercase tracking-widest mb-3">
+            <div className="contents">
+              <div className="contents">
+                <p className="text-xs font-bold text-accent-ink uppercase tracking-widest">
                   {translateUi("Premium")}</p>
-                <div className="flex items-end gap-1 mb-3">
-                  <span className="text-5xl font-bold text-ink">{translateUi("199K")}</span>
-                  <span className="text-sm text-accent-ink mb-1.5">{translateUi("/ tháng")}</span>
+                <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                  <span className="whitespace-nowrap text-4xl lg:text-5xl font-bold text-ink">{new Intl.NumberFormat(locale, { style: "currency", currency: "VND", maximumFractionDigits: 0 }).format(199000)}</span>
+                  <span className="whitespace-nowrap text-sm text-accent-ink">{translateUi("/ tháng")}</span>
                 </div>
                 <p className="text-sm text-accent-ink leading-relaxed">
                   {translateUi("Cho người học nghiêm túc muốn thấy tiến bộ rõ ràng trước ngày thi.")}</p>
@@ -113,7 +109,7 @@ export default function Pricing() {
 
               <a
                 href="/upgrade"
-                className="block w-full py-3.5 text-sm font-bold text-center text-accent-ink bg-surface rounded-full hover:bg-accent-hover transition-colors mb-7 shadow-sm"
+                className="block w-full py-3.5 text-sm font-bold text-center text-accent-ink bg-surface border-2 border-transparent rounded-full hover:bg-accent-hover transition-colors my-3 shadow-sm"
               >
                 {translateUi("Dùng Premium")}</a>
 
