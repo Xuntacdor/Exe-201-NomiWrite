@@ -308,6 +308,26 @@ export const mockClient: ApiClient = {
     return { ...word, isMastered: request.isMastered };
   },
 
+  async createVocabGroup(request) {
+    await delay();
+    return {
+      id: `group_${Date.now()}`,
+      name: request.name,
+      createdAt: new Date().toISOString(),
+      wordCount: request.vocabularyIds?.length ?? 0,
+      vocabularyIds: request.vocabularyIds ?? []
+    };
+  },
+
+  async listVocabGroups() {
+    await delay();
+    return [];
+  },
+
+  async addVocabGroupItems() {
+    await delay();
+  },
+
   async generateQuiz() {
     await delay();
     return mockQuiz;
