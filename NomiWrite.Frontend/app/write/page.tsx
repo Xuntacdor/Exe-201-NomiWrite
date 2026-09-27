@@ -1,5 +1,8 @@
 "use client";
 
+import { useLocale } from "@/lib/i18n/locale";
+
+
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import AppShell from "../components/AppShell";
@@ -53,6 +56,7 @@ function buildScaffold(input: { prompt: string; hints: string[]; vocab: string }
 }
 
 function WriteContent() {
+  const { t: translateUi, errorText } = useLocale();
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialType = searchParams.get("type");
@@ -68,6 +72,7 @@ function WriteContent() {
   const [selectedTypeId, setSelectedTypeId] = useState(initialType ?? "");
   const [selectedPromptId, setSelectedPromptId] = useState("");
   const [content, setContent] = useState("");
+  const [loadedDraftKey, setLoadedDraftKey] = useState<string | null>(null);
   const [sampleAnswer, setSampleAnswer] = useState<string | null>(null);
   const [timerOn, setTimerOn] = useState(false);
   const [loadingTypes, setLoadingTypes] = useState(true);
@@ -206,6 +211,8 @@ function WriteContent() {
         }
       } catch {
         setContent("");
+      } finally {
+        setLoadedDraftKey(draftKey);
       }
     }, 0);
 
@@ -213,10 +220,11 @@ function WriteContent() {
   }, [draftKey, hasCustomTopic, customPrompt, customHints, customVocab]);
 
   useEffect(() => {
+    if (loadedDraftKey !== draftKey) return;
     try {
       localStorage.setItem(draftKey, content);
     } catch {}
-  }, [content, draftKey]);
+  }, [content, draftKey, loadedDraftKey]);
 
   async function handleSubmit() {
     if (!currentPrompt || !content.trim()) return;
@@ -252,8 +260,8 @@ function WriteContent() {
             <PenLine className="h-5 w-5" strokeWidth={2.5} />
           </div>
           <div>
-            <h1 className="text-lg font-bold text-ink">IELTS Writing Practice</h1>
-            <p className="text-xs font-semibold text-muted">Computer-delivered format</p>
+            <h1 className="text-lg font-bold text-ink">{translateUi("IELTS Writing Practice")}</h1>
+            <p className="text-xs font-semibold text-muted">{translateUi("Computer-delivered format")}</p>
           </div>
         </div>
         <div className="flex items-center gap-4">
@@ -265,7 +273,7 @@ function WriteContent() {
             }`}
           >
             <Clock className="h-4 w-4" />
-            {timerOn ? "Timed Mode" : "Untimed"}
+            {translateUi(timerOn ? "Timed Mode" : "Untimed")}
           </button>
           <button
             type="button"
@@ -274,8 +282,7 @@ function WriteContent() {
             className="flex items-center gap-2 rounded-xl bg-accent px-6 py-2 text-sm font-bold text-ink shadow-sm transition-all hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
           >
             {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-            Submit for Grading
-          </button>
+            {translateUi("Submit for Grading")}</button>
         </div>
       </div>
 
@@ -288,7 +295,7 @@ function WriteContent() {
           <div className="rounded-xl border border-line bg-surface p-5">
             <div className="write-controls grid grid-cols-2 gap-4">
               <div>
-                <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-muted">Writing Task</label>
+                <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-muted">{translateUi("Writing Task")}</label>
                 <div className="relative">
                   <select
                     value={selectedTypeId}
@@ -300,20 +307,19 @@ function WriteContent() {
                     className="w-full cursor-pointer appearance-none rounded-xl border border-line bg-canvas px-4 py-3 pr-10 text-[15px] font-semibold text-ink outline-none transition-all focus:border-focus focus:bg-surface focus:ring-4 focus:ring-focus disabled:opacity-50"
                   >
                     {types.map(type => (
-                      <option key={type.id} value={type.id}>{type.label}</option>
+                      <option key={type.id} value={type.id}>{translateUi(type.label)}</option>
                     ))}
                   </select>
                   <ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
                 </div>
               </div>
               <div>
-                <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-muted">Select Prompt</label>
+                <label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-muted">{translateUi("Select Prompt")}</label>
                 <div className="relative">
                   {loadingPrompts ? (
                     <div className="flex w-full items-center gap-2 rounded-xl border border-line bg-canvas px-4 py-3 text-[15px] font-semibold text-muted">
                       <Loader2 className="h-4 w-4 animate-spin" />
-                      Loading...
-                    </div>
+                      {translateUi("Loading...")}</div>
                   ) : prompts.length ? (
                     <select
                       value={selectedPromptId}
@@ -326,8 +332,7 @@ function WriteContent() {
                     </select>
                   ) : (
                     <div className="flex w-full items-center rounded-xl border border-line bg-warning px-4 py-3 text-[15px] font-semibold text-warning-ink">
-                      No prompts available
-                    </div>
+                      {translateUi("No prompts available")}</div>
                   )}
                   <ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
                 </div>
@@ -337,24 +342,24 @@ function WriteContent() {
             {error && (
               <div className="mt-4 flex items-center gap-2 rounded-lg bg-danger p-3 text-sm font-semibold text-danger-ink">
                 <AlertCircle className="h-4 w-4" />
-                {error}
+                {errorText(error)}
               </div>
             )}
           </div>
 
           {/* Prompt Area */}
-          <div className="min-w-0">
+          <div className="write-prompt-body min-w-0">
             {hasCustomTopic && (
               <div className="mb-6 overflow-hidden rounded-xl border border-line bg-accent shadow-sm">
                 <div className="flex items-center gap-2 border-b border-line px-6 py-3.5">
                   <Lightbulb className="h-4 w-4 text-accent-ink" />
-                  <p className="text-sm font-bold text-ink">{customTitle || "Topic from your Study Plan"}</p>
+                  <p className="text-sm font-bold text-ink">{customTitle || translateUi("Topic from your Study Plan")}</p>
                 </div>
                 <div className="p-6">
                   <p className="text-[15px] font-medium leading-relaxed text-ink">{customPrompt}</p>
                   {customHints.length > 0 && (
                     <div className="mt-4">
-                      <p className="text-xs font-bold uppercase tracking-wide text-accent-ink">Ideas to develop</p>
+                      <p className="text-xs font-bold uppercase tracking-wide text-accent-ink">{translateUi("Ideas to develop")}</p>
                       <ul className="mt-2 space-y-1.5">
                         {customHints.map((hint, index) => (
                           <li key={index} className="flex items-start gap-2 text-sm leading-relaxed text-muted">
@@ -375,18 +380,17 @@ function WriteContent() {
                     </div>
                   )}
                   <p className="mt-4 text-xs font-semibold text-muted">
-                    Choose a writing task above to submit for grading — or keep this topic as your reference while you type.
-                  </p>
+                    {translateUi("Choose a writing task above to submit for grading — or keep this topic as your reference while you type.")}</p>
                 </div>
               </div>
             )}
             {currentPrompt ? (
-              <div className="rounded-xl border border-line bg-surface p-5 shadow-sm">
+              <div className="write-prompt-card rounded-xl border border-line bg-surface p-5 shadow-sm">
                 <div className="mb-4 flex items-center gap-3">
                   <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-surface-muted text-muted">
                     <AlignLeft className="h-4 w-4" />
                   </div>
-                  <h2 className="text-lg font-bold text-ink">Topic: {currentPrompt.topic}</h2>
+                  <h2 className="text-lg font-bold text-ink">{translateUi("Topic: ")}{currentPrompt.topic}</h2>
                 </div>
                 <div className="prose prose-slate max-w-none text-[15px] leading-relaxed text-ink">
                   {currentPrompt.prompt.split('\n').map((paragraph, idx) => (
@@ -397,7 +401,7 @@ function WriteContent() {
             ) : (
               <div className="flex h-full flex-col items-center justify-center text-muted">
                 <BookOpen className="mb-4 h-12 w-12 opacity-20" />
-                <p className="font-semibold text-muted">Select a prompt to start practicing</p>
+                <p className="font-semibold text-muted">{translateUi("Select a prompt to start practicing")}</p>
               </div>
             )}
 
@@ -407,8 +411,7 @@ function WriteContent() {
                   <summary className="flex cursor-pointer items-center justify-between p-6 font-bold text-accent-ink outline-none transition-colors hover:bg-accent-hover">
                     <div className="flex items-center gap-2">
                       <Sparkles className="h-5 w-5 text-accent-ink" />
-                      Show Sample Answer
-                    </div>
+                      {translateUi("Show Sample Answer")}</div>
                     <ChevronDown className="h-5 w-5 text-accent-ink transition-transform group-open:rotate-180" />
                   </summary>
                   <div className="border-t border-line bg-surface p-6">
@@ -426,10 +429,12 @@ function WriteContent() {
 
         {/* Right Column: Writing Area */}
         <div className="write-editor">
-          <label htmlFor="writing-content" className="write-editor-label">Bài viết của bạn</label>
+          <label htmlFor="writing-content" className="write-editor-label">{translateUi("Bài viết của bạn")}</label>
           <div className="write-editor-body">
             <textarea
+              lang="en"
               id="writing-content"
+              readOnly={loadedDraftKey !== draftKey}
               value={content}
               onChange={event => setContent(event.target.value)}
               placeholder={"Type your essay here...\n\nRemember to:\n- Read the prompt carefully\n- Plan your paragraphs\n- Check for grammar and vocabulary\n- Reach the minimum word count"}
@@ -440,7 +445,7 @@ function WriteContent() {
 
           {error && (
             <p className="rounded-xl border border-line bg-danger px-4 py-3 text-sm font-semibold text-danger-ink">
-              {error}
+              {errorText(error)}
             </p>
           )}
 
@@ -451,16 +456,16 @@ function WriteContent() {
                 <span className={`text-2xl font-bold ${wordCount >= minimumWords ? "text-success-ink" : "text-ink"}`}>
                   {wordCount}
                 </span>
-                <span className="ml-1.5 text-xs font-bold uppercase tracking-wide text-muted">Words</span>
+                <span className="ml-1.5 text-xs font-bold uppercase tracking-wide text-muted">{translateUi("Words")}</span>
               </div>
               <div className="h-8 w-px bg-surface-muted"></div>
               <div>
                 <p className={`text-[13px] font-semibold ${shortContent ? "text-warning-ink" : "text-muted"}`}>
                   {wordCount === 0
-                    ? "Start writing to track progress"
+                    ? translateUi("Start writing to track progress")
                     : shortContent
-                      ? `${minimumWords - wordCount} more words to reach target (${minimumWords})`
-                      : `Target of ${minimumWords} words reached!`}
+                      ? translateUi("{remaining} more words to reach target ({target})", { remaining: minimumWords - wordCount, target: minimumWords })
+                      : translateUi("Target of {target} words reached!", { target: minimumWords })}
                 </p>
                 <div className="mt-1.5 h-1.5 w-48 overflow-hidden rounded-full bg-surface-muted">
                   <div
@@ -473,8 +478,7 @@ function WriteContent() {
             {apiMode === "mock" && (
               <div className="flex items-center gap-1.5 rounded-lg bg-warning px-2.5 py-1 text-[11px] font-bold text-warning-ink">
                 <AlertCircle className="h-3 w-3" />
-                MOCK MODE
-              </div>
+                {translateUi("MOCK MODE")}</div>
             )}
           </div>
         </div>

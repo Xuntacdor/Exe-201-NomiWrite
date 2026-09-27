@@ -1,3 +1,6 @@
+"use client";
+
+import { useLocale } from "@/lib/i18n/locale";
 import {
   PenLine,
   Bot,
@@ -73,21 +76,18 @@ const steps = [
 ];
 
 export default function HowItWorks() {
+  const { t: translateUi } = useLocale();
   return (
     <section id="how-it-works" className="py-20 sm:py-28 bg-canvas">
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
         {/* Header */}
         <div className="text-center mb-16">
           <span className="inline-block px-3 py-1 text-xs font-bold text-accent-ink bg-accent rounded-full uppercase tracking-widest mb-4">
-            Cách hoạt động
-          </span>
+            {translateUi("Cách hoạt động")}</span>
           <h2 className="text-4xl sm:text-5xl font-bold text-ink leading-tight">
-            Vòng lặp học tập khép kín
-          </h2>
+            {translateUi("Vòng lặp học tập khép kín")}</h2>
           <p className="mt-5 text-lg text-muted max-w-xl mx-auto">
-            6 bước biến mỗi bài viết thành một buổi học cá nhân hóa —
-            từ chấm điểm đến đo tiến bộ thật.
-          </p>
+            {translateUi("6 bước biến mỗi bài viết thành một buổi học cá nhân hóa — từ chấm điểm đến đo tiến bộ thật.")}</p>
         </div>
 
         {/* Steps grid */}
@@ -100,7 +100,7 @@ export default function HowItWorks() {
                 <div className={`bg-surface rounded-xl border ${step.border} p-6 card-hover h-full flex flex-col shadow-sm`}>
                   {/* Step number watermark */}
                   <span className={`absolute top-4 right-5 text-5xl font-black ${step.num} select-none`}>
-                    {step.number}
+                    {translateUi(step.number)}
                   </span>
 
                   {/* Icon */}
@@ -109,10 +109,10 @@ export default function HowItWorks() {
                   </div>
 
                   <h3 className="text-base font-bold text-ink mb-2">
-                    {step.title}
+                    {translateUi(step.title)}
                   </h3>
                   <p className="text-sm text-muted leading-relaxed flex-1">
-                    {step.description}
+                    {translateUi(step.description)}
                   </p>
 
                   {/* Connector arrow on lg screens */}
@@ -131,7 +131,7 @@ export default function HowItWorks() {
         <div className="mt-10 flex justify-center">
           <div className="inline-flex items-center gap-3 px-6 py-3 bg-surface border border-line rounded-full text-sm font-semibold text-accent-ink shadow-sm">
             <RefreshCw className="w-4 h-4 text-accent-ink animate-spin-slow" />
-            <span>Bài viết tiếp theo lại bắt đầu vòng lặp — bạn tiến bộ hơn mỗi lần</span>
+            <span>{translateUi("Bài viết tiếp theo lại bắt đầu vòng lặp — bạn tiến bộ hơn mỗi lần")}</span>
           </div>
         </div>
       </div>

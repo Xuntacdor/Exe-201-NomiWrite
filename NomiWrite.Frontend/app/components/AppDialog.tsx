@@ -1,5 +1,8 @@
 "use client";
 
+import { useLocale } from "@/lib/i18n/locale";
+
+
 import { FormEvent, ReactNode, useEffect, useState } from "react";
 import { AlertTriangle, X } from "lucide-react";
 
@@ -32,6 +35,7 @@ export default function AppDialog({
   onCancel,
   onConfirm,
 }: AppDialogProps) {
+  const { t: translateUi } = useLocale();
   const [value, setValue] = useState(initialValue);
 
   useEffect(() => {
@@ -60,14 +64,14 @@ export default function AppDialog({
             <AlertTriangle className="h-5 w-5" />
           </div>
           <div className="min-w-0 flex-1">
-            <h2 className="text-base font-bold text-ink">{title}</h2>
-            {description && <p className="mt-1 text-sm leading-relaxed text-muted">{description}</p>}
+            <h2 className="text-base font-bold text-ink">{translateUi(title)}</h2>
+            {description && <p className="mt-1 text-sm leading-relaxed text-muted">{translateUi(description)}</p>}
           </div>
           <button
             type="button"
             onClick={onCancel}
             className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface-muted hover:text-ink"
-            aria-label="Close dialog"
+            aria-label={translateUi("Close dialog")}
           >
             <X className="h-4 w-4" />
           </button>
@@ -77,11 +81,11 @@ export default function AppDialog({
           {children}
           {promptLabel && (
             <label className="block text-xs font-bold uppercase tracking-wider text-muted">
-              {promptLabel}
+              {translateUi(promptLabel)}
               <textarea
                 value={value}
                 onChange={event => setValue(event.target.value)}
-                placeholder={promptPlaceholder}
+                placeholder={translateUi(promptPlaceholder)}
                 className="mt-2 min-h-28 w-full resize-none rounded-xl border border-line bg-canvas px-3 py-2.5 text-sm font-medium normal-case tracking-normal text-ink placeholder:text-muted focus:border-focus focus:bg-surface focus:outline-none"
                 autoFocus
               />
@@ -95,7 +99,7 @@ export default function AppDialog({
             onClick={onCancel}
             className="rounded-xl border border-line bg-surface px-4 py-2.5 text-sm font-bold text-muted transition-colors hover:bg-surface-muted"
           >
-            {cancelLabel}
+            {translateUi(cancelLabel)}
           </button>
           <button
             type="submit"
@@ -103,7 +107,7 @@ export default function AppDialog({
               danger ? "bg-danger hover:bg-danger" : "bg-accent hover:bg-accent-hover"
             }`}
           >
-            {confirmLabel}
+            {translateUi(confirmLabel)}
           </button>
         </div>
       </form>

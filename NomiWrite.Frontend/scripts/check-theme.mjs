@@ -24,6 +24,7 @@ function environment({ system = false, saved = null, blocked = false } = {}) {
   const state = { document, window, localStorage, Event: class { constructor(type) { this.type = type; } }, exports: {} };
   let cleanup;
   state.require = name => {
+    if (name === '@/lib/i18n/locale') return { useLocale: () => ({ t: value => value }) };
     if (name === 'react') return { useSyncExternalStore(subscribe, snapshot) { cleanup?.(); cleanup = subscribe(() => {}); return snapshot(); } };
     if (name === 'lucide-react') return { Sun: 'sun', Moon: 'moon' };
     if (name === 'react/jsx-runtime') return { jsx: (tag, props) => ({ tag, props }), jsxs: (tag, props) => ({ tag, props }) };

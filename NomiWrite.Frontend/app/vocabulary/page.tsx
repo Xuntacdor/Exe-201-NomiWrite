@@ -1,5 +1,8 @@
 "use client";
 
+import { useLocale } from "@/lib/i18n/locale";
+
+
 import { useEffect, useMemo, useState } from "react";
 import AppShell from "../components/AppShell";
 import { apiClient } from "@/lib/api/client";
@@ -7,6 +10,7 @@ import type { VocabSuggestion } from "@/lib/types";
 import { BookOpen, CheckCircle2, Circle, Loader2, Search } from "lucide-react";
 
 export default function VocabularyPage() {
+  const { t: translateUi, errorText } = useLocale();
   const [words, setWords] = useState<VocabSuggestion[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
@@ -59,12 +63,11 @@ export default function VocabularyPage() {
       <div className="sticky top-0 z-10 flex h-14 items-center justify-between border-b border-line bg-surface px-6">
         <div className="flex items-center gap-2">
           <BookOpen className="h-4 w-4 text-success-ink" />
-          <h1 className="text-sm font-bold text-ink">Vocabulary</h1>
+          <h1 className="text-sm font-bold text-ink">{translateUi("Vocabulary")}</h1>
         </div>
         <div className="flex items-center gap-1.5 text-xs font-semibold text-muted">
           <CheckCircle2 className="h-3.5 w-3.5 text-success-ink" />
-          {masteredCount}/{words.length} mastered
-        </div>
+          {masteredCount}/{words.length} {translateUi(" mastered")}</div>
       </div>
 
       <div className="w-full space-y-5 p-6">
@@ -76,7 +79,7 @@ export default function VocabularyPage() {
           ].map(item => (
             <div key={item.label} className="rounded-xl border border-line bg-surface p-4 text-center shadow-sm">
               <p className={`text-2xl font-bold ${item.color}`}>{item.value}</p>
-              <p className="mt-0.5 text-xs text-muted">{item.label}</p>
+              <p className="mt-0.5 text-xs text-muted">{translateUi(item.label)}</p>
             </div>
           ))}
         </div>
@@ -86,7 +89,7 @@ export default function VocabularyPage() {
           <input
             value={search}
             onChange={event => setSearch(event.target.value)}
-            placeholder="Search original word, suggestion, or topic"
+            placeholder={translateUi("Search original word, suggestion, or topic")}
             className="w-full rounded-xl border border-line bg-surface py-2.5 pl-10 pr-4 text-sm text-ink placeholder:text-muted focus:border-focus focus:outline-none"
           />
         </div>
@@ -94,17 +97,16 @@ export default function VocabularyPage() {
         {loading && (
           <div className="flex items-center justify-center gap-2 rounded-xl border border-line bg-surface p-8 text-sm font-semibold text-muted shadow-sm">
             <Loader2 className="h-4 w-4 animate-spin" />
-            Loading vocabulary
-          </div>
+            {translateUi("Loading vocabulary")}</div>
         )}
 
-        {error && <p className="rounded-xl border border-line bg-danger p-4 text-sm font-semibold text-danger-ink">{error}</p>}
+        {error && <p className="rounded-xl border border-line bg-danger p-4 text-sm font-semibold text-danger-ink">{errorText(error)}</p>}
 
         {!loading && filtered.length === 0 && (
           <div className="rounded-xl border border-line bg-surface p-8 text-center shadow-sm">
             <BookOpen className="mx-auto mb-3 h-8 w-8 text-muted" />
-            <p className="text-sm font-bold text-ink">No vocabulary found</p>
-            <p className="mt-1 text-xs text-muted">Suggestions appear after grading returns vocabulary feedback.</p>
+            <p className="text-sm font-bold text-ink">{translateUi("No vocabulary found")}</p>
+            <p className="mt-1 text-xs text-muted">{translateUi("Suggestions appear after grading returns vocabulary feedback.")}</p>
           </div>
         )}
 
@@ -113,7 +115,7 @@ export default function VocabularyPage() {
             <div key={word.id} className={`rounded-xl border p-5 shadow-sm ${word.isMastered ? "border-line bg-success" : "border-line bg-surface"}`}>
               <div className="mb-3 flex items-center gap-2">
                 <span className="text-sm font-medium text-muted line-through">{word.originalWord}</span>
-                <span className="text-muted">-&gt;</span>
+                <span className="text-muted">{translateUi("->")}</span>
                 <span className="text-base font-bold text-ink">{word.suggestedWord}</span>
               </div>
               <p className="mb-4 text-xs leading-relaxed text-muted">{word.exampleSentence}</p>
@@ -123,7 +125,7 @@ export default function VocabularyPage() {
                 className={`flex items-center gap-2 text-xs font-bold ${word.isMastered ? "text-success-ink" : "text-accent-ink"}`}
               >
                 {word.isMastered ? <CheckCircle2 className="h-4 w-4" /> : <Circle className="h-4 w-4" />}
-                {word.isMastered ? "Mastered" : "Mark as mastered"}
+                {translateUi(word.isMastered ? "Mastered" : "Mark as mastered")}
               </button>
             </div>
           ))}

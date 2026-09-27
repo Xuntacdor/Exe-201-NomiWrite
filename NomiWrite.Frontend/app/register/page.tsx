@@ -1,5 +1,8 @@
 "use client";
 
+import { useLocale } from "@/lib/i18n/locale";
+
+
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
@@ -9,6 +12,7 @@ import { levelOptions, writingGoalOptions } from "@/lib/constants/profile-option
 import GoogleSignInButton from "../components/GoogleSignInButton";
 
 export default function RegisterPage() {
+  const { t: translateUi, errorText } = useLocale();
   const router = useRouter();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -63,11 +67,10 @@ export default function RegisterPage() {
             <div className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center shadow-sm">
               <PenLine className="w-5 h-5 text-ink" strokeWidth={2.5} />
             </div>
-            <span className="text-xl font-bold text-ink">NomiWrite</span>
+            <span className="text-xl font-bold text-ink">{translateUi("NomiWrite")}</span>
           </Link>
           <p className="mt-3 text-sm font-medium text-muted">
-            Create your writing practice account
-          </p>
+            {translateUi("Create your writing practice account")}</p>
         </div>
 
         <div className="bg-surface border border-line rounded-xl p-8 shadow-sm">
@@ -75,55 +78,55 @@ export default function RegisterPage() {
 
           <div className="flex items-center gap-3 mb-6">
             <div className="flex-1 h-px bg-surface-muted" />
-            <span className="text-xs text-muted font-semibold uppercase tracking-wider">or enter details</span>
+            <span className="text-xs text-muted font-semibold uppercase tracking-wider">{translateUi("or enter details")}</span>
             <div className="flex-1 h-px bg-surface-muted" />
           </div>
 
           <form className="space-y-4" onSubmit={handleSubmit}>
             <div>
-              <label className="block text-xs font-bold text-ink mb-1.5">Full name</label>
+              <label className="block text-xs font-bold text-ink mb-1.5">{translateUi("Full name")}</label>
               <div className="relative">
                 <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
                 <input
                   type="text"
                   value={fullName}
                   onChange={event => setFullName(event.target.value)}
-                  placeholder="Nguyen Van A"
+                  placeholder={translateUi("Nguyen Van A")}
                   className="w-full pl-10 pr-4 py-3 rounded-xl bg-canvas border border-line text-ink placeholder:text-muted text-sm focus:outline-none focus:border-focus focus:ring-2 focus:ring-focus focus:bg-surface transition-all"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-ink mb-1.5">Email</label>
+              <label className="block text-xs font-bold text-ink mb-1.5">{translateUi("Email")}</label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
                 <input
                   type="email"
                   value={email}
                   onChange={event => setEmail(event.target.value)}
-                  placeholder="student@nomiwrite.local"
+                  placeholder={translateUi("student@nomiwrite.local")}
                   className="w-full pl-10 pr-4 py-3 rounded-xl bg-canvas border border-line text-ink placeholder:text-muted text-sm focus:outline-none focus:border-focus focus:ring-2 focus:ring-focus focus:bg-surface transition-all"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-ink mb-1.5">Password</label>
+              <label className="block text-xs font-bold text-ink mb-1.5">{translateUi("Password")}</label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
                 <input
                   type="password"
                   value={password}
                   onChange={event => setPassword(event.target.value)}
-                  placeholder="At least 8 characters"
+                  placeholder={translateUi("At least 8 characters")}
                   className="w-full pl-10 pr-4 py-3 rounded-xl bg-canvas border border-line text-ink placeholder:text-muted text-sm focus:outline-none focus:border-focus focus:ring-2 focus:ring-focus focus:bg-surface transition-all"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-ink mb-2">Current level</label>
+              <label className="block text-xs font-bold text-ink mb-2">{translateUi("Current level")}</label>
               <div className="grid grid-cols-2 gap-2">
                 {levelOptions.map(level => (
                   <button
@@ -141,14 +144,14 @@ export default function RegisterPage() {
                     }`}>
                       {selectedLevel === level && <Check className="w-2 h-2 text-ink" />}
                     </span>
-                    <span className="text-xs font-bold">{level}</span>
+                    <span className="text-xs font-bold">{translateUi(level)}</span>
                   </button>
                 ))}
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-ink mb-2">Writing goal</label>
+              <label className="block text-xs font-bold text-ink mb-2">{translateUi("Writing goal")}</label>
               <div className="flex flex-wrap gap-2">
                 {writingGoalOptions.map(target => (
                   <button
@@ -161,7 +164,7 @@ export default function RegisterPage() {
                         : "border-line bg-surface text-muted hover:border-line hover:bg-canvas"
                     }`}
                   >
-                    {target}
+                    {translateUi(target)}
                   </button>
                 ))}
               </div>
@@ -178,13 +181,12 @@ export default function RegisterPage() {
                 {acceptedTerms && <Check className="w-3 h-3 text-ink" />}
               </span>
               <span className="text-xs font-medium text-muted leading-relaxed">
-                I agree to the terms of use and privacy policy.
-              </span>
+                {translateUi("I agree to the terms of use and privacy policy.")}</span>
             </button>
 
             {error && (
               <p className="rounded-xl border border-line bg-danger px-3 py-2 text-xs font-bold text-danger-ink">
-                {error}
+                {errorText(error)}
               </p>
             )}
 
@@ -193,17 +195,16 @@ export default function RegisterPage() {
               disabled={submitting}
               className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl bg-accent hover:bg-accent-hover text-ink text-sm font-bold transition-all shadow-sm  mt-2 disabled:opacity-60 disabled:cursor-not-allowed disabled:translate-y-0"
             >
-              {submitting ? "Creating account..." : "Create account"}
+              {translateUi(submitting ? "Creating account..." : "Create account")}
               <ArrowRight className="w-4 h-4" />
             </button>
           </form>
         </div>
 
         <p className="text-center mt-6 text-sm font-medium text-muted">
-          Already have an account?{" "}
+          {translateUi("Already have an account?")}{" "}
           <Link href="/login" className="text-accent-ink hover:text-accent-ink font-bold transition-colors">
-            Sign in
-          </Link>
+            {translateUi("Sign in")}</Link>
         </p>
       </div>
     </div>

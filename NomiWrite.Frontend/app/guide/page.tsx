@@ -1,5 +1,8 @@
 "use client";
 
+import { useLocale } from "@/lib/i18n/locale";
+
+
 import { useEffect, useState } from "react";
 import AppShell from "../components/AppShell";
 import {
@@ -285,6 +288,7 @@ const tabDefs: { key: Tab; icon: typeof AlignLeft; label: string }[] = [
 ];
 
 export default function GuidePage() {
+  const { t: translateUi } = useLocale();
   const [selectedTypeId, setSelectedTypeId] = useState<string>("ielts2");
   const [activeTab, setActiveTab] = useState<Tab>("structure");
   const [copied, setCopied] = useState<string | null>(null);
@@ -317,8 +321,8 @@ export default function GuidePage() {
             <GraduationCap className="h-5 w-5" strokeWidth={2.5} />
           </div>
           <div>
-            <h1 className="text-lg font-bold text-ink">Writing Guides</h1>
-            <p className="text-xs font-semibold text-muted">Comprehensive resources & structures</p>
+            <h1 className="text-lg font-bold text-ink">{translateUi("Writing Guides")}</h1>
+            <p className="text-xs font-semibold text-muted">{translateUi("Comprehensive resources & structures")}</p>
           </div>
         </div>
       </div>
@@ -326,7 +330,7 @@ export default function GuidePage() {
       <div className="guide-layout">
         {/* Left Sidebar Navigation */}
         <div className="guide-library">
-          <h2 className="mb-4 px-2 text-[11px] font-bold uppercase tracking-widest text-muted">Library</h2>
+          <h2 className="mb-4 px-2 text-[11px] font-bold uppercase tracking-widest text-muted">{translateUi("Library")}</h2>
           <div className="space-y-1">
             {types.map((t) => {
               const Icon = t.icon;
@@ -348,8 +352,8 @@ export default function GuidePage() {
                     <Icon className="h-4 w-4" />
                   </div>
                   <div>
-                    <p className={`text-[13px] font-bold ${isActive ? "text-accent-ink" : "text-ink"}`}>{t.label}</p>
-                    <p className={`text-[10px] font-semibold ${isActive ? "text-accent-ink" : "text-muted"}`}>{t.tag}</p>
+                    <p className={`text-[13px] font-bold ${isActive ? "text-accent-ink" : "text-ink"}`}>{translateUi(t.label)}</p>
+                    <p className={`text-[10px] font-semibold ${isActive ? "text-accent-ink" : "text-muted"}`}>{translateUi(t.tag)}</p>
                   </div>
                 </button>
               );
@@ -359,11 +363,10 @@ export default function GuidePage() {
           <div className="guide-tip mt-4 rounded-xl border border-line bg-accent p-4">
             <div className="mb-2 flex items-center gap-2">
               <Zap className="h-4 w-4 text-accent-ink" />
-              <p className="text-xs font-bold text-accent-ink">Pro Tip</p>
+              <p className="text-xs font-bold text-accent-ink">{translateUi("Pro Tip")}</p>
             </div>
             <p className="text-[11px] leading-relaxed text-accent-ink">
-              When taking a practice test, you can open the guide in the side panel to quickly reference structures and connectors!
-            </p>
+              {translateUi("When taking a practice test, you can open the guide in the side panel to quickly reference structures and connectors!")}</p>
           </div>
         </div>
 
@@ -377,12 +380,12 @@ export default function GuidePage() {
               </div>
               <div>
                 <div className="mb-2 flex flex-wrap items-center gap-3">
-                  <h2 className="text-2xl font-bold text-ink">{openType.label}</h2>
+                  <h2 className="text-2xl font-bold text-ink">{translateUi(openType.label)}</h2>
                   <span className={`rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-widest ${openType.pill}`}>
-                    {openType.tag}
+                    {translateUi(openType.tag)}
                   </span>
                 </div>
-                <p className="text-[15px] leading-relaxed text-muted">{openType.desc}</p>
+                <p className="text-[15px] leading-relaxed text-muted">{translateUi(openType.desc)}</p>
               </div>
             </div>
 
@@ -390,9 +393,9 @@ export default function GuidePage() {
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 2xl:grid-cols-4">
               {openType.criteria.map((c) => (
                 <div key={c.label} className="rounded-xl border border-line bg-canvas p-4">
-                  <div className={`mb-1 text-lg font-bold ${openType.accent}`}>{c.weight}</div>
-                  <div className="mb-1.5 text-xs font-bold text-ink">{c.label}</div>
-                  <p className="text-[10px] font-medium text-muted">{c.tip}</p>
+                  <div className={`mb-1 text-lg font-bold ${openType.accent}`}>{translateUi(c.weight)}</div>
+                  <div className="mb-1.5 text-xs font-bold text-ink">{translateUi(c.label)}</div>
+                  <p className="text-[10px] font-medium text-muted">{translateUi(c.tip)}</p>
                 </div>
               ))}
             </div>
@@ -413,7 +416,7 @@ export default function GuidePage() {
                   }`}
                 >
                   <TabIcon className="h-4 w-4" />
-                  {label}
+                  {translateUi(label)}
                 </button>
               );
             })}
@@ -425,23 +428,23 @@ export default function GuidePage() {
             {activeTab === "structure" && (
               <div className="space-y-5">
                 <div className="rounded-xl border border-line bg-surface p-5 shadow-sm">
-                  <h3 className="mb-4 text-lg font-bold text-ink">Recommended Paragraph Structure</h3>
+                  <h3 className="mb-4 text-lg font-bold text-ink">{translateUi("Recommended Paragraph Structure")}</h3>
                   <div className="space-y-6">
                     {openType.structure.map((s, i) => (
                       <div key={i} className="flex gap-5">
                         <div className="flex flex-col items-center gap-2">
                           <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full  ${openType.gradient} text-xs font-bold text-ink shadow-sm`}>
-                            {i + 1}
+                            {translateUi(i + 1)}
                           </div>
                           {i < openType.structure.length - 1 && <div className="w-px flex-1 bg-surface-muted min-h-[24px]" />}
                         </div>
                         <div className="pt-1 min-w-0 flex-1">
                           <div className="mb-2 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                            <h4 className="text-[15px] font-bold text-ink">{s.step}</h4>
-                            <p className="text-[13px] text-muted">{s.detail}</p>
+                            <h4 className="text-[15px] font-bold text-ink">{translateUi(s.step)}</h4>
+                            <p className="text-[13px] text-muted">{translateUi(s.detail)}</p>
                           </div>
                           <div className={`rounded-xl border ${openType.border} ${openType.bg} p-4`}>
-                            <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-muted">Example</p>
+                            <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-muted">{translateUi("Example")}</p>
                             <p className={`text-[13px] italic font-medium leading-relaxed ${openType.accent}`}>
                               &ldquo;{s.example}&rdquo;
                             </p>
@@ -453,12 +456,12 @@ export default function GuidePage() {
                 </div>
 
                 <div className="rounded-xl border border-line bg-surface p-5 shadow-sm">
-                  <h3 className="mb-4 text-lg font-bold text-ink">Scoring Requirements</h3>
+                  <h3 className="mb-4 text-lg font-bold text-ink">{translateUi("Scoring Requirements")}</h3>
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                     {openType.bandTips.map((b) => (
                       <div key={b.band} className={`rounded-xl px-5 py-4 ${b.color}`}>
-                        <p className="mb-2 text-xs font-bold uppercase tracking-widest">{b.band}</p>
-                        <p className="text-[13px] font-medium leading-relaxed">{b.req}</p>
+                        <p className="mb-2 text-xs font-bold uppercase tracking-widest">{translateUi(b.band)}</p>
+                        <p className="text-[13px] font-medium leading-relaxed">{translateUi(b.req)}</p>
                       </div>
                     ))}
                   </div>
@@ -471,15 +474,15 @@ export default function GuidePage() {
               <div className="rounded-xl border border-line bg-surface p-5 shadow-sm">
                 <div className="mb-6 flex items-center justify-between">
                   <div>
-                    <h3 className="text-lg font-bold text-ink">Vocabulary & Connectors</h3>
-                    <p className="mt-1 text-[13px] text-muted">Click any phrase to copy it to your clipboard.</p>
+                    <h3 className="text-lg font-bold text-ink">{translateUi("Vocabulary & Connectors")}</h3>
+                    <p className="mt-1 text-[13px] text-muted">{translateUi("Click any phrase to copy it to your clipboard.")}</p>
                   </div>
                 </div>
                 <div className="space-y-5">
                   {openType.connectors.map((group) => (
                     <div key={group.label}>
                       <h4 className="mb-3 text-[11px] font-bold uppercase tracking-widest text-muted">
-                        {group.label}
+                        {translateUi(group.label)}
                       </h4>
                       <div className="flex flex-wrap gap-2.5">
                         {group.phrases.map((phrase) => (
@@ -493,7 +496,7 @@ export default function GuidePage() {
                             }`}
                           >
                             {copied === phrase ? (
-                              <><Check className="h-4 w-4" /> Copied!</>
+                              <><Check className="h-4 w-4" /> {translateUi(" Copied!")}</>
                             ) : (
                               <><Copy className="h-4 w-4 opacity-40" /> {phrase}</>
                             )}
@@ -509,7 +512,7 @@ export default function GuidePage() {
             {/* Tips Tab */}
             {activeTab === "tips" && (
               <div className="rounded-xl border border-line bg-surface p-5 shadow-sm">
-                <h3 className="mb-4 text-lg font-bold text-ink">Pro Tips for {openType.tag}</h3>
+                <h3 className="mb-4 text-lg font-bold text-ink">{translateUi("Pro Tips for ")}{translateUi(openType.tag)}</h3>
                 <div className="space-y-4">
                   {openType.tips.map((item, i) => (
                     <div key={i} className="flex gap-4 rounded-xl border border-line bg-canvas p-5 transition-all hover:border-line hover:shadow-sm">
@@ -517,9 +520,9 @@ export default function GuidePage() {
                         <Check className="h-3 w-3 text-ink" />
                       </div>
                       <div>
-                        <p className="mb-1 text-[15px] font-bold text-ink">{item.tip}</p>
+                        <p className="mb-1 text-[15px] font-bold text-ink">{translateUi(item.tip)}</p>
                         <p className="text-[13px] leading-relaxed text-muted">
-                          <span className="font-bold text-ink">Why: </span>{item.why}
+                          <span className="font-bold text-ink">{translateUi("Why: ")}</span>{translateUi(item.why)}
                         </p>
                       </div>
                     </div>
@@ -531,7 +534,7 @@ export default function GuidePage() {
             {/* Mistakes Tab */}
             {activeTab === "mistakes" && (
               <div className="rounded-xl border border-line bg-surface p-5 shadow-sm">
-                <h3 className="mb-4 text-lg font-bold text-ink">Common Mistakes to Avoid</h3>
+                <h3 className="mb-4 text-lg font-bold text-ink">{translateUi("Common Mistakes to Avoid")}</h3>
                 <div className="space-y-6">
                   {openType.mistakes.map((item, i) => (
                     <div key={i} className="overflow-hidden rounded-xl border border-line shadow-sm">
@@ -540,7 +543,7 @@ export default function GuidePage() {
                           <X className="h-3.5 w-3.5 text-danger-ink" />
                         </div>
                         <div>
-                          <p className="text-[11px] font-bold uppercase tracking-widest text-danger-ink mb-1">Don&apos;t write this</p>
+                          <p className="text-[11px] font-bold uppercase tracking-widest text-danger-ink mb-1">{translateUi("Don't write this")}</p>
                           <p className="text-[14px] font-medium leading-relaxed text-danger-ink line-through decoration-red-300">
                             {item.wrong}
                           </p>
@@ -551,7 +554,7 @@ export default function GuidePage() {
                           <Check className="h-3.5 w-3.5 text-success-ink" />
                         </div>
                         <div>
-                          <p className="text-[11px] font-bold uppercase tracking-widest text-success-ink mb-1">Instead, do this</p>
+                          <p className="text-[11px] font-bold uppercase tracking-widest text-success-ink mb-1">{translateUi("Instead, do this")}</p>
                           <p className="text-[14px] font-bold leading-relaxed text-success-ink">
                             {item.fix}
                           </p>
@@ -559,8 +562,8 @@ export default function GuidePage() {
                       </div>
                       <div className="bg-canvas p-4 px-5">
                         <p className="text-[13px] text-muted">
-                          <span className="font-bold text-ink">Explanation: </span>
-                          {item.note}
+                          <span className="font-bold text-ink">{translateUi("Explanation: ")}</span>
+                          {translateUi(item.note)}
                         </p>
                       </div>
                     </div>

@@ -1,5 +1,8 @@
 "use client";
 
+import { useLocale } from "@/lib/i18n/locale";
+
+
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -23,11 +26,12 @@ function bandBg(band?: number) {
   return "bg-accent border-line";
 }
 
-function formatDate(value: string) {
-  return new Intl.DateTimeFormat("en", { dateStyle: "medium" }).format(new Date(value));
+function formatDate(value: string, locale: string) {
+  return new Intl.DateTimeFormat(locale, { dateStyle: "medium" }).format(new Date(value));
 }
 
 export default function HistoryPage() {
+  const { t: translateUi, errorText, locale } = useLocale();
   const router = useRouter();
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [loading, setLoading] = useState(true);
@@ -84,17 +88,15 @@ export default function HistoryPage() {
       <div className="sticky top-0 z-10 flex h-14 items-center justify-between border-b border-line bg-surface px-6">
         <div className="flex items-center gap-2">
           <Clock className="h-4 w-4 text-muted" />
-          <h1 className="text-sm font-bold text-ink">Writing history</h1>
+          <h1 className="text-sm font-bold text-ink">{translateUi("Writing history")}</h1>
         </div>
         <div className="flex items-center gap-2">
           <button className="flex items-center gap-1.5 rounded-lg bg-surface-muted px-3 py-1.5 text-xs font-semibold text-muted transition-colors hover:bg-surface-muted">
             <Filter className="h-3.5 w-3.5" />
-            Filter
-          </button>
+            {translateUi("Filter")}</button>
           <Link href="/write" className="flex items-center gap-1.5 rounded-lg bg-accent px-3 py-1.5 text-xs font-bold text-ink transition-colors hover:bg-accent-hover">
             <PenLine className="h-3.5 w-3.5" />
-            New writing
-          </Link>
+            {translateUi("New writing")}</Link>
         </div>
       </div>
 
@@ -106,36 +108,35 @@ export default function HistoryPage() {
             { label: "Best band", value: best, unit: "", color: "text-success-ink" },
           ].map(({ label, value, unit, color }) => (
             <div key={label} className="rounded-xl border border-line bg-surface p-4 text-center shadow-sm">
-              <p className={`text-2xl font-bold ${color}`}>{value}<span className="ml-0.5 text-base font-semibold">{unit}</span></p>
-              <p className="mt-0.5 text-xs text-muted">{label}</p>
+              <p className={`text-2xl font-bold ${color}`}>{value}<span className="ml-0.5 text-base font-semibold">{translateUi(unit)}</span></p>
+              <p className="mt-0.5 text-xs text-muted">{translateUi(label)}</p>
             </div>
           ))}
         </div>
 
         <div className="overflow-hidden rounded-xl border border-line bg-surface shadow-sm">
           <div className="grid grid-cols-12 gap-4 border-b border-line px-5 py-3 text-xs font-bold uppercase tracking-widest text-muted">
-            <span className="col-span-5">Writing</span>
-            <span className="col-span-2">Status</span>
-            <span className="col-span-2 text-center">Band</span>
-            <span className="col-span-2 text-center">Words</span>
+            <span className="col-span-5">{translateUi("Writing")}</span>
+            <span className="col-span-2">{translateUi("Status")}</span>
+            <span className="col-span-2 text-center">{translateUi("Band")}</span>
+            <span className="col-span-2 text-center">{translateUi("Words")}</span>
             <span className="col-span-1" />
           </div>
 
           {loading && (
             <div className="flex items-center justify-center gap-2 p-8 text-sm font-semibold text-muted">
               <Loader2 className="h-4 w-4 animate-spin" />
-              Loading history
-            </div>
+              {translateUi("Loading history")}</div>
           )}
 
           {!loading && error && (
-            <p className="p-5 text-sm font-semibold text-danger-ink">{error}</p>
+            <p className="p-5 text-sm font-semibold text-danger-ink">{errorText(error)}</p>
           )}
 
           {!loading && !error && sorted.length === 0 && (
             <div className="p-8 text-center">
-              <p className="text-sm font-bold text-ink">No submissions yet</p>
-              <p className="mt-1 text-xs text-muted">Start a writing session to create your first record.</p>
+              <p className="text-sm font-bold text-ink">{translateUi("No submissions yet")}</p>
+              <p className="mt-1 text-xs text-muted">{translateUi("Start a writing session to create your first record.")}</p>
             </div>
           )}
 
@@ -149,22 +150,22 @@ export default function HistoryPage() {
                 >
                   <div className="col-span-5">
                     <p className="truncate text-sm font-semibold text-ink transition-colors group-hover:text-accent-ink">{submission.topic}</p>
-                    <p className="mt-0.5 text-xs text-muted">{formatDate(submission.submittedAt)}</p>
+                    <p className="mt-0.5 text-xs text-muted">{translateUi(formatDate(submission.submittedAt, locale))}</p>
                   </div>
                   <div className="col-span-2">
                     <span className="rounded-full bg-surface-muted px-2 py-1 text-xs font-semibold text-muted">
-                      {submission.status}
+                      {translateUi(submission.status)}
                     </span>
                   </div>
                   <div className="col-span-2 flex justify-center">
                     <span className={`rounded-xl border px-3 py-1 text-sm font-bold ${bandBg(submission.overallScore)} ${bandColor(submission.overallScore)}`}>
-                      {submission.overallScore ?? "--"}
+                      {translateUi(submission.overallScore ?? "--")}
                     </span>
                   </div>
                   <div className="col-span-2 flex justify-center">
                     <div className="flex items-center gap-1.5">
                       <AlertCircle className="h-3.5 w-3.5 text-muted" />
-                      <span className="text-sm font-semibold text-ink">{submission.wordCount}</span>
+                      <span className="text-sm font-semibold text-ink">{translateUi(submission.wordCount)}</span>
                     </div>
                   </div>
                   <div className="col-span-1 flex justify-end">

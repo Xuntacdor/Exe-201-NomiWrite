@@ -1,3 +1,6 @@
+"use client";
+
+import { useLocale } from "@/lib/i18n/locale";
 import { Check, Minus, X } from "lucide-react";
 
 type CellValue = boolean | "partial";
@@ -94,38 +97,34 @@ function Cell({ value, highlight }: { value: CellValue; highlight?: boolean }) {
 }
 
 export default function Comparison() {
+  const { t: translateUi } = useLocale();
   return (
     <section className="bg-canvas py-20 sm:py-28">
       <div className="mx-auto max-w-5xl px-4 sm:px-6">
         <div className="mb-12 text-center">
           <span className="mb-3 inline-block rounded-full bg-success px-3 py-1 text-xs font-semibold uppercase tracking-wide text-success-ink">
-            So sánh
-          </span>
+            {translateUi("So sánh")}</span>
           <h2 className="text-3xl font-bold leading-tight text-ink sm:text-4xl">
-            Không chỉ sửa bài. NomiWrite tạo vòng lặp học thật.
-          </h2>
+            {translateUi("Không chỉ sửa bài. NomiWrite tạo vòng lặp học thật.")}</h2>
           <p className="mx-auto mt-4 max-w-2xl text-lg text-muted">
-            Nhiều công cụ chỉ giải quyết một phần: sửa lỗi, cho điểm, hoặc giúp ôn tập.
-            NomiWrite nối các bước đó thành một hành trình luyện viết cá nhân hóa.
-          </p>
+            {translateUi("Nhiều công cụ chỉ giải quyết một phần: sửa lỗi, cho điểm, hoặc giúp ôn tập. NomiWrite nối các bước đó thành một hành trình luyện viết cá nhân hóa.")}</p>
         </div>
 
         <div className="overflow-hidden rounded-xl border border-line bg-surface shadow-sm">
           <div className="grid grid-cols-5 gap-0 border-b border-line">
             <div className="col-span-1 px-4 py-4 text-xs font-semibold uppercase tracking-wide text-muted">
-              Năng lực
-            </div>
+              {translateUi("Năng lực")}</div>
             <div className="col-span-1 border-x border-line bg-accent px-2 py-4 text-center">
-              <p className="text-sm font-bold text-accent-ink">NomiWrite</p>
+              <p className="text-sm font-bold text-accent-ink">{translateUi("NomiWrite")}</p>
             </div>
             <div className="col-span-1 px-2 py-4 text-center">
-              <p className="text-xs font-semibold text-muted">Công cụ sửa lỗi</p>
+              <p className="text-xs font-semibold text-muted">{translateUi("Công cụ sửa lỗi")}</p>
             </div>
             <div className="col-span-1 px-2 py-4 text-center">
-              <p className="text-xs font-semibold text-muted">Công cụ chấm điểm</p>
+              <p className="text-xs font-semibold text-muted">{translateUi("Công cụ chấm điểm")}</p>
             </div>
             <div className="col-span-1 px-2 py-4 text-center">
-              <p className="text-xs font-semibold text-muted">Công cụ ôn tập</p>
+              <p className="text-xs font-semibold text-muted">{translateUi("Công cụ ôn tập")}</p>
             </div>
           </div>
 
@@ -137,7 +136,7 @@ export default function Comparison() {
               }`}
             >
               <div className="col-span-1 px-4 py-3.5">
-                <p className="text-sm text-ink">{row.feature}</p>
+                <p className="text-sm text-ink">{translateUi(row.feature)}</p>
               </div>
               <div className="col-span-1 border-x border-line bg-accent px-2 py-3.5">
                 <Cell value={row.nomiwrite} highlight />
@@ -158,15 +157,15 @@ export default function Comparison() {
         <div className="mt-4 flex items-center justify-center gap-5 text-xs text-muted">
           <div className="flex items-center gap-1.5">
             <Check className="h-3.5 w-3.5 text-success-ink" />
-            <span>Có đầy đủ</span>
+            <span>{translateUi("Có đầy đủ")}</span>
           </div>
           <div className="flex items-center gap-1.5">
             <Minus className="h-3.5 w-3.5 text-warning-ink" />
-            <span>Có một phần</span>
+            <span>{translateUi("Có một phần")}</span>
           </div>
           <div className="flex items-center gap-1.5">
             <X className="h-3.5 w-3.5 text-muted" />
-            <span>Không có</span>
+            <span>{translateUi("Không có")}</span>
           </div>
         </div>
       </div>

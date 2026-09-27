@@ -1,5 +1,8 @@
 "use client";
 
+import { useLocale } from "@/lib/i18n/locale";
+
+
 import { useState } from "react";
 import Link from "next/link";
 import {
@@ -285,6 +288,7 @@ interface GuideModalProps {
 }
 
 export default function GuideModal({ typeId, onClose, hideCTA }: GuideModalProps) {
+  const { t: translateUi } = useLocale();
   const [activeTab, setActiveTab] = useState<Tab>("structure");
   const [copied, setCopied] = useState<string | null>(null);
 
@@ -311,13 +315,13 @@ export default function GuideModal({ typeId, onClose, hideCTA }: GuideModalProps
               </div>
               <div>
                 <div className="flex items-center gap-2 mb-0.5">
-                  <h2 className="text-sm font-bold text-ink">{openType.label}</h2>
-                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${openType.pill}`}>{openType.tag}</span>
+                  <h2 className="text-sm font-bold text-ink">{translateUi(openType.label)}</h2>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${openType.pill}`}>{translateUi(openType.tag)}</span>
                 </div>
                 <div className="flex items-center gap-3 text-xs text-muted">
-                  <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{openType.time}</span>
+                  <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{translateUi(openType.time)}</span>
                   <span className="w-px h-3 bg-surface-muted" />
-                  <span className="flex items-center gap-1"><Target className="w-3 h-3" />≥ {openType.minWords} từ</span>
+                  <span className="flex items-center gap-1"><Target className="w-3 h-3" />≥ {translateUi(openType.minWords)} {translateUi(" từ")}</span>
                 </div>
               </div>
             </div>
@@ -327,9 +331,9 @@ export default function GuideModal({ typeId, onClose, hideCTA }: GuideModalProps
           </div>
           <div className="flex flex-wrap gap-2 mt-3">
             {openType.criteria.map((c) => (
-              <div key={c.label} title={c.tip} className="flex items-center gap-1.5 px-2.5 py-1.5 bg-surface border border-line rounded-xl cursor-help hover:bg-surface transition-colors">
-                <span className={`text-[10px] font-bold ${openType.accent}`}>{c.weight}</span>
-                <span className="text-[10px] font-semibold text-muted">{c.label}</span>
+              <div key={c.label} title={translateUi(c.tip)} className="flex items-center gap-1.5 px-2.5 py-1.5 bg-surface border border-line rounded-xl cursor-help hover:bg-surface transition-colors">
+                <span className={`text-[10px] font-bold ${openType.accent}`}>{translateUi(c.weight)}</span>
+                <span className="text-[10px] font-semibold text-muted">{translateUi(c.label)}</span>
               </div>
             ))}
           </div>
@@ -343,7 +347,7 @@ export default function GuideModal({ typeId, onClose, hideCTA }: GuideModalProps
                 activeTab === key ? `border-current ${openType.accent} bg-surface` : "border-transparent text-muted hover:text-muted hover:bg-surface"
               }`}
             >
-              <TabIcon className="w-3.5 h-3.5" />{label}
+              <TabIcon className="w-3.5 h-3.5" />{translateUi(label)}
             </button>
           ))}
         </div>
@@ -356,16 +360,16 @@ export default function GuideModal({ typeId, onClose, hideCTA }: GuideModalProps
                 {openType.structure.map((s, i) => (
                   <div key={i} className="flex gap-4">
                     <div className="flex flex-col items-center gap-1">
-                      <div className={`w-7 h-7 rounded-xl  ${openType.gradient} text-ink text-[11px] font-bold flex items-center justify-center shrink-0 shadow-sm`}>{i + 1}</div>
+                      <div className={`w-7 h-7 rounded-xl  ${openType.gradient} text-ink text-[11px] font-bold flex items-center justify-center shrink-0 shadow-sm`}>{translateUi(i + 1)}</div>
                       {i < openType.structure.length - 1 && <div className="w-px flex-1 bg-surface-muted min-h-[16px]" />}
                     </div>
                     <div className="pb-3 flex-1">
                       <div className="flex items-baseline gap-2 mb-1.5">
-                        <p className="text-sm font-bold text-ink">{s.step}</p>
-                        <p className="text-xs text-muted">{s.detail}</p>
+                        <p className="text-sm font-bold text-ink">{translateUi(s.step)}</p>
+                        <p className="text-xs text-muted">{translateUi(s.detail)}</p>
                       </div>
                       <div className={`p-3 rounded-xl ${openType.bg} border ${openType.border}`}>
-                        <p className="text-[10px] font-bold text-muted uppercase tracking-widest mb-1">Ví dụ mẫu</p>
+                        <p className="text-[10px] font-bold text-muted uppercase tracking-widest mb-1">{translateUi("Ví dụ mẫu")}</p>
                         <p className={`text-xs ${openType.accent} font-medium italic leading-relaxed`}>&ldquo;{s.example}&rdquo;</p>
                       </div>
                     </div>
@@ -373,12 +377,12 @@ export default function GuideModal({ typeId, onClose, hideCTA }: GuideModalProps
                 ))}
               </div>
               <div className="pt-2 border-t border-line">
-                <p className="text-[10px] font-bold text-muted uppercase tracking-widest mb-2.5 flex items-center gap-1.5"><Zap className="w-3 h-3" />Yêu cầu theo mức điểm</p>
+                <p className="text-[10px] font-bold text-muted uppercase tracking-widest mb-2.5 flex items-center gap-1.5"><Zap className="w-3 h-3" />{translateUi("Yêu cầu theo mức điểm")}</p>
                 <div className="grid grid-cols-3 gap-2">
                   {openType.bandTips.map((b) => (
                     <div key={b.band} className={`px-3 py-2.5 rounded-xl ${b.color}`}>
-                      <p className="text-[10px] font-bold uppercase tracking-wide mb-1">{b.band}</p>
-                      <p className="text-[11px] leading-snug">{b.req}</p>
+                      <p className="text-[10px] font-bold uppercase tracking-wide mb-1">{translateUi(b.band)}</p>
+                      <p className="text-[11px] leading-snug">{translateUi(b.req)}</p>
                     </div>
                   ))}
                 </div>
@@ -390,7 +394,7 @@ export default function GuideModal({ typeId, onClose, hideCTA }: GuideModalProps
             <div className="space-y-4">
               {openType.connectors.map((group) => (
                 <div key={group.label}>
-                  <p className="text-[10px] font-bold text-muted uppercase tracking-widest mb-2">{group.label}</p>
+                  <p className="text-[10px] font-bold text-muted uppercase tracking-widest mb-2">{translateUi(group.label)}</p>
                   <div className="flex flex-wrap gap-2">
                     {group.phrases.map((phrase) => (
                       <button key={phrase} onClick={() => copyPhrase(phrase)}
@@ -400,13 +404,13 @@ export default function GuideModal({ typeId, onClose, hideCTA }: GuideModalProps
                             : `${openType.bg} border ${openType.border} text-ink hover:shadow-sm`
                         }`}
                       >
-                        {copied === phrase ? <><Check className="w-3 h-3" />Đã copy</> : <><Copy className="w-3 h-3 opacity-50" />{phrase}</>}
+                        {copied === phrase ? <><Check className="w-3 h-3" />{translateUi("Đã copy")}</> : <><Copy className="w-3 h-3 opacity-50" />{phrase}</>}
                       </button>
                     ))}
                   </div>
                 </div>
               ))}
-              <p className="text-[10px] text-muted text-center pt-2 flex items-center justify-center gap-1"><Copy className="w-3 h-3" />Bấm vào phrase để copy vào clipboard</p>
+              <p className="text-[10px] text-muted text-center pt-2 flex items-center justify-center gap-1"><Copy className="w-3 h-3" />{translateUi("Bấm vào phrase để copy vào clipboard")}</p>
             </div>
           )}
 
@@ -418,8 +422,8 @@ export default function GuideModal({ typeId, onClose, hideCTA }: GuideModalProps
                     <Check className="w-3.5 h-3.5 text-ink" />
                   </div>
                   <div>
-                    <p className="text-sm font-bold text-ink mb-1">{item.tip}</p>
-                    <p className="text-xs text-muted leading-relaxed"><span className="font-semibold text-muted">Tại sao: </span>{item.why}</p>
+                    <p className="text-sm font-bold text-ink mb-1">{translateUi(item.tip)}</p>
+                    <p className="text-xs text-muted leading-relaxed"><span className="font-semibold text-muted">{translateUi("Tại sao: ")}</span>{translateUi(item.why)}</p>
                   </div>
                 </div>
               ))}
@@ -435,7 +439,7 @@ export default function GuideModal({ typeId, onClose, hideCTA }: GuideModalProps
                       <span className="text-danger-ink text-[10px] font-bold">✕</span>
                     </div>
                     <div>
-                      <p className="text-[10px] font-bold text-danger-ink uppercase tracking-widest mb-1">Cách viết kém</p>
+                      <p className="text-[10px] font-bold text-danger-ink uppercase tracking-widest mb-1">{translateUi("Cách viết kém")}</p>
                       <p className="text-sm text-danger-ink italic leading-relaxed">&ldquo;{item.wrong}&rdquo;</p>
                     </div>
                   </div>
@@ -444,13 +448,13 @@ export default function GuideModal({ typeId, onClose, hideCTA }: GuideModalProps
                       <Check className="w-3 h-3 text-success-ink" />
                     </div>
                     <div>
-                      <p className="text-[10px] font-bold text-success-ink uppercase tracking-widest mb-1">Cách viết tốt hơn</p>
+                      <p className="text-[10px] font-bold text-success-ink uppercase tracking-widest mb-1">{translateUi("Cách viết tốt hơn")}</p>
                       <p className="text-sm text-success-ink font-medium italic leading-relaxed">&ldquo;{item.fix}&rdquo;</p>
                     </div>
                   </div>
                   <div className="px-4 py-2.5 bg-warning border-t border-line flex items-start gap-2">
                     <Lightbulb className="w-3.5 h-3.5 text-warning-ink shrink-0 mt-0.5" />
-                    <p className="text-xs text-warning-ink leading-relaxed">{item.note}</p>
+                    <p className="text-xs text-warning-ink leading-relaxed">{translateUi(item.note)}</p>
                   </div>
                 </div>
               ))}
@@ -460,12 +464,12 @@ export default function GuideModal({ typeId, onClose, hideCTA }: GuideModalProps
 
         {/* Footer */}
         <div className="shrink-0 px-5 py-4 border-t border-line flex items-center justify-between bg-surface">
-          <button onClick={onClose} className="text-xs text-muted hover:text-muted font-semibold transition-colors">← Đóng</button>
+          <button onClick={onClose} className="text-xs text-muted hover:text-muted font-semibold transition-colors">{translateUi("← Đóng")}</button>
           {!hideCTA && (
             <Link href={`/write?type=${openType.id}`}
               className={`flex items-center gap-2 px-5 py-2.5 rounded-xl  ${openType.gradient} text-ink text-xs font-bold hover:opacity-90 transition-opacity shadow-sm`}
             >
-              Bắt đầu viết loại này <ArrowRight className="w-3.5 h-3.5" />
+              {translateUi("Bắt đầu viết loại này ")}<ArrowRight className="w-3.5 h-3.5" />
             </Link>
           )}
         </div>

@@ -1,5 +1,8 @@
 "use client";
 
+import { useLocale } from "@/lib/i18n/locale";
+
+
 import { FormEvent, type ElementType, ReactNode, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import AppDialog from "../components/AppDialog";
@@ -43,8 +46,8 @@ const paymentMethods: { id: PaymentMethod; label: string; icon: ElementType; sub
   { id: "momo", label: "MoMo", icon: Wallet, sub: "Redirect to MoMo payment" },
 ];
 
-function fmt(amount: number) {
-  return `${amount.toLocaleString("vi-VN")}d`;
+function fmt(amount: number, locale: string) {
+  return new Intl.NumberFormat(locale, { style: "currency", currency: "VND" }).format(amount);
 }
 
 function planMatches(plan: SubscriptionPlan, billing: "monthly" | "yearly") {
@@ -70,6 +73,7 @@ function PageFrame({ signedIn, children }: { signedIn: boolean; children: ReactN
 }
 
 export default function UpgradePage() {
+  const { t: translateUi, errorText, locale } = useLocale();
   const [signedIn, setSignedIn] = useState(false);
   const [method, setMethod] = useState<PaymentMethod>("vnpay");
   const [billing, setBilling] = useState<"monthly" | "yearly">("monthly");
@@ -172,7 +176,7 @@ export default function UpgradePage() {
         return;
       }
       setPromoDiscount(result.discountPercent ?? 0);
-      setPromoMessage(`Promo applied: ${result.discountPercent ?? 0}% off.`);
+      setPromoMessage("Promo code applied.");
     } catch (err) {
       setPromoMessage(err instanceof Error ? err.message : "Could not validate promo code.");
     } finally {
@@ -260,19 +264,18 @@ export default function UpgradePage() {
             <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-xl bg-accent shadow-sm">
               <BadgeCheck className="h-10 w-10 text-ink" />
             </div>
-            <h2 className="mb-3 text-2xl font-bold text-ink">Payment order created</h2>
+            <h2 className="mb-3 text-2xl font-bold text-ink">{translateUi("Payment order created")}</h2>
             <p className="mb-8 text-sm leading-relaxed text-muted">
-              The backend returned a pending payment without a redirect URL. Check payment status from the backend service.
-            </p>
+              {translateUi("The backend returned a pending payment without a redirect URL. Check payment status from the backend service.")}</p>
             {checkoutResult && (
               <div className="mb-6 rounded-xl border border-line bg-canvas p-4 text-left">
                 <div className="mb-2 flex items-center justify-between gap-3">
-                  <span className="text-xs font-bold text-muted">Order</span>
-                  <span className="truncate text-xs font-bold text-ink">{checkoutResult.orderReference}</span>
+                  <span className="text-xs font-bold text-muted">{translateUi("Order")}</span>
+                  <span className="truncate text-xs font-bold text-ink">{translateUi(checkoutResult.orderReference)}</span>
                 </div>
                 <div className="mb-4 flex items-center justify-between gap-3">
-                  <span className="text-xs font-bold text-muted">Status</span>
-                  <span className="rounded-full bg-accent px-2.5 py-1 text-xs font-bold text-accent-ink">{checkoutResult.status}</span>
+                  <span className="text-xs font-bold text-muted">{translateUi("Status")}</span>
+                  <span className="rounded-full bg-accent px-2.5 py-1 text-xs font-bold text-accent-ink">{translateUi(checkoutResult.status)}</span>
                 </div>
                 <button
                   type="button"
@@ -281,12 +284,11 @@ export default function UpgradePage() {
                   className="flex w-full items-center justify-center gap-2 rounded-xl bg-surface-muted py-2.5 text-xs font-bold text-ink transition-colors hover:bg-surface-muted disabled:opacity-60"
                 >
                   {checkingPaymentId === checkoutResult.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
-                  Refresh status
-                </button>
+                  {translateUi("Refresh status")}</button>
               </div>
             )}
             <Link href="/dashboard" className="flex w-full items-center justify-center gap-2 rounded-xl bg-accent py-4 text-sm font-bold text-ink shadow-sm transition-all hover:opacity-90">
-              Go to Dashboard <ChevronRight className="h-4 w-4" />
+              {translateUi("Go to Dashboard ")}<ChevronRight className="h-4 w-4" />
             </Link>
           </div>
         </main>
@@ -298,7 +300,7 @@ export default function UpgradePage() {
     <PageFrame signedIn={signedIn}>
       <AppDialog
         open={Boolean(refundPaymentId)}
-        title="Request refund"
+        title={translateUi("Request refund")}
         description="Send a refund request to the backend payment service for this payment order."
         confirmLabel="Send request"
         promptLabel="Reason"
@@ -312,16 +314,14 @@ export default function UpgradePage() {
             {signedIn ? (
               <Link href="/profile" className="inline-flex items-center gap-1.5 text-sm font-medium text-muted hover:text-ink">
                 <ArrowLeft className="h-4 w-4" />
-                Back to profile
-              </Link>
+                {translateUi("Back to profile")}</Link>
             ) : (
               <Link href="/#pricing" className="inline-flex items-center gap-1.5 text-sm font-medium text-muted hover:text-ink">
                 <ArrowLeft className="h-4 w-4" />
-                Back to pricing
-              </Link>
+                {translateUi("Back to pricing")}</Link>
             )}
           </div>
-          <span className="text-sm font-bold text-ink">Premium checkout</span>
+          <span className="text-sm font-bold text-ink">{translateUi("Premium checkout")}</span>
         </div>
 
         <div className="relative overflow-hidden hero-gradient">
@@ -330,12 +330,11 @@ export default function UpgradePage() {
           <div className="relative mx-auto max-w-5xl px-4 py-16 text-center sm:px-6">
             <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-line bg-accent px-4 py-1.5 shadow-sm">
               <Zap className="h-4 w-4 fill-warning-ink text-warning-ink" />
-              <span className="text-xs font-bold tracking-wider text-accent-ink uppercase">Upgrade to Premium</span>
+              <span className="text-xs font-bold tracking-wider text-accent-ink uppercase">{translateUi("Upgrade to Premium")}</span>
             </div>
-            <h1 className="mb-4 text-4xl font-bold text-ink sm:text-5xl tracking-tight">Premium checkout</h1>
+            <h1 className="mb-4 text-4xl font-bold text-ink sm:text-5xl tracking-tight">{translateUi("Premium checkout")}</h1>
             <p className="mx-auto max-w-md text-base text-muted">
-              Securely upgrade your account using our backend Subscription and Payment services.
-            </p>
+              {translateUi("Securely upgrade your account using our backend Subscription and Payment services.")}</p>
           </div>
         </div>
 
@@ -343,7 +342,7 @@ export default function UpgradePage() {
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-5" style={{ animationDelay: "0.2s" }}>
             <div className="space-y-6 lg:col-span-2">
               <div className="rounded-xl border border-line bg-surface p-5 shadow-sm">
-                <p className="mb-4 text-xs font-bold uppercase tracking-widest text-muted">Billing cycle</p>
+                <p className="mb-4 text-xs font-bold uppercase tracking-widest text-muted">{translateUi("Billing cycle")}</p>
                 <div className="flex gap-2 rounded-xl bg-canvas p-1 border border-line">
                   {(["monthly", "yearly"] as const).map(option => (
                     <button
@@ -354,7 +353,7 @@ export default function UpgradePage() {
                         billing === option ? "bg-surface text-ink shadow-sm border border-line" : "text-muted hover:text-ink"
                       }`}
                     >
-                      {option} {option === "yearly" && <span className="ml-1 text-[10px] font-bold text-success-ink bg-success px-1.5 py-0.5 rounded-full">Save 20%</span>}
+                      {option} {option === "yearly" && <span className="ml-1 text-[10px] font-bold text-success-ink bg-success px-1.5 py-0.5 rounded-full">{translateUi("Save 20%")}</span>}
                     </button>
                   ))}
                 </div>
@@ -365,21 +364,19 @@ export default function UpgradePage() {
                 <div className="relative p-8">
                   <div className="mb-4 flex justify-between items-center">
                     <p className="text-xs font-bold uppercase tracking-widest text-accent-ink">
-                      {selectedPlan?.name ?? "Premium"}
+                      {translateUi(selectedPlan?.name ?? "Premium")}
                     </p>
                     <div className="inline-flex items-center gap-1 rounded-full bg-warning px-3 py-1 text-[10px] font-bold text-warning-ink shadow-sm">
                       <Sparkles className="h-3 w-3" />
-                      Backend plan
-                    </div>
+                      {translateUi("Backend plan")}</div>
                   </div>
                   <div className="mb-1 flex items-end gap-1.5">
-                    <span className="text-5xl font-bold text-ink tracking-tight">{fmt(monthlyEquivalent)}</span>
-                    <span className="mb-2 text-sm font-medium text-accent-ink">/ month</span>
+                    <span className="text-5xl font-bold text-ink tracking-tight">{translateUi(fmt(monthlyEquivalent, locale))}</span>
+                    <span className="mb-2 text-sm font-medium text-accent-ink">{translateUi("/ month")}</span>
                   </div>
                   {billing === "yearly" && (
                     <p className="mb-6 text-sm text-accent-ink font-medium bg-accent inline-block px-3 py-1 rounded-full border border-focus">
-                      Total <span className="font-bold text-ink">{fmt(total)}</span> / year
-                    </p>
+                      {translateUi("Total ")}<span className="font-bold text-ink">{translateUi(fmt(total, locale))}</span> {translateUi(" / year")}</p>
                   )}
                   {billing === "monthly" && <div className="h-6 mb-6" />}
 
@@ -389,7 +386,7 @@ export default function UpgradePage() {
                         <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-surface shadow-sm">
                           <Check className="h-3 w-3 text-ink" />
                         </div>
-                        <span className="text-sm font-medium leading-relaxed text-accent-ink">{feature}</span>
+                        <span className="text-sm font-medium leading-relaxed text-accent-ink">{translateUi(feature)}</span>
                       </div>
                     ))}
                   </div>
@@ -413,7 +410,7 @@ export default function UpgradePage() {
                 <div className="rounded-xl border border-line bg-surface p-4 shadow-sm">
                   <div className="mb-3 flex items-center gap-2">
                     <History className="h-4 w-4 text-muted" />
-                    <p className="text-xs font-bold uppercase tracking-wider text-muted">Payment history</p>
+                    <p className="text-xs font-bold uppercase tracking-wider text-muted">{translateUi("Payment history")}</p>
                   </div>
                   {paymentHistory.length ? (
                     <div className="space-y-2">
@@ -421,10 +418,10 @@ export default function UpgradePage() {
                         <div key={item.id} className="rounded-xl bg-canvas px-3 py-2">
                           <div className="flex items-center justify-between gap-3">
                           <div className="min-w-0">
-                            <p className="truncate text-xs font-bold text-ink">{item.provider}</p>
-                            <p className="text-[11px] text-muted">{item.status}</p>
+                            <p className="truncate text-xs font-bold text-ink">{translateUi(item.provider)}</p>
+                            <p className="text-[11px] text-muted">{translateUi(item.status)}</p>
                           </div>
-                          <span className="text-xs font-bold text-ink">{fmt(item.amount)}</span>
+                          <span className="text-xs font-bold text-ink">{translateUi(fmt(item.amount, locale))}</span>
                           </div>
                           <div className="mt-2 flex gap-2">
                             <button
@@ -434,22 +431,21 @@ export default function UpgradePage() {
                               className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-line bg-surface px-2 py-1.5 text-[11px] font-bold text-muted transition-colors hover:border-line hover:text-accent-ink disabled:opacity-60"
                             >
                               {checkingPaymentId === item.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
-                              Status
-                            </button>
+                              {translateUi("Status")}</button>
                             <button
                               type="button"
                               onClick={() => setRefundPaymentId(item.id)}
                               disabled={requestingRefundId === item.id}
                               className="flex-1 rounded-lg border border-line bg-surface px-2 py-1.5 text-[11px] font-bold text-muted transition-colors hover:border-line hover:text-warning-ink disabled:opacity-60"
                             >
-                              {requestingRefundId === item.id ? "Sending" : "Refund"}
+                              {translateUi(requestingRefundId === item.id ? "Sending" : "Refund")}
                             </button>
                           </div>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <p className="text-xs leading-relaxed text-muted">No payment records returned yet.</p>
+                    <p className="text-xs leading-relaxed text-muted">{translateUi("No payment records returned yet.")}</p>
                   )}
                 </div>
               )}
@@ -458,22 +454,22 @@ export default function UpgradePage() {
                 <div className="rounded-xl border border-line bg-surface p-4 shadow-sm">
                   <div className="mb-3 flex items-center gap-2">
                     <RefreshCw className="h-4 w-4 text-muted" />
-                    <p className="text-xs font-bold uppercase tracking-wider text-muted">Refund requests</p>
+                    <p className="text-xs font-bold uppercase tracking-wider text-muted">{translateUi("Refund requests")}</p>
                   </div>
                   {refundRequests.length ? (
                     <div className="space-y-2">
                       {refundRequests.map(item => (
                         <div key={item.id} className="rounded-xl bg-canvas px-3 py-2">
                           <div className="mb-1 flex items-center justify-between gap-3">
-                            <p className="truncate text-xs font-bold text-ink">{item.reason}</p>
-                            <span className="rounded-full bg-warning px-2 py-0.5 text-[11px] font-bold text-warning-ink">{item.status}</span>
+                            <p className="truncate text-xs font-bold text-ink">{translateUi(item.reason)}</p>
+                            <span className="rounded-full bg-warning px-2 py-0.5 text-[11px] font-bold text-warning-ink">{translateUi(item.status)}</span>
                           </div>
-                          <p className="text-[11px] text-muted">{new Date(item.requestedAt).toLocaleString()}</p>
+                          <p className="text-[11px] text-muted">{translateUi(new Date(item.requestedAt).toLocaleString(locale))}</p>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <p className="text-xs leading-relaxed text-muted">No refund requests returned yet.</p>
+                    <p className="text-xs leading-relaxed text-muted">{translateUi("No refund requests returned yet.")}</p>
                   )}
                 </div>
               )}
@@ -481,7 +477,7 @@ export default function UpgradePage() {
 
             <form onSubmit={handleSubmit} className="space-y-6 lg:col-span-3">
               <div className="rounded-xl border border-line bg-surface p-6 shadow-sm">
-                <p className="mb-5 text-xs font-bold uppercase tracking-widest text-muted">Payment method</p>
+                <p className="mb-5 text-xs font-bold uppercase tracking-widest text-muted">{translateUi("Payment method")}</p>
                 <div className="space-y-3">
                   {paymentMethods.map(({ id, label, icon: Icon, sub }) => (
                     <label
@@ -502,8 +498,8 @@ export default function UpgradePage() {
                         <Icon className={`h-6 w-6 ${method === id ? "text-accent-ink" : "text-muted group-hover:text-muted"}`} />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className={`text-base font-bold ${method === id ? "text-accent-ink" : "text-ink group-hover:text-ink"}`}>{label}</p>
-                        <p className={`mt-0.5 text-xs font-medium ${method === id ? "text-accent-ink" : "text-muted"}`}>{sub}</p>
+                        <p className={`text-base font-bold ${method === id ? "text-accent-ink" : "text-ink group-hover:text-ink"}`}>{translateUi(label)}</p>
+                        <p className={`mt-0.5 text-xs font-medium ${method === id ? "text-accent-ink" : "text-muted"}`}>{translateUi(sub)}</p>
                       </div>
                       <div className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 transition-all ${method === id ? "border-focus bg-accent scale-110" : "border-line bg-surface"}`}>
                         {method === id && <div className="h-2.5 w-2.5 rounded-full bg-surface" />}
@@ -514,7 +510,7 @@ export default function UpgradePage() {
               </div>
 
               <div className="rounded-xl border border-line bg-surface p-6 shadow-sm">
-                <p className="mb-5 text-xs font-bold uppercase tracking-widest text-muted">Order summary</p>
+                <p className="mb-5 text-xs font-bold uppercase tracking-widest text-muted">{translateUi("Order summary")}</p>
                 <div className="space-y-4">
                   <div className="flex gap-2">
                     <div className="relative flex-1">
@@ -526,7 +522,7 @@ export default function UpgradePage() {
                           setPromoDiscount(null);
                           setPromoMessage("");
                         }}
-                        placeholder="Promo code"
+                        placeholder={translateUi("Promo code")}
                         className="w-full rounded-xl border border-line bg-canvas py-2.5 pl-9 pr-3 text-sm font-semibold text-ink placeholder:text-muted focus:border-focus focus:outline-none"
                       />
                     </div>
@@ -536,29 +532,29 @@ export default function UpgradePage() {
                       disabled={checkingPromo}
                       className="rounded-xl bg-surface-muted px-4 py-2.5 text-xs font-bold text-ink transition-colors hover:bg-surface-muted disabled:opacity-60"
                     >
-                      {checkingPromo ? "Checking" : "Apply"}
+                      {translateUi(checkingPromo ? "Checking" : "Apply")}
                     </button>
                   </div>
                   {promoMessage && (
                     <p className={`text-xs font-semibold ${promoDiscount !== null ? "text-success-ink" : "text-muted"}`}>
-                      {promoMessage}
+                      {errorText(promoMessage)}
                     </p>
                   )}
                   <div className="flex justify-between text-base">
-                    <span className="font-semibold text-muted">{selectedPlan?.name ?? "NomiWrite Premium"} - <span className="capitalize">{billing}</span></span>
-                    <span className="font-bold text-ink">{fmt(subtotal)}</span>
+                    <span className="font-semibold text-muted">{translateUi(selectedPlan?.name ?? "NomiWrite Premium")} - <span className="capitalize">{translateUi(billing)}</span></span>
+                    <span className="font-bold text-ink">{translateUi(fmt(subtotal, locale))}</span>
                   </div>
                   {promoDiscount !== null && promoDiscount > 0 && (
                     <div className="flex justify-between text-base">
-                      <span className="font-semibold text-success-ink">Promo discount</span>
-                      <span className="font-bold text-success-ink">-{promoDiscount}%</span>
+                      <span className="font-semibold text-success-ink">{translateUi("Promo discount")}</span>
+                      <span className="font-bold text-success-ink">-{translateUi(promoDiscount)}%</span>
                     </div>
                   )}
                   {/* Backend plan id removed as requested */}
                   <div className="my-2 border-t border-dashed border-line" />
                   <div className="flex items-center justify-between">
-                    <span className="text-base font-bold text-ink">Total to pay</span>
-                    <span className="text-3xl font-bold text-accent-ink tracking-tight">{fmt(total)}</span>
+                    <span className="text-base font-bold text-ink">{translateUi("Total to pay")}</span>
+                    <span className="text-3xl font-bold text-accent-ink tracking-tight">{translateUi(fmt(total, locale))}</span>
                   </div>
                 </div>
               </div>
@@ -572,12 +568,11 @@ export default function UpgradePage() {
                   {agreed && <Check className="h-4 w-4 text-ink" />}
                 </button>
                 <span className="text-sm font-medium leading-relaxed text-muted">
-                  I agree to create a payment order through the selected backend provider securely.
-                </span>
+                  {translateUi("I agree to create a payment order through the selected backend provider securely.")}</span>
               </label>
 
               {error && (
-                <p className="rounded-xl border border-line bg-danger px-4 py-3 text-sm font-bold text-danger-ink">{error}</p>
+                <p className="rounded-xl border border-line bg-danger px-4 py-3 text-sm font-bold text-danger-ink">{errorText(error)}</p>
               )}
 
               <button
@@ -592,12 +587,11 @@ export default function UpgradePage() {
                 {loading ? (
                   <>
                     <Loader2 className="h-5 w-5 animate-spin" />
-                    Creating payment...
-                  </>
+                    {translateUi("Creating payment...")}</>
                 ) : (
                   <>
                     <Lock className="h-5 w-5" />
-                    Pay with {method.toUpperCase()} - {fmt(total)}
+                    {translateUi("Pay with ")}{translateUi(method.toUpperCase())} - {translateUi(fmt(total, locale))}
                   </>
                 )}
               </button>

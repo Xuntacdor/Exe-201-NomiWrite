@@ -1,5 +1,8 @@
 "use client";
 
+import { useLocale } from "@/lib/i18n/locale";
+
+
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import AppShell from "../components/AppShell";
@@ -91,6 +94,7 @@ function buildWriteHref(topic: StudyGuideTopic): string {
 }
 
 function StepAction({ step }: { step: StudyGuideStep }) {
+  const { t: translateUi } = useLocale();
   if (!step.actionType || step.actionType === "none" || !isSafeRoute(step.actionTarget)) return null;
   const meta = actionMeta[step.actionType];
 
@@ -100,7 +104,7 @@ function StepAction({ step }: { step: StudyGuideStep }) {
         href={step.actionTarget}
         className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-rose px-3.5 py-2 text-xs font-bold text-rose-ink transition-colors hover:bg-rose"
       >
-        Open <ArrowRight className="h-3.5 w-3.5" />
+        {translateUi("Open ")}<ArrowRight className="h-3.5 w-3.5" />
       </Link>
     );
   }
@@ -111,26 +115,26 @@ function StepAction({ step }: { step: StudyGuideStep }) {
       className="group inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-accent px-3.5 py-2 text-xs font-bold text-accent-ink transition-colors hover:bg-accent-hover"
     >
       <meta.icon className="h-3.5 w-3.5" />
-      {meta.label}
+      {translateUi(meta.label)}
       <ArrowRight className="h-3.5 w-3.5 transition-transform " />
-      <span className="hidden font-semibold text-accent-ink sm:inline">· {meta.labelVi}</span>
     </Link>
   );
 }
 
 function ViLine({ text }: { text?: string }) {
-  if (!text) return null;
+  const { locale } = useLocale();
+  if (!text || locale !== "vi") return null;
   return (
     <p className="mt-1.5 flex items-start gap-1.5 text-xs leading-relaxed text-muted">
       <span className="mt-px shrink-0 rounded bg-rose px-1 py-px text-[10px] font-bold leading-4 text-rose-ink">
-        VI
-      </span>
+        VI</span>
       {text}
     </p>
   );
 }
 
 function StudyPlanContent() {
+  const { t: translateUi, errorText, locale } = useLocale();
   const [guide, setGuide] = useState<StudyGuide | null>(null);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
@@ -192,7 +196,7 @@ function StudyPlanContent() {
       <div className="sticky top-0 z-10 flex h-14 items-center justify-between border-b border-line bg-surface px-6">
         <div className="flex items-center gap-2">
           <Compass className="h-4 w-4 text-rose-ink" />
-          <h1 className="text-sm font-bold text-ink">Study Plan</h1>
+          <h1 className="text-sm font-bold text-ink">{translateUi("Study Plan")}</h1>
         </div>
         {guide && (
           <button
@@ -202,7 +206,7 @@ function StudyPlanContent() {
             className="flex items-center gap-2 rounded-full bg-accent px-4 py-1.5 text-xs font-bold text-ink shadow-sm transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-60"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${generating ? "animate-spin" : ""}`} />
-            {generating ? "Regenerating…" : "Regenerate"}
+            {translateUi(generating ? "Regenerating…" : "Regenerate")}
           </button>
         )}
       </div>
@@ -211,13 +215,12 @@ function StudyPlanContent() {
         {loading && (
           <div className="flex items-center justify-center gap-2 rounded-xl border border-line bg-surface p-10 text-sm font-semibold text-muted shadow-sm">
             <Loader2 className="h-4 w-4 animate-spin text-accent-ink" />
-            Loading your study plan
-          </div>
+            {translateUi("Loading your study plan")}</div>
         )}
 
         {error && (
           <div className="rounded-xl border border-line bg-accent px-4 py-3 text-sm font-semibold text-accent-ink">
-            {error}
+            {errorText(error)}
           </div>
         )}
 
@@ -229,13 +232,9 @@ function StudyPlanContent() {
                   <Compass className="h-6 w-6 text-success-ink" />
                 </div>
                 <h2 className="relative text-2xl font-bold tracking-tight text-ink lg:text-3xl">
-                  Your personalized roadmap to the band you want
-                </h2>
+                  {translateUi("Your personalized roadmap to the band you want")}</h2>
                 <p className="relative mt-3 max-w-2xl text-base leading-relaxed text-muted lg:text-base">
-                  NomiWrite analyzes your graded essays, grammar errors, and vocabulary to build a
-                  step-by-step study plan — your current band, exact strengths and weaknesses, and
-                  three next moves to practice.
-                </p>
+                  {translateUi("NomiWrite analyzes your graded essays, grammar errors, and vocabulary to build a step-by-step study plan — your current band, exact strengths and weaknesses, and three next moves to practice.")}</p>
               </div>
               <div className="-mt-10 flex justify-center lg:justify-start lg:px-14">
                 <button
@@ -244,15 +243,14 @@ function StudyPlanContent() {
                   className="flex items-center gap-2 rounded-xl bg-accent px-7 py-3.5 text-sm font-bold text-ink shadow-sm transition-all  hover:bg-accent-hover"
                 >
                   <Sparkles className="h-4 w-4" />
-                  Generate my study plan
-                </button>
+                  {translateUi("Generate my study plan")}</button>
               </div>
             </div>
             {!error && (
               <p className="text-center text-xs font-medium text-muted">
-                Needs at least one graded writing — add one in{" "}
-                <Link href="/write" className="text-accent-ink hover:underline">Write</Link> or{" "}
-                <Link href="/history" className="text-accent-ink hover:underline">History</Link>.
+                {translateUi("Needs at least one graded writing — add one in")}{" "}
+                <Link href="/write" className="text-accent-ink hover:underline">{translateUi("Write")}</Link> {translateUi(" or")}{" "}
+                <Link href="/history" className="text-accent-ink hover:underline">{translateUi("History")}</Link>.
               </p>
             )}
           </div>
@@ -264,8 +262,8 @@ function StudyPlanContent() {
               <div className="absolute inset-0 animate-spin-slow rounded-full border-4 border-line border-t-line" />
               <Sparkles className="absolute inset-0 m-auto h-5 w-5 text-accent-ink" />
             </div>
-            <p className="text-sm font-bold text-ink">Analyzing your writing history…</p>
-            <p className="mt-1 text-xs text-muted">Reading graded essays, grammar errors, and vocabulary. This can take up to a minute.</p>
+            <p className="text-sm font-bold text-ink">{translateUi("Analyzing your writing history…")}</p>
+            <p className="mt-1 text-xs text-muted">{translateUi("Reading graded essays, grammar errors, and vocabulary. This can take up to a minute.")}</p>
           </div>
         )}
 
@@ -276,22 +274,21 @@ function StudyPlanContent() {
                 <div className="relative flex flex-col items-center justify-center gap-2 p-8 lg:min-w-64 lg:border-r lg:border-line">
                   <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-success-ink">
                     <Trophy className="h-3.5 w-3.5 text-success-ink" />
-                    Estimated Band
-                  </div>
+                    {translateUi("Estimated Band")}</div>
                   {guide.analyzedEssayCount > 0 ? (
                     <>
                       <span className="text-6xl font-bold tracking-tight text-ink lg:text-7xl">
-                        {formatBand(guide.estimatedBand)}
+                        {translateUi(formatBand(guide.estimatedBand))}
                       </span>
                       {guide.targetBand != null && (
                         <div className="flex items-center gap-1.5 rounded-full bg-surface px-3 py-1 text-xs font-bold text-ink">
                           <TrendingUp className="h-3 w-3 text-success-ink" />
-                          Mục tiêu {formatBand(guide.targetBand)}
+                          {translateUi("Mục tiêu ")}{translateUi(formatBand(guide.targetBand))}
                         </div>
                       )}
                       {bandGap != null && (
                         <p className={`text-xs font-semibold ${bandGap > 0 ? "text-accent-ink" : "text-success-ink"}`}>
-                          {bandGap > 0 ? `Còn ${formatBand(bandGap)} để đạt mục tiêu` : "Target reached"}
+                          {bandGap > 0 ? translateUi("{gap} points to your target", { gap: formatBand(bandGap) }) : translateUi("Target reached")}
                         </p>
                       )}
                     </>
@@ -299,31 +296,29 @@ function StudyPlanContent() {
                     <>
                       <span className="text-6xl font-bold tracking-tight text-ink lg:text-7xl">—</span>
                       <span className="rounded-full bg-surface px-3 py-1 text-xs font-bold text-ink">
-                        Not graded yet
-                      </span>
+                        {translateUi("Not graded yet")}</span>
                       <Link
                         href="/write"
                         className="text-xs font-bold text-success-ink transition-colors hover:text-success-ink"
                       >
-                        Write an essay to unlock your band →
-                      </Link>
+                        {translateUi("Write an essay to unlock your band →")}</Link>
                     </>
                   )}
                 </div>
                 <div className="relative p-8 lg:p-10">
                   <div className="mb-3 flex flex-wrap gap-2">
                     <span className="rounded-full bg-surface px-3 py-1 text-xs font-bold text-ink">
-                      {guide.targetExam || "IELTS Writing"}
+                      {translateUi(guide.targetExam || "IELTS Writing")}
                     </span>
                     <span className="rounded-full bg-surface px-3 py-1 text-xs font-bold text-ink">
                       {guide.analyzedEssayCount > 0
-                        ? `${guide.analyzedEssayCount} essay${guide.analyzedEssayCount === 1 ? "" : "s"} analyzed`
-                        : "Grades pending"}
+                        ? translateUi("Essays analyzed: {count}", { count: guide.analyzedEssayCount })
+                        : translateUi("Grades pending")}
                     </span>
                   </div>
-                  <p className="text-base leading-relaxed text-ink lg:text-lg">{guide.summary}</p>
+                  <p className="text-base leading-relaxed text-ink lg:text-lg">{translateUi(guide.summary)}</p>
                   <p className="mt-4 text-xs font-semibold text-muted">
-                    Generated {new Date(guide.createdAt).toLocaleString()}
+                    {translateUi("Generated ")}{translateUi(new Date(guide.createdAt).toLocaleString(locale))}
                   </p>
                 </div>
               </div>
@@ -334,13 +329,11 @@ function StudyPlanContent() {
                 <Languages className="h-3.5 w-3.5 text-rose-ink" />
               </span>
               <div>
-                <p className="text-xs font-bold text-ink">IELTS criteria, in plain words</p>
+                <p className="text-xs font-bold text-ink">{translateUi("IELTS criteria, in plain words")}</p>
                 <p className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted">
                   {criteriaLegend.map(item => (
                     <span key={item.en}>
-                      <span className="font-bold text-rose-ink">{item.en}</span>
-                      <span className="mx-1 text-muted">/</span>
-                      {item.vi}
+                      <span className="font-bold text-rose-ink">{translateUi(item.en)}</span>
                     </span>
                   ))}
                 </p>
@@ -353,20 +346,20 @@ function StudyPlanContent() {
                   <span className="flex h-8 w-8 items-center justify-center rounded-full bg-success">
                     <Check className="h-4 w-4 text-success-ink" />
                   </span>
-                  <h3 className="text-base font-bold text-ink">What you do well</h3>
+                  <h3 className="text-base font-bold text-ink">{translateUi("What you do well")}</h3>
                 </div>
                 <ul className="space-y-3">
                   {strengths.map((item, index) => (
                     <li key={index} className="flex items-start gap-3 rounded-xl bg-success p-3.5">
                       <Check className="mt-0.5 h-4 w-4 shrink-0 text-success-ink" />
                       <div className="min-w-0">
-                        <p className="text-base leading-relaxed text-ink">{item.text}</p>
+                        <p className="text-base leading-relaxed text-ink">{translateUi(item.text)}</p>
                         <ViLine text={item.explanationVi} />
                       </div>
                     </li>
                   ))}
                   {strengths.length === 0 && (
-                    <li className="text-sm text-muted">No strengths recorded yet.</li>
+                    <li className="text-sm text-muted">{translateUi("No strengths recorded yet.")}</li>
                   )}
                 </ul>
               </div>
@@ -376,20 +369,20 @@ function StudyPlanContent() {
                   <span className="flex h-8 w-8 items-center justify-center rounded-full bg-accent">
                     <AlertTriangle className="h-4 w-4 text-accent-ink" />
                   </span>
-                  <h3 className="text-base font-bold text-ink">What to fix</h3>
+                  <h3 className="text-base font-bold text-ink">{translateUi("What to fix")}</h3>
                 </div>
                 <ul className="space-y-3">
                   {weaknesses.map((item, index) => (
                     <li key={index} className="flex items-start gap-3 rounded-xl bg-accent p-3.5">
                       <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-accent-ink" />
                       <div className="min-w-0">
-                        <p className="text-base leading-relaxed text-ink">{item.text}</p>
+                        <p className="text-base leading-relaxed text-ink">{translateUi(item.text)}</p>
                         <ViLine text={item.explanationVi} />
                       </div>
                     </li>
                   ))}
                   {weaknesses.length === 0 && (
-                    <li className="text-sm text-muted">No weaknesses flagged.</li>
+                    <li className="text-sm text-muted">{translateUi("No weaknesses flagged.")}</li>
                   )}
                 </ul>
               </div>
@@ -397,8 +390,8 @@ function StudyPlanContent() {
 
             <div className="rounded-xl border border-line bg-surface p-6 shadow-sm lg:p-8">
               <div className="mb-6 flex items-center justify-between">
-                <h3 className="text-base font-bold text-ink">Your next three moves</h3>
-                <span className="text-xs font-semibold text-muted">Do these in order</span>
+                <h3 className="text-base font-bold text-ink">{translateUi("Your next three moves")}</h3>
+                <span className="text-xs font-semibold text-muted">{translateUi("Do these in order")}</span>
               </div>
               <div className="space-y-4">
                 {guide.nextSteps.map((step, index) => {
@@ -413,15 +406,15 @@ function StudyPlanContent() {
                         </div>
                         <div className="min-w-0 flex-1">
                           <div className="mb-1 flex flex-wrap items-center gap-2">
-                            <p className="text-sm font-bold text-ink">{step.title}</p>
+                            <p className="text-sm font-bold text-ink">{translateUi(step.title)}</p>
                             <span
                               className={`cursor-help rounded-full px-2.5 py-0.5 text-[11px] font-bold ${badge.className}`}
-                              title={vi ? `${badge.label} — ${vi}` : badge.label}
+                              title={translateUi(locale === "vi" && vi ? vi : badge.label)}
                             >
-                              {badge.label}
+                              {translateUi(badge.label)}
                             </span>
                           </div>
-                          <p className="text-base leading-relaxed text-muted">{step.description}</p>
+                          <p className="text-base leading-relaxed text-muted">{translateUi(step.description)}</p>
                           <ViLine text={step.explanationVi} />
                         </div>
                         <StepAction step={step} />
@@ -430,7 +423,7 @@ function StudyPlanContent() {
                   );
                 })}
                 {guide.nextSteps.length === 0 && (
-                  <p className="text-sm text-muted">No steps planned yet.</p>
+                  <p className="text-sm text-muted">{translateUi("No steps planned yet.")}</p>
                 )}
               </div>
             </div>
@@ -441,10 +434,10 @@ function StudyPlanContent() {
                   <span className="flex h-8 w-8 items-center justify-center rounded-full bg-surface">
                     <Sparkles className="h-4 w-4 text-rose-ink" />
                   </span>
-                  <h3 className="text-base font-bold text-ink">Practice topic recommended for you</h3>
+                  <h3 className="text-base font-bold text-ink">{translateUi("Practice topic recommended for you")}</h3>
                 </div>
                 <p className="text-sm font-bold text-accent-ink">{guide.recommendedTopic.title}</p>
-                <p className="mt-1 text-base leading-relaxed text-muted">{guide.recommendedTopic.reason}</p>
+                <p className="mt-1 text-base leading-relaxed text-muted">{translateUi(guide.recommendedTopic.reason)}</p>
                 {guide.recommendedTopic.suggestedPrompt && (
                   <div className="mt-4 flex items-start gap-3 rounded-xl border border-line bg-surface p-4">
                     <p className="flex-1 text-sm italic leading-relaxed text-ink">
@@ -456,7 +449,7 @@ function StudyPlanContent() {
                       className="flex shrink-0 items-center gap-1.5 rounded-xl border border-line px-3 py-1.5 text-xs font-bold text-rose-ink transition-colors hover:border-line hover:bg-rose"
                     >
                       {copied ? <Check className="h-3.5 w-3.5 text-success-ink" /> : <Copy className="h-3.5 w-3.5" />}
-                      {copied ? "Copied" : "Copy prompt"}
+                      {translateUi(copied ? "Copied" : "Copy prompt")}
                     </button>
                   </div>
                 )}
@@ -470,8 +463,7 @@ function StudyPlanContent() {
                     >
                       <span className="flex items-center gap-2 text-sm font-bold text-accent-ink">
                         <Lightbulb className="h-4 w-4 text-rose-ink" />
-                        Ideas & vocabulary to start writing
-                      </span>
+                        {translateUi("Ideas & vocabulary to start writing")}</span>
                       <ChevronDown className={`h-4 w-4 text-muted transition-transform ${topicOpen ? "rotate-180" : ""}`} />
                     </button>
                     {topicOpen && (
@@ -479,8 +471,7 @@ function StudyPlanContent() {
                         {guide.recommendedTopic.ideaHints && guide.recommendedTopic.ideaHints.length > 0 && (
                           <div>
                             <p className="mb-2 text-[11px] font-bold uppercase tracking-widest text-rose-ink">
-                              Brainstorming hints
-                            </p>
+                              {translateUi("Brainstorming hints")}</p>
                             <ul className="space-y-1.5">
                               {guide.recommendedTopic.ideaHints.map((hint, index) => (
                                 <li key={index} className="flex items-start gap-2 text-xs leading-relaxed text-ink">
@@ -494,8 +485,7 @@ function StudyPlanContent() {
                         {guide.recommendedTopic.keyVocabulary && guide.recommendedTopic.keyVocabulary.length > 0 && (
                           <div>
                             <p className="mb-2 text-[11px] font-bold uppercase tracking-widest text-rose-ink">
-                              Topic vocabulary to reuse
-                            </p>
+                              {translateUi("Topic vocabulary to reuse")}</p>
                             <div className="flex flex-wrap gap-2">
                               {guide.recommendedTopic.keyVocabulary.map((term, index) => (
                                 <span key={index} className="rounded-full bg-success px-3 py-1 text-xs font-bold text-success-ink">
@@ -515,12 +505,10 @@ function StudyPlanContent() {
                   href={buildWriteHref(guide.recommendedTopic)}
                   className="inline-flex items-center gap-2 rounded-xl bg-accent px-5 py-2.5 text-sm font-bold text-ink shadow-sm transition-all  hover:bg-accent-hover"
                 >
-                  Start writing this topic
-                  <ArrowRight className="h-4 w-4" />
+                  {translateUi("Start writing this topic")}<ArrowRight className="h-4 w-4" />
                 </Link>
                 <span className="ml-3 hidden text-xs font-medium text-muted sm:inline">
-                  Prompt + ideas auto-filled in the editor
-                </span>
+                  {translateUi("Prompt + ideas auto-filled in the editor")}</span>
               </div>
             </div>
           </>

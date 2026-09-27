@@ -1,3 +1,6 @@
+"use client";
+
+import { useLocale } from "@/lib/i18n/locale";
 import {
   Target,
   BarChart3,
@@ -50,20 +53,18 @@ const features = [
 ];
 
 export default function Features() {
+  const { t: translateUi } = useLocale();
   return (
     <section id="features" className="py-20 sm:py-28 bg-surface">
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
         {/* Header */}
         <div className="text-center mb-16">
           <span className="inline-block px-3 py-1 text-xs font-bold text-rose-ink bg-rose rounded-full uppercase tracking-widest mb-4">
-            Tính năng
-          </span>
+            {translateUi("Tính năng")}</span>
           <h2 className="text-4xl sm:text-5xl font-bold text-ink leading-tight">
-            Khác biệt then chốt
-          </h2>
+            {translateUi("Khác biệt then chốt")}</h2>
           <p className="mt-5 text-lg text-muted max-w-xl mx-auto">
-            Bốn điểm làm NomiWrite khác với mọi công cụ bạn đã dùng.
-          </p>
+            {translateUi("Bốn điểm làm NomiWrite khác với mọi công cụ bạn đã dùng.")}</p>
         </div>
 
         {/* Feature grid */}
@@ -82,15 +83,15 @@ export default function Features() {
                   <Icon className="w-6 h-6 text-ink" />
                 </div>
                 <h3 className="text-xl font-bold text-ink mb-3">
-                  {feature.title}
+                  {translateUi(feature.title)}
                 </h3>
                 <p className="text-sm text-muted leading-relaxed mb-5">
-                  {feature.description}
+                  {translateUi(feature.description)}
                 </p>
                 <div className={`inline-flex items-center gap-2 px-3 py-1.5 border rounded-full ${feature.accent}`}>
                   <Check className="w-3.5 h-3.5 shrink-0" />
                   <span className="text-xs font-semibold">
-                    {feature.highlight}
+                    {translateUi(feature.highlight)}
                   </span>
                 </div>
               </div>
@@ -107,11 +108,9 @@ export default function Features() {
               </div>
               <div>
                 <h4 className="font-bold text-ink text-lg">
-                  20 nhóm lỗi ngữ pháp phổ biến nhất của người Việt
-                </h4>
+                  {translateUi("20 nhóm lỗi ngữ pháp phổ biến nhất của người Việt")}</h4>
                 <p className="text-sm text-muted mt-0.5">
-                  Danh mục cố định — AI luôn gán lỗi đúng nhóm, không tự đặt tên mới. Thống kê nhất quán theo thời gian.
-                </p>
+                  {translateUi("Danh mục cố định — AI luôn gán lỗi đúng nhóm, không tự đặt tên mới. Thống kê nhất quán theo thời gian.")}</p>
               </div>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -128,7 +127,7 @@ export default function Features() {
                       : "bg-surface border-line text-muted hover:bg-surface transition-colors"
                   }`}
                 >
-                  {cat}
+                  {translateUi(cat)}
                 </span>
               ))}
             </div>

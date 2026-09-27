@@ -1,3 +1,6 @@
+"use client";
+
+import { useLocale } from "@/lib/i18n/locale";
 import {
   ArrowRight,
   BarChart2,
@@ -22,6 +25,7 @@ const problems = [
     bg: "bg-rose ",
     iconColor: "text-rose-ink bg-rose",
     tagColor: "text-rose-ink bg-rose border-line",
+    detailColor: "text-muted",
   },
   {
     tool: "App chấm IELTS",
@@ -35,6 +39,7 @@ const problems = [
     bg: "bg-accent ",
     iconColor: "text-accent-ink bg-accent",
     tagColor: "text-accent-ink bg-accent border-line",
+    detailColor: "text-muted",
   },
   {
     tool: "Quizlet / Anki",
@@ -45,9 +50,10 @@ const problems = [
     pain: "Thiếu ngữ cảnh",
     metric: "Khó áp dụng vào bài thật",
     border: "border-line",
-    bg: "bg-warning ",
-    iconColor: "text-warning-ink bg-warning",
-    tagColor: "text-warning-ink bg-warning border-line",
+    bg: "bg-rose-bold",
+    iconColor: "text-rose-bold-ink bg-rose-bold",
+    tagColor: "text-rose-bold-ink bg-rose-bold border-current",
+    detailColor: "text-rose-bold-ink",
   },
 ];
 
@@ -58,6 +64,7 @@ const loopItems = [
 ];
 
 export default function Problem() {
+  const { t: translateUi } = useLocale();
   return (
     <section className="relative overflow-hidden bg-surface-muted py-20 sm:py-28">
       <div className="absolute inset-0 pointer-events-none">
@@ -69,18 +76,14 @@ export default function Problem() {
           <div>
             <span className="inline-flex items-center gap-2 rounded-full border border-focus bg-danger px-3 py-1 text-xs font-bold uppercase tracking-widest text-danger-ink">
               <XCircle className="h-3.5 w-3.5" />
-              Vấn đề
-            </span>
+              {translateUi("Vấn đề")}</span>
             <h2 className="mt-5 max-w-3xl text-4xl font-bold leading-tight text-ink sm:text-5xl">
-              Công cụ hiện tại chỉ xử lý bài viết.
-              <span className="block text-accent-ink">Người học cần một vòng lặp.</span>
+              {translateUi("Công cụ hiện tại chỉ xử lý bài viết.")}<span className="block text-accent-ink">{translateUi("Người học cần một vòng lặp.")}</span>
             </h2>
           </div>
 
           <p className="text-base leading-relaxed text-muted sm:text-lg lg:pb-2">
-            Người học tiếng Anh ở Việt Nam không thiếu app. Cái thiếu là một hệ thống
-            nhìn thấy lỗi lặp lại, biến lỗi thành bài tập, rồi chứng minh bạn đang tiến bộ.
-          </p>
+            {translateUi("Người học tiếng Anh ở Việt Nam không thiếu app. Cái thiếu là một hệ thống nhìn thấy lỗi lặp lại, biến lỗi thành bài tập, rồi chứng minh bạn đang tiến bộ.")}</p>
         </div>
 
         <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
@@ -98,25 +101,25 @@ export default function Problem() {
                     <Icon className="h-5 w-5" />
                   </div>
                   <span className={`rounded-full border px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider ${item.tagColor}`}>
-                    {item.tool}
+                    {translateUi(item.tool)}
                   </span>
                 </div>
 
                 <div className="relative flex flex-1 flex-col">
-                  <p className="mb-2 text-xs font-bold uppercase tracking-[0.22em] text-muted">
-                    {item.pain}
+                  <p className={`mb-2 text-xs font-bold uppercase tracking-[0.22em] ${item.detailColor}`}>
+                    {translateUi(item.pain)}
                   </p>
                   <h3 className="mb-3 text-xl font-bold leading-snug text-ink">
-                    {item.problem}
+                    {translateUi(item.problem)}
                   </h3>
-                  <p className="text-sm leading-relaxed text-muted">
-                    {item.detail}
+                  <p className={`text-sm leading-relaxed ${item.detailColor}`}>
+                    {translateUi(item.detail)}
                   </p>
 
                   <div className="mt-auto pt-6">
                     <div className="flex items-center gap-2 rounded-xl bg-surface-muted px-3 py-2 text-xs font-bold text-muted">
                       <XCircle className="h-4 w-4 text-danger-ink" />
-                      {item.metric}
+                      {translateUi(item.metric)}
                     </div>
                   </div>
                 </div>
@@ -140,9 +143,8 @@ export default function Problem() {
               </div>
               <div>
                 <p className="text-xs font-bold uppercase tracking-widest text-accent-ink">
-                  Insight
-                </p>
-                <h3 className="font-bold text-ink">Sửa bài không đủ để học viết</h3>
+                  {translateUi("Insight")}</p>
+                <h3 className="font-bold text-ink">{translateUi("Sửa bài không đủ để học viết")}</h3>
               </div>
             </div>
 
@@ -152,7 +154,7 @@ export default function Problem() {
                   <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-surface text-xs font-black text-ink">
                     {index + 1}
                   </span>
-                  <span className="text-sm font-semibold text-muted">{item}</span>
+                  <span className="text-sm font-semibold text-muted">{translateUi(item)}</span>
                 </div>
               ))}
             </div>
@@ -168,16 +170,11 @@ export default function Problem() {
               <div className="flex-1">
                 <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-surface px-3 py-1 text-xs font-bold text-accent-ink ring-1 ring-focus">
                   <Sparkles className="h-3.5 w-3.5" />
-                  NomiWrite giải quyết khoảng trống này
-                </div>
+                  {translateUi("NomiWrite giải quyết khoảng trống này")}</div>
                 <h3 className="text-2xl font-bold leading-tight sm:text-3xl">
-                  Từ một bài viết, tạo ra lộ trình luyện đúng lỗi của bạn.
-                </h3>
+                  {translateUi("Từ một bài viết, tạo ra lộ trình luyện đúng lỗi của bạn.")}</h3>
                 <p className="mt-3 max-w-2xl text-sm leading-relaxed text-accent-ink sm:text-base">
-                  NomiWrite dùng bài viết thật làm dữ liệu, phân loại lỗi cố hữu,
-                  gợi ý từ vựng theo ngữ cảnh, sinh quiz cá nhân hóa và theo dõi
-                  xem lỗi cũ có giảm qua từng bài không.
-                </p>
+                  {translateUi("NomiWrite dùng bài viết thật làm dữ liệu, phân loại lỗi cố hữu, gợi ý từ vựng theo ngữ cảnh, sinh quiz cá nhân hóa và theo dõi xem lỗi cũ có giảm qua từng bài không.")}</p>
               </div>
             </div>
           </div>

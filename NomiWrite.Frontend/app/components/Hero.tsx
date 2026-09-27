@@ -1,3 +1,6 @@
+"use client";
+
+import { useLocale } from "@/lib/i18n/locale";
 import {
   ArrowRight,
   Sparkles,
@@ -24,6 +27,7 @@ const avatarIcons = [
 ];
 
 export default function Hero() {
+  const { t: translateUi } = useLocale();
   return (
     <section className="hero-gradient min-h-screen flex items-center pt-16 overflow-hidden relative">
       {/* Background orbs */}
@@ -36,24 +40,22 @@ export default function Hero() {
           {/* Eyebrow badge */}
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-surface border border-line text-accent-ink text-sm font-semibold mb-8 shadow-sm">
             <Sparkles className="w-4 h-4 text-accent-ink" />
-            <span>AI chấm bài · Học từ chính bài viết của bạn</span>
+            <span>{translateUi("AI chấm bài · Học từ chính bài viết của bạn")}</span>
           </div>
 
           {/* Headline */}
           <h1 className="text-5xl sm:text-6xl md:text-7xl font-bold text-ink leading-[1.08] tracking-tight max-w-4xl">
-            Luyện viết tiếng Anh{" "}
-            <span className="gradient-text">dạy thật,</span>
+            {translateUi("Luyện viết tiếng Anh")}{" "}
+            <span className="gradient-text">{translateUi("dạy thật,")}</span>
             <br />
-            <span className="text-ink">không chỉ sửa hộ</span>
+            <span className="text-ink">{translateUi("không chỉ sửa hộ")}</span>
           </h1>
 
           {/* Subheadline */}
           <p className="mt-7 text-xl sm:text-2xl text-muted max-w-2xl leading-relaxed">
-            Viết bài → AI phân loại lỗi cố hữu → Sinh quiz cá nhân hóa → Đo tiến bộ thật.
-          </p>
+            {translateUi("Viết bài → AI phân loại lỗi cố hữu → Sinh quiz cá nhân hóa → Đo tiến bộ thật.")}</p>
           <p className="mt-3 text-base font-semibold text-ink">
-            Bài viết là điểm xuất phát, không phải đích đến.
-          </p>
+            {translateUi("Bài viết là điểm xuất phát, không phải đích đến.")}</p>
 
           {/* CTA buttons */}
           <div className="mt-10 flex flex-col sm:flex-row items-center gap-3">
@@ -61,15 +63,13 @@ export default function Hero() {
               href="/register"
               className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 text-base font-bold text-ink bg-accent rounded-full hover:bg-accent-hover transition-all shadow-sm "
             >
-              Bắt đầu miễn phí
-              <ArrowRight className="w-4 h-4" />
+              {translateUi("Bắt đầu miễn phí")}<ArrowRight className="w-4 h-4" />
             </a>
             <a
               href="#how-it-works"
               className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 text-base font-semibold text-ink bg-surface rounded-full hover:bg-surface transition-all border border-line shadow-sm "
             >
-              Xem cách hoạt động
-            </a>
+              {translateUi("Xem cách hoạt động")}</a>
           </div>
 
           {/* Social proof */}
@@ -89,7 +89,7 @@ export default function Hero() {
                 <Star key={i} className="w-4 h-4 fill-warning-ink text-warning-ink" />
               ))}
             </div>
-            <span className="text-muted font-medium">Dành cho người luyện IELTS &amp; viết chuyên nghiệp</span>
+            <span className="text-muted font-medium">{translateUi("Dành cho người luyện IELTS & viết chuyên nghiệp")}</span>
           </div>
 
           {/* Writing type badges */}
@@ -99,7 +99,7 @@ export default function Hero() {
                 key={badge}
                 className="px-4 py-1.5 text-xs font-semibold text-muted bg-surface border border-line rounded-full shadow-sm hover:border-focus hover:text-accent-ink transition-colors"
               >
-                {badge}
+                {translateUi(badge)}
               </span>
             ))}
           </div>
@@ -115,7 +115,7 @@ export default function Hero() {
                 <div className="ml-4 flex-1 h-5 bg-surface-muted rounded-md max-w-sm" />
                 <div className="flex items-center gap-1.5 ml-auto">
                   <div className="w-2 h-2 rounded-full bg-success" />
-                  <span className="text-xs text-muted font-medium">AI đang chấm…</span>
+                  <span className="text-xs text-muted font-medium">{translateUi("AI đang chấm…")}</span>
                 </div>
               </div>
 
@@ -126,11 +126,11 @@ export default function Hero() {
                   <div className="flex items-center justify-between mb-1">
                     <div className="flex items-center gap-2">
                       <PenLine className="w-3.5 h-3.5 text-muted" />
-                      <span className="text-xs font-semibold text-muted uppercase tracking-wide">Bài viết</span>
+                      <span className="text-xs font-semibold text-muted uppercase tracking-wide">{translateUi("Bài viết")}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="px-2 py-0.5 text-xs bg-accent text-accent-ink rounded-full font-semibold">IELTS Task 2</span>
-                      <span className="text-xs text-muted">287 từ</span>
+                      <span className="px-2 py-0.5 text-xs bg-accent text-accent-ink rounded-full font-semibold">{translateUi("IELTS Task 2")}</span>
+                      <span className="text-xs text-muted">{translateUi("287 từ")}</span>
                     </div>
                   </div>
                   <div className="space-y-2">
@@ -138,13 +138,13 @@ export default function Hero() {
                     <div className="h-2.5 bg-surface-muted rounded-full w-11/12" />
                     <div className="relative h-6 flex items-center">
                       <div className="h-2.5 bg-danger rounded-full w-4/5 border border-line" />
-                      <span className="absolute left-2 text-[10px] text-danger-ink font-semibold">article error</span>
+                      <span className="absolute left-2 text-[10px] text-danger-ink font-semibold">{translateUi("article error")}</span>
                     </div>
                     <div className="h-2.5 bg-surface-muted rounded-full w-full" />
                     <div className="h-2.5 bg-surface-muted rounded-full w-3/4" />
                     <div className="relative h-6 flex items-center">
                       <div className="h-2.5 bg-warning rounded-full w-full border border-line" />
-                      <span className="absolute left-16 text-[10px] text-warning-ink font-semibold">verb tense</span>
+                      <span className="absolute left-16 text-[10px] text-warning-ink font-semibold">{translateUi("verb tense")}</span>
                     </div>
                     <div className="h-2.5 bg-surface-muted rounded-full w-5/6" />
                     <div className="h-2.5 bg-surface-muted rounded-full w-2/3" />
@@ -155,7 +155,7 @@ export default function Hero() {
                 <div className="p-5 space-y-3.5 bg-canvas">
                   <div className="flex items-center gap-1.5 mb-1">
                     <Sparkles className="w-3.5 h-3.5 text-rose-ink" />
-                    <span className="text-xs font-semibold text-muted uppercase tracking-wide">Kết quả AI</span>
+                    <span className="text-xs font-semibold text-muted uppercase tracking-wide">{translateUi("Kết quả AI")}</span>
                   </div>
 
                   {/* Score card */}
@@ -164,13 +164,13 @@ export default function Hero() {
                       6.5
                     </div>
                     <div>
-                      <p className="text-sm font-bold text-ink">Band 6.5</p>
-                      <p className="text-xs text-accent-ink">Mức dự kiến IELTS Writing</p>
+                      <p className="text-sm font-bold text-ink">{translateUi("Band 6.5")}</p>
+                      <p className="text-xs text-accent-ink">{translateUi("Mức dự kiến IELTS Writing")}</p>
                     </div>
                   </div>
 
                   <div>
-                    <p className="text-xs font-semibold text-muted mb-2">Lỗi thường gặp của bạn</p>
+                    <p className="text-xs font-semibold text-muted mb-2">{translateUi("Lỗi thường gặp của bạn")}</p>
                     {[
                       { label: "Mạo từ (a/an/the)", count: 5, w: "w-5/6", color: "bg-danger" },
                       { label: "Chia thì động từ",  count: 3, w: "w-3/5", color: "bg-accent" },
@@ -178,8 +178,8 @@ export default function Hero() {
                     ].map((err) => (
                       <div key={err.label} className="mb-2">
                         <div className="flex justify-between mb-1">
-                          <span className="text-xs text-muted">{err.label}</span>
-                          <span className="text-xs font-semibold text-muted">{err.count} lỗi</span>
+                          <span className="text-xs text-muted">{translateUi(err.label)}</span>
+                          <span className="text-xs font-semibold text-muted">{translateUi(err.count)} {translateUi(" lỗi")}</span>
                         </div>
                         <div className="h-1.5 bg-surface-muted rounded-full overflow-hidden">
                           <div className={`h-full ${err.color} ${err.w} rounded-full`} />
@@ -193,14 +193,13 @@ export default function Hero() {
                 <div className="p-5 space-y-3 bg-rose">
                   <div className="flex items-center gap-1.5 mb-1">
                     <GraduationCap className="w-3.5 h-3.5 text-rose-ink" />
-                    <span className="text-xs font-semibold text-muted uppercase tracking-wide">Quiz sinh từ lỗi</span>
+                    <span className="text-xs font-semibold text-muted uppercase tracking-wide">{translateUi("Quiz sinh từ lỗi")}</span>
                   </div>
 
                   <div className="p-3 rounded-xl bg-surface border border-line shadow-sm">
-                    <p className="text-xs font-semibold text-ink mb-2">Câu 1/8 — Mạo từ</p>
+                    <p className="text-xs font-semibold text-ink mb-2">{translateUi("Câu 1/8 — Mạo từ")}</p>
                     <p className="text-xs text-muted mb-3 leading-relaxed">
-                      &quot;__ environment is a shared responsibility.&quot;
-                    </p>
+                      {translateUi("\"__ environment is a shared responsibility.\"")}</p>
                     <div className="space-y-1.5">
                       {["A", "An", "The", "—"].map((opt, i) => (
                         <div
@@ -213,15 +212,15 @@ export default function Hero() {
                         >
                           <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold ${
                             i === 2 ? "bg-success text-ink" : "bg-surface-muted text-muted"
-                          }`}>{opt}</span>
-                          <span>{opt === "—" ? "Không mạo từ" : opt}</span>
+                          }`}>{translateUi(opt)}</span>
+                          <span>{translateUi(opt === "—" ? "Không mạo từ" : opt)}</span>
                         </div>
                       ))}
                     </div>
                   </div>
 
                   <div className="flex items-center justify-between px-1">
-                    <span className="text-xs text-rose-ink font-semibold">7/8 đúng hôm nay</span>
+                    <span className="text-xs text-rose-ink font-semibold">{translateUi("7/8 đúng hôm nay")}</span>
                     <div className="flex gap-0.5">
                       {[...Array(8)].map((_, i) => (
                         <div key={i} className={`w-2 h-2 rounded-full ${i < 7 ? "bg-success" : "bg-surface-muted"}`} />

@@ -4,6 +4,17 @@ Mục tiêu: giao diện luyện TOEIC/IELTS gần gũi, nhất quán, dễ tậ
 
 ## Điều chỉnh mới nhất theo phản hồi
 
+- Writing desktop giãn theo phần chiều cao còn lại bên dưới header; cột đề và editor cuộn riêng, thanh đếm từ ở đáy editor. Màn hình hẹp hoặc thấp vẫn dùng bố cục cuộn tự nhiên.
+- Dark mode giữ nền xanh than, chuyển accent sang hồng mận `#482b40`, hover `#60364f`, chữ nhấn `#ffd2e5`, focus `#ed95be`. Áp dụng cho nút chính, mục chọn, biểu tượng, liên kết và tiến độ; card đọc nội dung giữ nền trung tính.
+- Dùng cặp token riêng cho ô hồng đậm trên landing ở cả hai theme; không dùng một mã màu sáng cố định trong dark mode. Các cặp chữ/nền chính được đo đều đạt tối thiểu 4,5:1.
+- Tham khảo [Material dark theme](https://codelabs.developers.google.com/codelabs/design-material-darktheme) về duy trì nhận diện và tiết chế màu nhấn; [Atlassian accents](https://atlassian.design/foundations/color/accents) về cặp nền/chữ cùng họ màu và tách màu trạng thái. Vị trí dùng hồng là lựa chọn thiết kế cho NomiWrite.
+- Rà soát phát hiện và sửa lỗi tự lưu có thể ghi đè bản nháp trước khi đọc xong khi mở/đổi đề; có test hồi quy cho các effect thực tế của trang.
+
+- Thêm Cài đặt dùng chung: chọn Tiếng Việt / English và sáng / tối; lưu lựa chọn trên trình duyệt và đồng bộ giữa các tab.
+- Nhãn, điều hướng, nút, thông báo, hướng dẫn và các trang công khai dùng bộ bản dịch thống nhất. Các giá trị gửi API không đổi theo ngôn ngữ.
+- Đề bài, bài người học viết, câu hỏi/đáp án, câu ví dụ, từ và cụm từ luyện tập giữ nguyên tiếng Anh. Không tự dịch nội dung bài làm. Ghi chú tiếng Việt từ lộ trình chỉ xuất hiện khi chọn tiếng Việt; không tạo nghĩa từ vựng giả khi API chưa cung cấp.
+- Kiểm tra thêm lưu/đổi ngôn ngữ, tham số trong bản dịch, lỗi mã hóa, trạng thái khi lưu trữ bị chặn và bảo vệ nội dung luyện tập. Chưa thay thế được kiểm thử thao tác trực quan trong Browser.
+
 Các lựa chọn dưới đây thay thế bảng màu và bố cục đề xuất trước đó:
 
 - Light: nền hồng phấn `#fff3f7`, card trắng, accent hồng `#f7c9dd`, chữ gần đen `#19171c`; bỏ sắc nâu/cam làm màu chủ đạo.

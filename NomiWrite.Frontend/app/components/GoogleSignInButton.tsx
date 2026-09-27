@@ -1,5 +1,8 @@
 "use client";
 
+import { useLocale } from "@/lib/i18n/locale";
+
+
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AlertCircle, Globe2, Loader2 } from "lucide-react";
@@ -23,6 +26,7 @@ declare global {
               width?: number;
               text?: "signin_with" | "signup_with" | "continue_with";
               shape?: "rectangular" | "pill" | "circle" | "square";
+              locale?: string;
             },
           ) => void;
         };
@@ -64,6 +68,7 @@ function loadGoogleScript() {
 }
 
 export default function GoogleSignInButton({ mode }: GoogleSignInButtonProps) {
+  const { t: translateUi, errorText, locale } = useLocale();
   const router = useRouter();
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [status, setStatus] = useState<"loading" | "ready" | "error">(googleClientId ? "loading" : "error");
@@ -108,6 +113,7 @@ export default function GoogleSignInButton({ mode }: GoogleSignInButtonProps) {
           width: containerRef.current.clientWidth || 320,
           text: mode === "register" ? "signup_with" : "continue_with",
           shape: "rectangular",
+          locale,
         });
         setStatus("ready");
       })
@@ -121,7 +127,7 @@ export default function GoogleSignInButton({ mode }: GoogleSignInButtonProps) {
     return () => {
       cancelled = true;
     };
-  }, [mode, router]);
+  }, [mode, router, locale]);
 
   if (!googleClientId) {
     return (
@@ -129,11 +135,11 @@ export default function GoogleSignInButton({ mode }: GoogleSignInButtonProps) {
         <button
           type="button"
           disabled
-          title="Set NEXT_PUBLIC_GOOGLE_CLIENT_ID to enable Google sign-in"
+          title={translateUi("Set NEXT_PUBLIC_GOOGLE_CLIENT_ID to enable Google sign-in")}
           className="mb-2 flex w-full cursor-not-allowed items-center justify-center gap-3 rounded-xl bg-surface py-3 text-sm font-semibold text-muted shadow-sm"
         >
           <Globe2 className="h-4 w-4 text-accent-ink" />
-          {mode === "register" ? "Sign up with Google" : "Continue with Google"}
+          {translateUi(mode === "register" ? "Sign up with Google" : "Continue with Google")}
         </button>
       </div>
     );
@@ -145,13 +151,12 @@ export default function GoogleSignInButton({ mode }: GoogleSignInButtonProps) {
       {status === "loading" && (
         <div className="mt-2 flex items-center justify-center gap-2 text-[11px] font-medium text-muted">
           <Loader2 className="h-3 w-3 animate-spin" />
-          Connecting to Google
-        </div>
+          {translateUi("Connecting to Google")}</div>
       )}
       {status === "error" && message && (
         <div className="mt-2 flex items-start gap-2 rounded-xl border border-line bg-warning px-3 py-2 text-[11px] font-bold text-warning-ink">
           <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-          <span>{message}</span>
+          <span>{errorText(message)}</span>
         </div>
       )}
     </div>

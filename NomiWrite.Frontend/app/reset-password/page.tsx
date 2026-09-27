@@ -1,5 +1,8 @@
 "use client";
 
+import { useLocale } from "@/lib/i18n/locale";
+
+
 import Link from "next/link";
 import { FormEvent, Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
@@ -7,6 +10,7 @@ import { ArrowLeft, Lock, PenLine, RotateCcw } from "lucide-react";
 import { apiClient } from "@/lib/api/client";
 
 function ResetPasswordContent() {
+  const { t: translateUi, errorText } = useLocale();
   const params = useSearchParams();
   const [token, setToken] = useState(params.get("token") ?? "");
   const [password, setPassword] = useState("");
@@ -40,8 +44,7 @@ function ResetPasswordContent() {
       <div className="w-full max-w-sm">
         <Link href="/login" className="mb-6 inline-flex items-center gap-2 text-sm font-semibold text-muted hover:text-ink">
           <ArrowLeft className="h-4 w-4" />
-          Back to sign in
-        </Link>
+          {translateUi("Back to sign in")}</Link>
 
         <div className="rounded-xl border border-line bg-surface p-8 shadow-sm">
           <div className="mb-7 flex items-center gap-3">
@@ -49,36 +52,34 @@ function ResetPasswordContent() {
               <PenLine className="h-5 w-5 text-ink" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-ink">Create new password</h1>
-              <p className="text-sm text-muted">Paste the reset token if it is not in the URL.</p>
+              <h1 className="text-xl font-bold text-ink">{translateUi("Create new password")}</h1>
+              <p className="text-sm text-muted">{translateUi("Paste the reset token if it is not in the URL.")}</p>
             </div>
           </div>
 
           <form className="space-y-4" onSubmit={handleSubmit}>
             <label className="block text-xs font-semibold text-muted">
-              Reset token
-              <input
+              {translateUi("Reset token")}<input
                 value={token}
                 onChange={event => setToken(event.target.value)}
                 className="mt-1.5 w-full rounded-xl border border-line bg-surface px-4 py-3 text-sm text-ink placeholder:text-muted focus:border-focus focus:outline-none"
               />
             </label>
             <label className="block text-xs font-semibold text-muted">
-              New password
-              <span className="relative mt-1.5 block">
+              {translateUi("New password")}<span className="relative mt-1.5 block">
                 <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
                 <input
                   type="password"
                   value={password}
                   onChange={event => setPassword(event.target.value)}
-                  placeholder="At least 8 characters"
+                  placeholder={translateUi("At least 8 characters")}
                   className="w-full rounded-xl border border-line bg-surface py-3 pl-10 pr-4 text-sm text-ink placeholder:text-muted focus:border-focus focus:outline-none"
                 />
               </span>
             </label>
 
-            {message && <p className="rounded-xl border border-focus bg-success px-3 py-2 text-xs font-medium text-success-ink">{message}</p>}
-            {error && <p className="rounded-xl border border-focus bg-danger px-3 py-2 text-xs font-medium text-danger-ink">{error}</p>}
+            {message && <p className="rounded-xl border border-focus bg-success px-3 py-2 text-xs font-medium text-success-ink">{errorText(message)}</p>}
+            {error && <p className="rounded-xl border border-focus bg-danger px-3 py-2 text-xs font-medium text-danger-ink">{errorText(error)}</p>}
 
             <button
               type="submit"
@@ -86,7 +87,7 @@ function ResetPasswordContent() {
               className="flex w-full items-center justify-center gap-2 rounded-xl bg-accent py-3.5 text-sm font-bold text-ink shadow-sm transition-all hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-60"
             >
               <RotateCcw className="h-4 w-4" />
-              {submitting ? "Resetting..." : "Reset password"}
+              {translateUi(submitting ? "Resetting..." : "Reset password")}
             </button>
           </form>
         </div>

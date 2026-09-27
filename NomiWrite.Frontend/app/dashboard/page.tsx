@@ -1,5 +1,8 @@
 "use client";
 
+import { useLocale } from "@/lib/i18n/locale";
+
+
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -21,8 +24,8 @@ import { apiClient, apiMode } from "@/lib/api/client";
 import { getSession } from "@/lib/auth/session";
 import type { Submission, User } from "@/lib/types";
 
-function formatDate(value: string) {
-  return new Intl.DateTimeFormat("en-GB", {
+function formatDate(value: string, locale: string) {
+  return new Intl.DateTimeFormat(locale, {
     day: 'numeric',
     month: 'short',
     year: 'numeric'
@@ -30,6 +33,7 @@ function formatDate(value: string) {
 }
 
 export default function DashboardPage() {
+  const { t: translateUi, errorText, locale } = useLocale();
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
@@ -88,20 +92,20 @@ export default function DashboardPage() {
       <div className="sticky top-0 z-50 flex h-[72px] items-center justify-between border-b border-line bg-surface px-6">
         <div>
           <h1 className="text-xl font-bold tracking-tight text-ink">
-            Welcome back, {user?.displayName ?? "Writer"}! 👋
+            {translateUi("Welcome back, ")}{user?.displayName ?? translateUi("Writer")}! 👋
           </h1>
         </div>
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2 rounded-full border border-line bg-accent px-3.5 py-1.5 text-[13px] font-bold text-accent-ink shadow-sm">
             <Flame className="h-4 w-4" />
-            <span>{submissions.length} Essays</span>
+            <span>{submissions.length} {translateUi(" Essays")}</span>
           </div>
           <button className="relative flex h-10 w-10 items-center justify-center rounded-full border border-line bg-surface text-muted shadow-sm transition-all hover:bg-canvas hover:text-ink">
             <Bell className="h-5 w-5" />
             <span className="absolute right-2.5 top-2.5 h-2 w-2 rounded-full bg-danger ring-2 ring-focus"></span>
           </button>
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-accent text-sm font-bold text-ink shadow-sm">
-            {(user?.displayName ?? "N").slice(0, 1).toUpperCase()}
+            {translateUi((user?.displayName ?? "N").slice(0, 1).toUpperCase())}
           </div>
         </div>
       </div>
@@ -110,13 +114,12 @@ export default function DashboardPage() {
         {loading && (
           <div className="flex items-center justify-center gap-3 rounded-xl border border-line bg-surface p-12 text-[15px] font-semibold text-muted shadow-sm">
             <Loader2 className="h-5 w-5 animate-spin text-accent-ink" />
-            Loading your writing dashboard...
-          </div>
+            {translateUi("Loading your writing dashboard...")}</div>
         )}
 
         {!loading && error && (
           <div className="rounded-xl border border-line bg-danger p-6 text-[15px] font-semibold text-danger-ink shadow-sm">
-            {error}
+            {errorText(error)}
           </div>
         )}
 
@@ -135,8 +138,8 @@ export default function DashboardPage() {
                     <Icon className={color} strokeWidth={2.5} style={{ width: 22, height: 22 }} />
                   </div>
                   <p className={`text-3xl font-bold tracking-tight ${color}`}>{value}</p>
-                  <p className="mt-1 text-[15px] font-bold text-ink">{label}</p>
-                  <p className="mt-1 text-[13px] font-medium text-muted">{sub}</p>
+                  <p className="mt-1 text-[15px] font-bold text-ink">{translateUi(label)}</p>
+                  <p className="mt-1 text-[13px] font-medium text-muted">{translateUi(sub)}</p>
                 </div>
               ))}
             </div>
@@ -144,8 +147,8 @@ export default function DashboardPage() {
             {/* Practice Modules */}
             <div>
               <div className="mb-4 flex flex-wrap gap-3 items-center justify-between">
-                <h2 className="text-xl font-bold text-ink">Luyện Tập IELTS Writing</h2>
-                <Link href="/write" className="text-sm font-bold text-accent-ink hover:text-accent-ink">View all prompts →</Link>
+                <h2 className="text-xl font-bold text-ink">{translateUi("Luyện Tập IELTS Writing")}</h2>
+                <Link href="/write" className="text-sm font-bold text-accent-ink hover:text-accent-ink">{translateUi("View all prompts →")}</Link>
               </div>
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 {/* Task 1 Card */}
@@ -154,16 +157,15 @@ export default function DashboardPage() {
                     <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-accent text-accent-ink">
                       <BarChart strokeWidth={2.5} className="h-6 w-6" />
                     </div>
-                    <h3 className="mb-2 text-2xl font-bold text-ink">Writing Task 1</h3>
+                    <h3 className="mb-2 text-2xl font-bold text-ink">{translateUi("Writing Task 1")}</h3>
                     <p className="text-[15px] leading-relaxed text-muted">
-                      Summarize, describe or explain visual information (graphs, charts, tables or diagrams) in at least 150 words.
-                    </p>
+                      {translateUi("Summarize, describe or explain visual information (graphs, charts, tables or diagrams) in at least 150 words.")}</p>
                   </div>
                   <Link
                     href="/write?task=1"
                     className="relative z-10 mt-5 inline-flex items-center justify-center gap-2 rounded-xl bg-surface-muted px-6 py-3.5 text-[15px] font-bold text-ink transition-all hover:bg-surface-muted"
                   >
-                    Bắt đầu làm bài <ArrowRight className="h-4 w-4" />
+                    {translateUi("Bắt đầu làm bài ")}<ArrowRight className="h-4 w-4" />
                   </Link>
                 </div>
 
@@ -173,16 +175,15 @@ export default function DashboardPage() {
                     <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-rose text-rose-ink">
                       <MessageSquare strokeWidth={2.5} className="h-6 w-6" />
                     </div>
-                    <h3 className="mb-2 text-2xl font-bold text-ink">Writing Task 2</h3>
+                    <h3 className="mb-2 text-2xl font-bold text-ink">{translateUi("Writing Task 2")}</h3>
                     <p className="text-[15px] leading-relaxed text-muted">
-                      Write an essay in response to a point of view, argument or problem in at least 250 words. High score impact.
-                    </p>
+                      {translateUi("Write an essay in response to a point of view, argument or problem in at least 250 words. High score impact.")}</p>
                   </div>
                   <Link
                     href="/write?task=2"
                     className="relative z-10 mt-5 inline-flex items-center justify-center gap-2 rounded-xl bg-accent px-6 py-3.5 text-[15px] font-bold text-ink shadow-sm transition-all  hover:bg-accent-hover"
                   >
-                    Bắt đầu làm bài <ArrowRight className="h-4 w-4" />
+                    {translateUi("Bắt đầu làm bài ")}<ArrowRight className="h-4 w-4" />
                   </Link>
                 </div>
               </div>
@@ -194,12 +195,11 @@ export default function DashboardPage() {
               <div className="lg:col-span-2 min-w-0 overflow-hidden rounded-xl border border-line bg-surface shadow-sm">
                 <div className="flex items-center justify-between border-b border-line p-6">
                   <div>
-                    <h3 className="text-lg font-bold text-ink">Lịch sử làm bài</h3>
-                    <p className="mt-1 text-sm text-muted">Your latest essay submissions</p>
+                    <h3 className="text-lg font-bold text-ink">{translateUi("Lịch sử làm bài")}</h3>
+                    <p className="mt-1 text-sm text-muted">{translateUi("Your latest essay submissions")}</p>
                   </div>
                   <Link href="/history" className="rounded-full bg-canvas px-4 py-2 text-sm font-bold text-muted transition-colors hover:bg-surface-muted">
-                    Xem tất cả
-                  </Link>
+                    {translateUi("Xem tất cả")}</Link>
                 </div>
                 {recentSubmissions.length ? (
                   <div className="divide-y divide-line">
@@ -207,17 +207,17 @@ export default function DashboardPage() {
                       <Link key={submission.id} href={`/result?submissionId=${submission.id}`} className="flex items-center justify-between p-6 transition-colors hover:bg-canvas group">
                         <div className="flex items-center gap-4">
                           <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl font-bold ${submission.overallScore ? "bg-success text-success-ink" : "bg-surface-muted text-muted"}`}>
-                            {submission.overallScore ? submission.overallScore.toFixed(1) : "-"}
+                            {translateUi(submission.overallScore ? submission.overallScore.toFixed(1) : "-")}
                           </div>
                           <div>
                             <p className="line-clamp-1 font-bold text-ink group-hover:text-accent-ink transition-colors">{submission.topic}</p>
                             <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted">
-                              <span className="font-medium text-ink">{submission.writingType}</span>
+                              <span className="font-medium text-ink">{translateUi(submission.writingType)}</span>
                               <span>•</span>
-                              <span>{formatDate(submission.submittedAt)}</span>
+                              <span>{translateUi(formatDate(submission.submittedAt, locale))}</span>
                               <span>•</span>
                               <span className={submission.status === "graded" ? "text-success-ink font-medium" : "text-warning-ink font-medium"}>
-                                {submission.status.charAt(0).toUpperCase() + submission.status.slice(1)}
+                                {translateUi(submission.status.charAt(0).toUpperCase() + submission.status.slice(1))}
                               </span>
                             </div>
                           </div>
@@ -231,8 +231,8 @@ export default function DashboardPage() {
                     <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-canvas text-muted">
                       <PenLine strokeWidth={2} className="h-8 w-8" />
                     </div>
-                    <p className="text-lg font-bold text-ink">Chưa có bài làm nào</p>
-                    <p className="mt-2 text-sm text-muted">Hãy bắt đầu viết bài đầu tiên của bạn để nhận đánh giá chi tiết.</p>
+                    <p className="text-lg font-bold text-ink">{translateUi("Chưa có bài làm nào")}</p>
+                    <p className="mt-2 text-sm text-muted">{translateUi("Hãy bắt đầu viết bài đầu tiên của bạn để nhận đánh giá chi tiết.")}</p>
                   </div>
                 )}
               </div>
@@ -242,14 +242,12 @@ export default function DashboardPage() {
                 <div className="rounded-xl bg-surface-muted p-6 text-ink shadow-sm">
                   <div className="flex items-center gap-2 mb-3">
                     <Sparkles className="h-5 w-5 text-warning-ink" />
-                    <h4 className="font-bold text-base">NomiWrite PRO</h4>
+                    <h4 className="font-bold text-base">{translateUi("NomiWrite PRO")}</h4>
                   </div>
                   <p className="text-[13px] text-muted mb-5 leading-relaxed">
-                    Mở khóa tính năng chấm chữa chi tiết từng câu (Line-by-line grading) và nhận xét theo tiêu chí IELTS.
-                  </p>
+                    {translateUi("Mở khóa tính năng chấm chữa chi tiết từng câu (Line-by-line grading) và nhận xét theo tiêu chí IELTS.")}</p>
                   <Link href="/upgrade" className="block w-full rounded-xl bg-surface px-4 py-3 text-center text-sm font-bold transition-colors hover:bg-surface">
-                    Tìm hiểu thêm
-                  </Link>
+                    {translateUi("Tìm hiểu thêm")}</Link>
                 </div>
               </div>
             </div>

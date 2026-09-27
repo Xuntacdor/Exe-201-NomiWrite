@@ -9,7 +9,7 @@ export default function AppShell({ children, activePath }: AppShellProps) {
   return (
     <div className="app-shell flex bg-canvas">
       <AppSidebar activePath={activePath} />
-      <main className="app-main flex-1">
+      <main className={`app-main flex-1${activePath === "/write" ? " app-main--writing" : ""}`}>
         {children}
       </main>
     </div>

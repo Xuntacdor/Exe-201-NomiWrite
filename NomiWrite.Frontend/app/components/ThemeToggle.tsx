@@ -1,5 +1,8 @@
 "use client";
 
+import { useLocale } from "@/lib/i18n/locale";
+
+
 import { useSyncExternalStore } from "react";
 import { Moon, Sun } from "lucide-react";
 
@@ -35,15 +38,16 @@ function subscribe(onChange: () => void) {
 }
 
 export default function ThemeToggle({ collapsed = false }: { collapsed?: boolean }) {
+  const { t: translateUi } = useLocale();
   const dark = useSyncExternalStore(subscribe, () => document.documentElement.dataset.theme === "dark", () => false);
   const label = dark ? "Chuyển sang chế độ sáng" : "Chuyển sang chế độ tối";
   return (
     <button
       type="button"
       className="theme-toggle sidebar-action"
-      aria-label={label}
+      aria-label={translateUi(label)}
       aria-pressed={dark}
-      title={label}
+      title={translateUi(label)}
       onPointerDown={event => {
         // A pointer toggle keeps the caret in the editor; keyboard focus stays accessible.
         if (event.button === 0 && document.activeElement?.matches("textarea, input")) event.preventDefault();
@@ -55,7 +59,7 @@ export default function ThemeToggle({ collapsed = false }: { collapsed?: boolean
       }}
     >
       {dark ? <Sun size={20} aria-hidden="true" /> : <Moon size={20} aria-hidden="true" />}
-      {!collapsed && <span className="sidebar-label">{dark ? "Chế độ sáng" : "Chế độ tối"}</span>}
+      {!collapsed && <span className="sidebar-label">{translateUi(dark ? "Chế độ sáng" : "Chế độ tối")}</span>}
     </button>
   );
 }
