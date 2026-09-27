@@ -49,15 +49,15 @@ export default function AppSidebar({ activePath = "/dashboard" }: AppSidebarProp
 
   return (
     <aside className={`app-sidebar ${collapsed ? "is-collapsed" : ""}`}>
-      <Link href="/dashboard" className="sidebar-brand" aria-label="NomiWrite ? Dashboard" title="NomiWrite">
+      <Link href="/dashboard" className="sidebar-brand" aria-label="NomiWrite - Dashboard" title="NomiWrite">
         <span className="sidebar-brand-icon"><PenLine size={22} aria-hidden="true" /></span>
         {!collapsed && <span className="sidebar-label">NomiWrite</span>}
       </Link>
-      <nav className="sidebar-nav" aria-label="?i?u h??ng h?c t?p">
+      <nav className="sidebar-nav" aria-label="Điều hướng học tập">
         {navItems.map(({ icon: Icon, label, href }, index) => (
           <div key={href}>
             {!collapsed && (index === 0 || index === 1 || index === 6 || index === 7) && (
-              <p className="sidebar-group">{index === 0 ? "T?NG QUAN" : index === 1 ? "H?C T?P" : index === 6 ? "THEO D?I" : "C? NH?N"}</p>
+              <p className="sidebar-group">{index === 0 ? "TỔNG QUAN" : index === 1 ? "HỌC TẬP" : index === 6 ? "THEO DÕI" : "CÁ NHÂN"}</p>
             )}
             <Link href={href} className="sidebar-action" aria-current={activePath === href ? "page" : undefined} aria-label={label} title={label}>
               <Icon size={20} aria-hidden="true" />
