@@ -301,11 +301,40 @@ export const mockClient: ApiClient = {
     return mockVocabulary;
   },
 
+  async listVocabularyBySubmission(submissionId: string) {
+    await delay();
+    return mockVocabulary.filter(word => word.submissionId === submissionId);
+  },
+
   async updateVocabularyMastered(id: string, request: UpdateVocabularyMasteredRequest) {
     await delay();
     const word = mockVocabulary.find(item => item.id === id);
     if (!word) throw new Error("Vocabulary item not found.");
     return { ...word, isMastered: request.isMastered };
+  },
+
+  async createVocabGroup(request) {
+    await delay();
+    return {
+      id: `group_${Date.now()}`,
+      name: request.name,
+      createdAt: new Date().toISOString(),
+      wordCount: request.vocabularyIds?.length ?? 0,
+      vocabularyIds: request.vocabularyIds ?? []
+    };
+  },
+
+  async listVocabGroups() {
+    await delay();
+    return [];
+  },
+
+  async addVocabGroupItems() {
+    await delay();
+  },
+
+  async removeVocabGroupItem() {
+    await delay();
   },
 
   async generateQuiz() {

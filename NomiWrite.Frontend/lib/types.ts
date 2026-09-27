@@ -146,6 +146,23 @@ export interface VocabSuggestion {
   isMastered: boolean;
 }
 
+export interface VocabGroup {
+  id: string;
+  name: string;
+  createdAt: string;
+  wordCount: number;
+  vocabularyIds: string[];
+}
+
+export interface CreateVocabGroupRequest {
+  name: string;
+  vocabularyIds?: string[];
+}
+
+export interface AddToVocabGroupRequest {
+  vocabularyIds: string[];
+}
+
 export interface RestructuringSuggestion {
   id: string;
   submissionId: string;
@@ -363,7 +380,12 @@ export interface ApiClient {
   flagFeedback(gradingResultId: string, request: FlagFeedbackRequest): Promise<FeedbackFlagConfirmation>;
   getDashboardSummary(): Promise<DashboardSummary>;
   listVocabulary(): Promise<VocabSuggestion[]>;
+  listVocabularyBySubmission(submissionId: string): Promise<VocabSuggestion[]>;
   updateVocabularyMastered(id: string, request: UpdateVocabularyMasteredRequest): Promise<VocabSuggestion>;
+  createVocabGroup(request: CreateVocabGroupRequest): Promise<VocabGroup>;
+  listVocabGroups(): Promise<VocabGroup[]>;
+  addVocabGroupItems(groupId: string, request: AddToVocabGroupRequest): Promise<void>;
+  removeVocabGroupItem(groupId: string, vocabId: string): Promise<void>;
   generateQuiz(request: GenerateQuizRequest): Promise<Quiz>;
   listQuizzes(): Promise<QuizSummary[]>;
   getQuiz(id: string): Promise<Quiz>;

@@ -8,8 +8,8 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import AppShell from "../components/AppShell";
 import { apiClient } from "@/lib/api/client";
-import type { Quiz, QuizAttempt, QuizSummary } from "@/lib/types";
-import { ArrowRight, BrainCircuit, Home, Loader2, RotateCcw, Trophy } from "lucide-react";
+import type { Quiz, QuizAttempt, QuizSummary, VocabGroup } from "@/lib/types";
+import { ArrowRight, BrainCircuit, Home, Loader2, RotateCcw, Trophy, FolderSearch } from "lucide-react";
 
 function QuizContent() {
   const { t: translateUi, errorText, locale } = useLocale();
@@ -22,6 +22,8 @@ function QuizContent() {
   const [current, setCurrent] = useState(0);
   const [loading, setLoading] = useState(Boolean(submissionId));
   const [loadingHistory, setLoadingHistory] = useState(!submissionId);
+  const [vocabGroups, setVocabGroups] = useState<VocabGroup[]>([]);
+  const [loadingGroups, setLoadingGroups] = useState(!submissionId);
   const [error, setError] = useState("");
   const [mode, setMode] = useState<"test" | "flashcards">("flashcards");
   const [isFlipped, setIsFlipped] = useState(false);
@@ -63,6 +65,17 @@ function QuizContent() {
       })
       .finally(() => {
         if (!ignore) setLoadingHistory(false);
+      });
+
+    apiClient.listVocabGroups()
+      .then(items => {
+        if (!ignore) setVocabGroups(items);
+      })
+      .catch(() => {
+        if (!ignore) setVocabGroups([]);
+      })
+      .finally(() => {
+        if (!ignore) setLoadingGroups(false);
       });
 
     return () => {
@@ -112,6 +125,27 @@ function QuizContent() {
       setQuiz(detail);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not load this quiz.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function generateQuizFromGroup(groupId: string, vocabularyIds: string[]) {
+    if (vocabularyIds.length === 0) {
+      setError("This group has no vocabulary words.");
+      return;
+    }
+    setLoading(true);
+    setError("");
+    setAnswers({});
+    setSubmittedAttempt(null);
+    setCurrent(0);
+    setIsFlipped(false);
+    try {
+      const result = await apiClient.generateQuiz({ vocabularyIds });
+      setQuiz(result);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not generate quiz.");
     } finally {
       setLoading(false);
     }
@@ -272,13 +306,52 @@ function QuizContent() {
                   </button>
                 ))}
               </div>
-            ) : (
-              <div className="rounded-xl border border-line bg-surface p-8 text-center shadow-sm">
-                <p className="text-sm font-bold text-ink">{translateUi("Choose a graded writing first")}</p>
+            ) : null}
+
+            {!loadingGroups && vocabGroups.length > 0 && (
+              <div className="space-y-3 mt-8">
+                <div className="rounded-2xl border border-line bg-surface p-5 shadow-sm">
+                  <p className="text-sm font-extrabold text-ink">Vocabulary Groups</p>
+                  <p className="mt-1 text-xs leading-relaxed text-muted">
+                    Practice vocabulary words from your saved groups.
+                  </p>
+                </div>
+                {vocabGroups.map(group => (
+                  <button
+                    key={group.id}
+                    type="button"
+                    onClick={() => void generateQuizFromGroup(group.id, group.vocabularyIds)}
+                    className="w-full rounded-2xl border border-line bg-surface p-5 text-left shadow-sm transition-all hover:border-line hover:bg-accent"
+                  >
+                    <div className="mb-2 flex items-center justify-between gap-3">
+                      <span className="rounded-full bg-accent px-3 py-1 text-xs font-bold text-accent-ink flex items-center gap-1">
+                        <FolderSearch className="h-3 w-3" />
+                        Custom Group
+                      </span>
+                      <span className="text-xs font-semibold text-muted">
+                        {group.wordCount} words
+                      </span>
+                    </div>
+                    <p className="text-sm font-extrabold text-ink">
+                      {group.name}
+                    </p>
+                    <p className="mt-1 text-xs text-muted">
+                      Created {new Date(group.createdAt).toLocaleDateString()}
+                    </p>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {!loadingHistory && !quizHistory.length && !loadingGroups && !vocabGroups.length && (
+              <div className="rounded-2xl border border-line bg-surface p-8 text-center shadow-sm">
+                <p className="text-sm font-extrabold text-ink">Choose a graded writing first</p>
                 <p className="mt-1 mb-6 text-xs leading-relaxed text-muted">
-                  {translateUi("Personalized quizzes are generated from a submitted writing after AI feedback is ready.")}</p>
-                <Link href="/history" className="inline-flex items-center justify-center gap-2 rounded-full bg-rose px-6 py-3 text-sm font-bold text-ink transition-all hover:bg-rose">
-                  {translateUi("Go to History")}<ArrowRight className="h-4 w-4" />
+                  Personalized quizzes are generated from a submitted writing after AI feedback is ready.
+                </p>
+                <Link href="/history" className="inline-flex items-center justify-center gap-2 rounded-full bg-accent px-6 py-3 text-sm font-bold text-ink transition-all hover:bg-accent">
+                  Go to History
+                  <ArrowRight className="h-4 w-4" />
                 </Link>
               </div>
             )}

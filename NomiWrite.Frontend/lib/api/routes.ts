@@ -45,6 +45,8 @@ export const apiRoutes = {
   vocabulary: {
     list: "/api/vocabulary",
     mastered: (id: string) => `/api/vocabulary/${id}/mastered`,
+    groups: "/api/vocabulary/groups",
+    groupItems: (groupId: string) => `/api/vocabulary/groups/${groupId}/items`,
   },
   quizzes: {
     list: "/api/quizzes",
