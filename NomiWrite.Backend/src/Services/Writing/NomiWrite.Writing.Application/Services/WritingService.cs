@@ -15,7 +15,7 @@ namespace NomiWrite.Writing.Application.Services;
 
 public class WritingService : IWritingService
 {
-    private const int FreeDailyGradingLimit = 3;
+    private const int FreeMonthlyGradingLimit = 5;
     private readonly IWritingDbContext _dbContext;
     private readonly IValidator<CreateSubmissionRequestDto> _createSubmissionValidator;
     private readonly IValidator<UpdateSubmissionRequestDto> _updateSubmissionValidator;
@@ -275,12 +275,12 @@ public class WritingService : IWritingService
         var subscription = await GetSubscriptionStatusOrDefaultAsync(userId, accessToken);
         if (!subscription.HasActiveSubscription)
         {
-            var dayStart = now.Date;
-            var tomorrow = dayStart.AddDays(1);
-            var submittedToday = await _dbContext.WritingSubmissions.CountAsync(s =>
-                s.UserId == userId && s.SubmittedAt >= dayStart && s.SubmittedAt < tomorrow);
-            if (submittedToday >= FreeDailyGradingLimit)
-                throw new DailyGradingLimitExceededException();
+            var monthStart = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+            var nextMonth = monthStart.AddMonths(1);
+            var submittedThisMonth = await _dbContext.WritingSubmissions.CountAsync(s =>
+                s.UserId == userId && s.SubmittedAt >= monthStart && s.SubmittedAt < nextMonth);
+            if (submittedThisMonth >= FreeMonthlyGradingLimit)
+                throw new MonthlyGradingLimitExceededException();
         }
 
         // Late submissions still go through (grading proceeds); flag the lateness so

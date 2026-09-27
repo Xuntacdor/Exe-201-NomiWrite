@@ -1,5 +1,8 @@
 "use client";
 
+import { useLocale } from "@/lib/i18n/locale";
+
+
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
@@ -9,6 +12,7 @@ import { levelOptions, writingGoalOptions } from "@/lib/constants/profile-option
 import GoogleSignInButton from "../components/GoogleSignInButton";
 
 export default function RegisterPage() {
+  const { t: translateUi, errorText } = useLocale();
   const router = useRouter();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -53,79 +57,76 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 py-10 hero-gradient">
+    <div className="min-h-screen bg-canvas flex items-center justify-center p-4 py-10 hero-gradient">
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-1/4 -left-32 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/4 -right-32 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl" />
       </div>
 
       <div className="relative w-full max-w-md">
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/40">
-              <PenLine className="w-5 h-5 text-white" strokeWidth={2.5} />
+            <div className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center shadow-sm">
+              <PenLine className="w-5 h-5 text-ink" strokeWidth={2.5} />
             </div>
-            <span className="text-xl font-extrabold text-slate-900">NomiWrite</span>
+            <span className="text-xl font-bold text-ink">{translateUi("NomiWrite")}</span>
           </Link>
-          <p className="mt-3 text-sm font-medium text-slate-500">
-            Create your writing practice account
-          </p>
+          <p className="mt-3 text-sm font-medium text-muted">
+            {translateUi("Create your writing practice account")}</p>
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-3xl p-8 shadow-xl">
+        <div className="bg-surface border border-line rounded-xl p-8 shadow-sm">
           <GoogleSignInButton mode="register" />
 
           <div className="flex items-center gap-3 mb-6">
-            <div className="flex-1 h-px bg-slate-200" />
-            <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider">or enter details</span>
-            <div className="flex-1 h-px bg-slate-200" />
+            <div className="flex-1 h-px bg-surface-muted" />
+            <span className="text-xs text-muted font-semibold uppercase tracking-wider">{translateUi("or enter details")}</span>
+            <div className="flex-1 h-px bg-surface-muted" />
           </div>
 
           <form className="space-y-4" onSubmit={handleSubmit}>
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1.5">Full name</label>
+              <label className="block text-xs font-bold text-ink mb-1.5">{translateUi("Full name")}</label>
               <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
                 <input
                   type="text"
                   value={fullName}
                   onChange={event => setFullName(event.target.value)}
-                  placeholder="Nguyen Van A"
-                  className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 text-sm focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-all"
+                  placeholder={translateUi("Nguyen Van A")}
+                  className="w-full pl-10 pr-4 py-3 rounded-xl bg-canvas border border-line text-ink placeholder:text-muted text-sm focus:outline-none focus:border-focus focus:ring-2 focus:ring-focus focus:bg-surface transition-all"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1.5">Email</label>
+              <label className="block text-xs font-bold text-ink mb-1.5">{translateUi("Email")}</label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
                 <input
                   type="email"
                   value={email}
                   onChange={event => setEmail(event.target.value)}
-                  placeholder="student@nomiwrite.local"
-                  className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 text-sm focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-all"
+                  placeholder={translateUi("student@nomiwrite.local")}
+                  className="w-full pl-10 pr-4 py-3 rounded-xl bg-canvas border border-line text-ink placeholder:text-muted text-sm focus:outline-none focus:border-focus focus:ring-2 focus:ring-focus focus:bg-surface transition-all"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1.5">Password</label>
+              <label className="block text-xs font-bold text-ink mb-1.5">{translateUi("Password")}</label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
                 <input
                   type="password"
                   value={password}
                   onChange={event => setPassword(event.target.value)}
-                  placeholder="At least 8 characters"
-                  className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 text-sm focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-all"
+                  placeholder={translateUi("At least 8 characters")}
+                  className="w-full pl-10 pr-4 py-3 rounded-xl bg-canvas border border-line text-ink placeholder:text-muted text-sm focus:outline-none focus:border-focus focus:ring-2 focus:ring-focus focus:bg-surface transition-all"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-2">Current level</label>
+              <label className="block text-xs font-bold text-ink mb-2">{translateUi("Current level")}</label>
               <div className="grid grid-cols-2 gap-2">
                 {levelOptions.map(level => (
                   <button
@@ -134,23 +135,23 @@ export default function RegisterPage() {
                     onClick={() => setSelectedLevel(level)}
                     className={`flex items-center gap-2 p-2.5 rounded-xl border cursor-pointer transition-all text-left ${
                       selectedLevel === level
-                        ? "border-blue-500 bg-blue-50 text-blue-700 shadow-sm"
-                        : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
+                        ? "border-focus bg-accent text-accent-ink shadow-sm"
+                        : "border-line bg-surface text-muted hover:border-line hover:bg-canvas"
                     }`}
                   >
                     <span className={`w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center shrink-0 ${
-                      selectedLevel === level ? "border-blue-500 bg-blue-500" : "border-slate-300"
+                      selectedLevel === level ? "border-focus bg-accent" : "border-line"
                     }`}>
-                      {selectedLevel === level && <Check className="w-2 h-2 text-white" />}
+                      {selectedLevel === level && <Check className="w-2 h-2 text-ink" />}
                     </span>
-                    <span className="text-xs font-bold">{level}</span>
+                    <span className="text-xs font-bold">{translateUi(level)}</span>
                   </button>
                 ))}
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-2">Writing goal</label>
+              <label className="block text-xs font-bold text-ink mb-2">{translateUi("Writing goal")}</label>
               <div className="flex flex-wrap gap-2">
                 {writingGoalOptions.map(target => (
                   <button
@@ -159,11 +160,11 @@ export default function RegisterPage() {
                     onClick={() => setSelectedTarget(target)}
                     className={`px-3 py-1.5 text-xs font-bold rounded-full border cursor-pointer transition-all ${
                       selectedTarget === target
-                        ? "border-blue-500 bg-blue-50 text-blue-700 shadow-sm"
-                        : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
+                        ? "border-focus bg-accent text-accent-ink shadow-sm"
+                        : "border-line bg-surface text-muted hover:border-line hover:bg-canvas"
                     }`}
                   >
-                    {target}
+                    {translateUi(target)}
                   </button>
                 ))}
               </div>
@@ -175,37 +176,35 @@ export default function RegisterPage() {
               className="flex items-start gap-3 cursor-pointer text-left group"
             >
               <span className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 mt-0.5 transition-colors ${
-                acceptedTerms ? "border-blue-600 bg-blue-600" : "border-slate-300 bg-white group-hover:border-slate-400"
+                acceptedTerms ? "border-focus bg-accent" : "border-line bg-surface group-hover:border-line"
               }`}>
-                {acceptedTerms && <Check className="w-3 h-3 text-white" />}
+                {acceptedTerms && <Check className="w-3 h-3 text-ink" />}
               </span>
-              <span className="text-xs font-medium text-slate-600 leading-relaxed">
-                I agree to the terms of use and privacy policy.
-              </span>
+              <span className="text-xs font-medium text-muted leading-relaxed">
+                {translateUi("I agree to the terms of use and privacy policy.")}</span>
             </button>
 
             {error && (
-              <p className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-bold text-red-600">
-                {error}
+              <p className="rounded-xl border border-line bg-danger px-3 py-2 text-xs font-bold text-danger-ink">
+                {errorText(error)}
               </p>
             )}
 
             <button
               type="submit"
               disabled={submitting}
-              className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold transition-all shadow-lg shadow-blue-600/30 hover:-translate-y-0.5 mt-2 disabled:opacity-60 disabled:cursor-not-allowed disabled:translate-y-0"
+              className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl bg-accent hover:bg-accent-hover text-ink text-sm font-bold transition-all shadow-sm  mt-2 disabled:opacity-60 disabled:cursor-not-allowed disabled:translate-y-0"
             >
-              {submitting ? "Creating account..." : "Create account"}
+              {translateUi(submitting ? "Creating account..." : "Create account")}
               <ArrowRight className="w-4 h-4" />
             </button>
           </form>
         </div>
 
-        <p className="text-center mt-6 text-sm font-medium text-slate-600">
-          Already have an account?{" "}
-          <Link href="/login" className="text-blue-600 hover:text-blue-700 font-bold transition-colors">
-            Sign in
-          </Link>
+        <p className="text-center mt-6 text-sm font-medium text-muted">
+          {translateUi("Already have an account?")}{" "}
+          <Link href="/login" className="text-accent-ink hover:text-accent-ink font-bold transition-colors">
+            {translateUi("Sign in")}</Link>
         </p>
       </div>
     </div>

@@ -499,3 +499,7 @@ backups/
 *.backup
 #opencode.json
 opencode.json
+
+# Local UI migration helpers and generated inspection output
+.codex-run/*
+!.codex-run/*.md

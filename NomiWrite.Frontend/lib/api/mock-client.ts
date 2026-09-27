@@ -301,6 +301,11 @@ export const mockClient: ApiClient = {
     return mockVocabulary;
   },
 
+  async listVocabularyBySubmission(submissionId: string) {
+    await delay();
+    return mockVocabulary.filter(word => word.submissionId === submissionId);
+  },
+
   async updateVocabularyMastered(id: string, request: UpdateVocabularyMasteredRequest) {
     await delay();
     const word = mockVocabulary.find(item => item.id === id);
@@ -325,6 +330,10 @@ export const mockClient: ApiClient = {
   },
 
   async addVocabGroupItems() {
+    await delay();
+  },
+
+  async removeVocabGroupItem() {
     await delay();
   },
 

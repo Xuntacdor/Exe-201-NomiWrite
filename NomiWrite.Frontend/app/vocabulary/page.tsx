@@ -1,5 +1,8 @@
 "use client";
 
+import { useLocale } from "@/lib/i18n/locale";
+
+
 import { useEffect, useMemo, useState } from "react";
 import AppShell from "../components/AppShell";
 import { apiClient } from "@/lib/api/client";
@@ -7,6 +10,7 @@ import type { VocabSuggestion, VocabGroup } from "@/lib/types";
 import { BookOpen, CheckCircle2, Circle, Loader2, Search, ArrowLeft, Layers } from "lucide-react";
 
 export default function VocabularyPage() {
+  const { t: translateUi, errorText } = useLocale();
   const [groups, setGroups] = useState<VocabGroup[]>([]);
   const [words, setWords] = useState<VocabSuggestion[]>([]);
   const [search, setSearch] = useState("");
@@ -62,22 +66,22 @@ export default function VocabularyPage() {
 
   return (
     <AppShell activePath="/vocabulary">
-      <div className="sticky top-0 z-10 flex h-14 items-center justify-between border-b border-slate-100 bg-white/90 px-6 backdrop-blur">
+      <div className="sticky top-0 z-10 flex h-14 items-center justify-between border-b border-line bg-surface px-6">
         <div className="flex items-center gap-2">
           {selectedGroup ? (
-            <button onClick={() => setSelectedGroup(null)} className="mr-2 rounded-full p-1.5 hover:bg-slate-100 transition-colors">
-              <ArrowLeft className="h-4 w-4 text-slate-500" />
+            <button onClick={() => setSelectedGroup(null)} className="mr-2 rounded-full p-1.5 hover:bg-surface-muted transition-colors">
+              <ArrowLeft className="h-4 w-4 text-muted" />
             </button>
           ) : (
-            <Layers className="h-4 w-4 text-blue-500" />
+            <Layers className="h-4 w-4 text-accent-ink" />
           )}
-          <h1 className="text-sm font-extrabold text-slate-900">
+          <h1 className="text-sm font-extrabold text-ink">
             {selectedGroup ? selectedGroup.name : "Vocabulary Groups"}
           </h1>
         </div>
         {selectedGroup && (
-          <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-500">
-            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+          <div className="flex items-center gap-1.5 text-xs font-semibold text-muted">
+            <CheckCircle2 className="h-3.5 w-3.5 text-success-ink" />
             {masteredCount}/{activeWords.length} mastered
           </div>
         )}
@@ -86,79 +90,78 @@ export default function VocabularyPage() {
       <div className="w-full space-y-5 p-6">
         {!selectedGroup && (
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
             <input
               value={search}
               onChange={event => setSearch(event.target.value)}
               placeholder="Search groups by topic name..."
-              className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm text-slate-700 placeholder:text-slate-400 focus:border-blue-400 focus:outline-none"
+              className="w-full rounded-xl border border-line bg-surface py-2.5 pl-10 pr-4 text-sm text-ink placeholder:text-muted focus:border-focus focus:outline-none"
             />
           </div>
         )}
 
         {loading && (
-          <div className="flex items-center justify-center gap-2 rounded-2xl border border-slate-100 bg-white p-8 text-sm font-semibold text-slate-500 shadow-sm">
+          <div className="flex items-center justify-center gap-2 rounded-xl border border-line bg-surface p-8 text-sm font-semibold text-muted shadow-sm">
             <Loader2 className="h-4 w-4 animate-spin" />
-            Loading vocabulary...
+            {translateUi("Loading vocabulary")}</div>
+        )}
+
+        {error && <p className="rounded-xl border border-line bg-danger p-4 text-sm font-semibold text-danger-ink">{errorText(error)}</p>}
+
+        {!loading && !error && !selectedGroup && filteredGroups.length === 0 && (
+          <div className="rounded-2xl border border-line bg-surface p-8 text-center shadow-sm">
+            <Layers className="mx-auto mb-3 h-8 w-8 text-muted" />
+            <p className="text-sm font-bold text-ink">No vocabulary groups found</p>
+            <p className="mt-1 text-xs text-muted">Group your vocabulary from the grading result page.</p>
           </div>
         )}
 
-        {error && <p className="rounded-2xl border border-red-100 bg-red-50 p-4 text-sm font-semibold text-red-600">{error}</p>}
-
-        {!loading && !selectedGroup && filteredGroups.length === 0 && (
-          <div className="rounded-2xl border border-slate-100 bg-white p-8 text-center shadow-sm">
-            <Layers className="mx-auto mb-3 h-8 w-8 text-slate-300" />
-            <p className="text-sm font-bold text-slate-800">No vocabulary groups found</p>
-            <p className="mt-1 text-xs text-slate-500">Group your vocabulary from the grading result page.</p>
-          </div>
-        )}
-
-        {!loading && !selectedGroup && (
+        {!loading && !error && !selectedGroup && (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {filteredGroups.map(group => (
               <button
                 key={group.id}
                 onClick={() => setSelectedGroup(group)}
-                className="group text-left flex flex-col rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition-all hover:border-blue-200 hover:shadow-md"
+                className="group text-left flex flex-col rounded-2xl border border-line bg-surface p-5 shadow-sm transition-all hover:border-line hover:shadow-md"
               >
                 <div className="mb-2 flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent text-accent-ink group-hover:bg-accent group-hover:text-ink transition-colors">
                       <BookOpen className="h-4 w-4" />
                     </div>
-                    <span className="font-bold text-slate-800">{group.name}</span>
+                    <span className="font-bold text-ink">{group.name}</span>
                   </div>
                 </div>
-                <div className="mt-auto pt-4 flex items-center justify-between text-xs font-semibold text-slate-500 border-t border-slate-50">
+                <div className="mt-auto pt-4 flex items-center justify-between text-xs font-semibold text-muted border-t border-line">
                   <span>{group.wordCount} words</span>
-                  <span className="text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity">View group &rarr;</span>
+                  <span className="text-accent-ink opacity-0 group-hover:opacity-100 transition-opacity">View group &rarr;</span>
                 </div>
               </button>
             ))}
           </div>
         )}
 
-        {!loading && selectedGroup && activeWords.length === 0 && (
-          <div className="rounded-2xl border border-slate-100 bg-white p-8 text-center shadow-sm">
-            <BookOpen className="mx-auto mb-3 h-8 w-8 text-slate-300" />
-            <p className="text-sm font-bold text-slate-800">No words in this group</p>
+        {!loading && !error && selectedGroup && activeWords.length === 0 && (
+          <div className="rounded-2xl border border-line bg-surface p-8 text-center shadow-sm">
+            <BookOpen className="mx-auto mb-3 h-8 w-8 text-muted" />
+            <p className="text-sm font-bold text-ink">No words in this group</p>
           </div>
         )}
 
-        {!loading && selectedGroup && activeWords.length > 0 && (
+        {!loading && !error && selectedGroup && activeWords.length > 0 && (
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {activeWords.map(word => (
-              <div key={word.id} className={`rounded-2xl border p-5 shadow-sm ${word.isMastered ? "border-emerald-200 bg-emerald-50" : "border-slate-100 bg-white"}`}>
+              <div key={word.id} className={`rounded-2xl border p-5 shadow-sm ${word.isMastered ? "border-line bg-success" : "border-line bg-surface"}`}>
                 <div className="mb-3 flex items-center gap-2">
-                  <span className="text-sm font-medium text-slate-400 line-through">{word.originalWord}</span>
-                  <span className="text-slate-300">-&gt;</span>
-                  <span className="text-base font-extrabold text-slate-900">{word.suggestedWord}</span>
+                  <span className="text-sm font-medium text-muted line-through">{word.originalWord}</span>
+                  <span className="text-muted">-&gt;</span>
+                  <span className="text-base font-extrabold text-ink">{word.suggestedWord}</span>
                 </div>
-                <p className="mb-4 text-xs leading-relaxed text-slate-500">{word.exampleSentence}</p>
+                <p className="mb-4 text-xs leading-relaxed text-muted">{word.exampleSentence}</p>
                 <button
                   type="button"
                   onClick={() => toggleMastered(word)}
-                  className={`flex items-center gap-2 text-xs font-bold ${word.isMastered ? "text-emerald-700" : "text-blue-600"}`}
+                  className={`flex items-center gap-2 text-xs font-bold ${word.isMastered ? "text-success-ink" : "text-accent-ink"}`}
                 >
                   {word.isMastered ? <CheckCircle2 className="h-4 w-4" /> : <Circle className="h-4 w-4" />}
                   {word.isMastered ? "Mastered" : "Mark as mastered"}

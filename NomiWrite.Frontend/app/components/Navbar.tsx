@@ -1,5 +1,8 @@
 "use client";
 
+import { useLocale } from "@/lib/i18n/locale";
+
+
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Menu, PenLine, X } from "lucide-react";
@@ -11,6 +14,7 @@ const navLinks = [
 ];
 
 export default function Navbar() {
+  const { t: translateUi } = useLocale();
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -23,21 +27,21 @@ export default function Navbar() {
   return (
     <header
       className={`fixed left-0 right-0 top-0 z-50 transition-all duration-300 ${
-        scrolled ? "border-b border-slate-100 bg-white/90 shadow-sm backdrop-blur-md" : "bg-transparent"
+        scrolled ? "border-b border-line bg-surface shadow-sm " : "bg-transparent"
       }`}
     >
       <nav className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
         <Link href="/" className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600">
-            <PenLine className="h-4 w-4 text-white" strokeWidth={2.5} />
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent">
+            <PenLine className="h-4 w-4 text-ink" strokeWidth={2.5} />
           </div>
-          <span className="text-lg font-bold text-slate-900">NomiWrite</span>
+          <span className="text-lg font-bold text-ink">{translateUi("NomiWrite")}</span>
         </Link>
 
         <div className="hidden items-center gap-8 md:flex">
           {navLinks.map(link => (
-            <Link key={link.href} href={link.href} className="text-sm font-medium text-slate-600 transition-colors hover:text-blue-600">
-              {link.label}
+            <Link key={link.href} href={link.href} className="text-sm font-medium text-muted transition-colors hover:text-accent-ink">
+              {translateUi(link.label)}
             </Link>
           ))}
         </div>
@@ -45,22 +49,20 @@ export default function Navbar() {
         <div className="hidden items-center gap-3 md:flex">
           <Link
             href="/login"
-            className="text-sm font-medium text-slate-600 transition-colors hover:text-slate-900"
+            className="text-sm font-medium text-muted transition-colors hover:text-ink"
           >
-            Login
-          </Link>
+            {translateUi("Login")}</Link>
           <Link
             href="/register"
-            className="rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-blue-200 transition-colors hover:bg-blue-700"
+            className="rounded-full bg-accent px-4 py-2 text-sm font-semibold text-ink shadow-sm transition-colors hover:bg-accent-hover"
           >
-            Start free
-          </Link>
+            {translateUi("Start free")}</Link>
         </div>
 
         <button
-          className="rounded-lg p-2 text-slate-600 transition-colors hover:bg-slate-100 md:hidden"
+          className="rounded-lg p-2 text-muted transition-colors hover:bg-surface-muted md:hidden"
           onClick={() => setMobileOpen(value => !value)}
-          aria-label="Toggle menu"
+          aria-label={translateUi("Toggle menu")}
           type="button"
         >
           {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -68,32 +70,30 @@ export default function Navbar() {
       </nav>
 
       {mobileOpen && (
-        <div className="space-y-3 border-t border-slate-100 bg-white px-4 py-4 md:hidden">
+        <div className="space-y-3 border-t border-line bg-surface px-4 py-4 md:hidden">
           {navLinks.map(link => (
             <Link
               key={link.href}
               href={link.href}
-              className="block py-2 text-sm font-medium text-slate-700 hover:text-blue-600"
+              className="block py-2 text-sm font-medium text-ink hover:text-accent-ink"
               onClick={() => setMobileOpen(false)}
             >
-              {link.label}
+              {translateUi(link.label)}
             </Link>
           ))}
           <div className="flex flex-col gap-2 pt-2">
             <Link
               href="/login"
-              className="block py-2 text-center text-sm font-medium text-slate-600"
+              className="block py-2 text-center text-sm font-medium text-muted"
               onClick={() => setMobileOpen(false)}
             >
-              Login
-            </Link>
+              {translateUi("Login")}</Link>
             <Link
               href="/register"
-              className="block rounded-full bg-blue-600 py-2.5 text-center text-sm font-semibold text-white transition-colors hover:bg-blue-700"
+              className="block rounded-full bg-accent py-2.5 text-center text-sm font-semibold text-ink transition-colors hover:bg-accent-hover"
               onClick={() => setMobileOpen(false)}
             >
-              Start free
-            </Link>
+              {translateUi("Start free")}</Link>
           </div>
         </div>
       )}
