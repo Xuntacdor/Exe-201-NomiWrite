@@ -10,6 +10,8 @@ public interface ILearningDbContext
     DbSet<Quiz> Quizzes { get; }
     DbSet<QuizAttempt> QuizAttempts { get; }
     DbSet<StudyGuide> StudyGuides { get; }
+    DbSet<VocabGroup> VocabGroups { get; }
+    DbSet<VocabGroupItem> VocabGroupItems { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }
