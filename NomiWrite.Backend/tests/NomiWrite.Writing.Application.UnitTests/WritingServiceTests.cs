@@ -732,5 +732,39 @@ public class WritingServiceTests
         result.ImageUrl.Should().Be("https://example.com/chart.png");
     }
 
+    [Fact]
+    public async Task GetPromptsAsync_ProjectsInstructions()
+    {
+        var db = TestWritingDbContext.Create();
+        var type = SeedType(db);
+        var prompt = SeedPrompt(db, type);
+        prompt.Instructions = "Write a formal essay about the topic.";
+        db.SaveChanges();
+
+        var sut = Build(db);
+        var prompts = await sut.GetPromptsAsync(type.Id, null, random: false, userId: UserA);
+
+        var item = prompts.Should().ContainSingle(p => p.Id == prompt.Id).Subject;
+        item.Title.Should().Be(prompt.Title);
+        item.Instructions.Should().Be("Write a formal essay about the topic.");
+        item.Instructions.Should().NotBe(item.Title);
+    }
+
+    [Fact]
+    public async Task GetPromptsAsync_Random_ProjectsInstructions()
+    {
+        var db = TestWritingDbContext.Create();
+        var type = SeedType(db);
+        var prompt = SeedPrompt(db, type);
+        prompt.Instructions = "Write a formal essay about the topic.";
+        db.SaveChanges();
+
+        var sut = Build(db);
+        var prompts = await sut.GetPromptsAsync(type.Id, null, random: true, userId: UserA);
+
+        var item = prompts.Should().ContainSingle().Subject;
+        item.Instructions.Should().Be("Write a formal essay about the topic.");
+    }
+
     #endregion
 }
