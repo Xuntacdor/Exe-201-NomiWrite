@@ -393,9 +393,15 @@ function WriteContent() {
                   <h2 className="text-lg font-bold text-ink">{translateUi("Topic: ")}{currentPrompt.topic}</h2>
                 </div>
                 <div className="prose prose-slate max-w-none text-[15px] leading-relaxed text-ink">
-                  {currentPrompt.prompt.split('\n').map((paragraph, idx) => (
-                    <p key={idx} className="mb-4">{paragraph}</p>
-                  ))}
+                  {currentPrompt.prompt
+                    ? currentPrompt.prompt.split('\n').map((paragraph, idx) => (
+                      <p key={idx} className="mb-4">{paragraph}</p>
+                    ))
+                    : (
+                      <p className="mb-4 italic text-muted">
+                        {translateUi("No instructions were returned for this prompt.")}
+                      </p>
+                    )}
                 </div>
               </div>
             ) : (

@@ -115,7 +115,7 @@ public class NotificationServiceTests
     public async Task Consume_DuplicateGradingEvent_NotPersistedAgain()
     {
         var db = TestNotificationDbContext.Create();
-        var consumer = new GradingCompletedEventConsumer(db, NullLogger<GradingCompletedEventConsumer>.Instance);
+        var consumer = new NotificationGradingCompletedEventConsumer(db, NullLogger<NotificationGradingCompletedEventConsumer>.Instance);
         var evt = new GradingCompletedEvent(Guid.NewGuid(), UserA, 6.5m, DateTime.UtcNow, null, null);
 
         await Consume(consumer, evt);
@@ -131,7 +131,7 @@ public class NotificationServiceTests
     public async Task Consume_SameSubmissionDifferentUser_BothNotified()
     {
         var db = TestNotificationDbContext.Create();
-        var consumer = new GradingCompletedEventConsumer(db, NullLogger<GradingCompletedEventConsumer>.Instance);
+        var consumer = new NotificationGradingCompletedEventConsumer(db, NullLogger<NotificationGradingCompletedEventConsumer>.Instance);
         var submissionId = Guid.NewGuid();
 
         await Consume(consumer, new GradingCompletedEvent(submissionId, UserA, 5.0m, DateTime.UtcNow, null, null));
@@ -156,7 +156,7 @@ public class NotificationServiceTests
         });
         db.SaveChanges();
 
-        var consumer = new GradingCompletedEventConsumer(db, NullLogger<GradingCompletedEventConsumer>.Instance);
+        var consumer = new NotificationGradingCompletedEventConsumer(db, NullLogger<NotificationGradingCompletedEventConsumer>.Instance);
         await Consume(consumer, new GradingCompletedEvent(Guid.NewGuid(), UserA, 6.0m, DateTime.UtcNow, null, null));
 
         db.Notifications.Should().BeEmpty();
@@ -174,7 +174,7 @@ public class NotificationServiceTests
         });
         db.SaveChanges();
 
-        var consumer = new GradingCompletedEventConsumer(db, NullLogger<GradingCompletedEventConsumer>.Instance);
+        var consumer = new NotificationGradingCompletedEventConsumer(db, NullLogger<NotificationGradingCompletedEventConsumer>.Instance);
         await Consume(consumer, new GradingCompletedEvent(Guid.NewGuid(), UserA, 7.0m, DateTime.UtcNow, null, null));
 
         db.Notifications.Should().BeEmpty();
@@ -184,7 +184,7 @@ public class NotificationServiceTests
     public async Task Consume_PreferencesUnset_CreatesDefaultsAndNotifies()
     {
         var db = TestNotificationDbContext.Create();
-        var consumer = new GradingCompletedEventConsumer(db, NullLogger<GradingCompletedEventConsumer>.Instance);
+        var consumer = new NotificationGradingCompletedEventConsumer(db, NullLogger<NotificationGradingCompletedEventConsumer>.Instance);
 
         await Consume(consumer, new GradingCompletedEvent(Guid.NewGuid(), UserA, 7.5m, DateTime.UtcNow, null, null));
 
@@ -204,7 +204,7 @@ public class NotificationServiceTests
         });
         db.SaveChanges();
 
-        var consumer = new GradingCompletedEventConsumer(db, NullLogger<GradingCompletedEventConsumer>.Instance);
+        var consumer = new NotificationGradingCompletedEventConsumer(db, NullLogger<NotificationGradingCompletedEventConsumer>.Instance);
         await Consume(consumer, new GradingCompletedEvent(Guid.NewGuid(), UserA, 6.5m, DateTime.UtcNow, null, null));
 
         db.Notifications.Should().ContainSingle(n => n.Type == NotificationType.Grading);

@@ -57,7 +57,7 @@ public static class DependencyInjection
 
         services.AddMassTransit(busConfigurator =>
         {
-            busConfigurator.AddConsumer<GradingCompletedEventConsumer>();
+            busConfigurator.AddConsumer<LearningGradingCompletedEventConsumer>();
 
             busConfigurator.UsingRabbitMq((context, rabbitConfig) =>
             {

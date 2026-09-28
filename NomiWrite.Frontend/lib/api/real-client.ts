@@ -88,7 +88,7 @@ interface BackendWritingPrompt {
   writingTypeId: string;
   writingTypeName: string;
   title: string;
-  instructions?: string;
+  instructions?: string | null;
   imageUrl?: string | null;
   difficulty: string;
   minWords?: number | null;
@@ -287,7 +287,7 @@ function toWritingPrompt(item: BackendWritingPrompt): WritingPrompt {
     writingTypeId: item.writingTypeId,
     writingType: item.writingTypeName,
     topic: item.title,
-    prompt: item.instructions ?? item.title,
+    prompt: item.instructions ?? "",
     imageUrl: item.imageUrl ?? undefined,
     difficulty: item.difficulty,
     minWords: item.minWords ?? undefined,
@@ -308,7 +308,7 @@ function toSubmission(item: BackendSubmission, userId = "", prompt?: WritingProm
     userId,
     writingType: prompt?.writingType ?? "",
     topic: item.promptTitle,
-    prompt: prompt?.prompt ?? item.promptTitle,
+    prompt: prompt?.prompt || item.promptTitle,
     content: item.content ?? "",
     wordCount: item.wordCount,
     submittedAt,

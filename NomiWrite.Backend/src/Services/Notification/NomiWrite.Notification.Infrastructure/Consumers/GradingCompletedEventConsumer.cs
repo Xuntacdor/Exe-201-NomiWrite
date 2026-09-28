@@ -8,14 +8,14 @@ using NomiWrite.Shared.Contracts.Events.Grading;
 
 namespace NomiWrite.Notification.Infrastructure.Consumers;
 
-public class GradingCompletedEventConsumer : IConsumer<GradingCompletedEvent>
+public class NotificationGradingCompletedEventConsumer : IConsumer<GradingCompletedEvent>
 {
     private readonly INotificationDbContext _dbContext;
-    private readonly ILogger<GradingCompletedEventConsumer> _logger;
+    private readonly ILogger<NotificationGradingCompletedEventConsumer> _logger;
 
-    public GradingCompletedEventConsumer(
+    public NotificationGradingCompletedEventConsumer(
         INotificationDbContext dbContext,
-        ILogger<GradingCompletedEventConsumer> logger)
+        ILogger<NotificationGradingCompletedEventConsumer> logger)
     {
         _dbContext = dbContext;
         _logger = logger;

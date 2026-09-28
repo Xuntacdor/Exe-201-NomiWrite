@@ -499,6 +499,8 @@ backups/
 *.backup
 #opencode.json
 opencode.json
+# test jmeter
+qa
 
 # Local UI migration helpers and generated inspection output
 .codex-run/*

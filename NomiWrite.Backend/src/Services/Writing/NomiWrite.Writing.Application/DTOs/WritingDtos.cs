@@ -31,6 +31,7 @@ public class WritingPromptListItemDto
     public Guid WritingTypeId { get; set; }
     public string WritingTypeName { get; set; } = string.Empty;
     public string Title { get; set; } = string.Empty;
+    public string Instructions { get; set; } = string.Empty;
     public string? ImageUrl { get; set; }
     public DifficultyLevel Difficulty { get; set; }
     public int? MinWords { get; set; }
