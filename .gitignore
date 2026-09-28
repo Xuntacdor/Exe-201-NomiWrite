@@ -499,3 +499,5 @@ backups/
 *.backup
 #opencode.json
 opencode.json
+# test jmeter
+qa
