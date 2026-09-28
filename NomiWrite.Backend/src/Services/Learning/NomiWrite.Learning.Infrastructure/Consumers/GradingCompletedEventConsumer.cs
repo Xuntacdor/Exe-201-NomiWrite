@@ -7,7 +7,7 @@ using NomiWrite.Shared.Contracts.Events.Grading;
 
 namespace NomiWrite.Learning.Infrastructure.Consumers;
 
-public class GradingCompletedEventConsumer : IConsumer<GradingCompletedEvent>
+public class LearningGradingCompletedEventConsumer : IConsumer<GradingCompletedEvent>
 {
     private const string DefaultVocabularyTopic = "Vocabulary";
     private const string ArticleCategory = "M\u1ea1o t\u1eeb";
@@ -33,11 +33,11 @@ public class GradingCompletedEventConsumer : IConsumer<GradingCompletedEvent>
     private const string DefaultGrammarCategory = "Kh\u00e1c";
 
     private readonly ILearningDbContext _dbContext;
-    private readonly ILogger<GradingCompletedEventConsumer> _logger;
+    private readonly ILogger<LearningGradingCompletedEventConsumer> _logger;
 
-    public GradingCompletedEventConsumer(
+    public LearningGradingCompletedEventConsumer(
         ILearningDbContext dbContext,
-        ILogger<GradingCompletedEventConsumer> logger)
+        ILogger<LearningGradingCompletedEventConsumer> logger)
     {
         _dbContext = dbContext;
         _logger = logger;

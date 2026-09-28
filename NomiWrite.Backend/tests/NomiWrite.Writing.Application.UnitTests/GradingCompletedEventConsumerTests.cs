@@ -33,7 +33,7 @@ public class GradingCompletedEventConsumerTests
         await db.SaveChangesAsync();
 
         var completedAt = DateTime.UtcNow;
-        var consumer = new GradingCompletedEventConsumer(db, NullLogger<GradingCompletedEventConsumer>.Instance);
+        var consumer = new WritingGradingCompletedEventConsumer(db, NullLogger<WritingGradingCompletedEventConsumer>.Instance);
         await ConsumeAsync(consumer, new GradingCompletedEvent(SubmissionId, userId, 6.5m, completedAt));
 
         var stored = db.WritingSubmissions.Single();
@@ -60,7 +60,7 @@ public class GradingCompletedEventConsumerTests
         });
         await db.SaveChangesAsync();
 
-        var consumer = new GradingCompletedEventConsumer(db, NullLogger<GradingCompletedEventConsumer>.Instance);
+        var consumer = new WritingGradingCompletedEventConsumer(db, NullLogger<WritingGradingCompletedEventConsumer>.Instance);
         await ConsumeAsync(consumer, new GradingCompletedEvent(SubmissionId, Guid.NewGuid(), 8.0m, DateTime.UtcNow));
 
         var stored = db.WritingSubmissions.Single();
@@ -68,7 +68,7 @@ public class GradingCompletedEventConsumerTests
         stored.GradedAt.Should().Be(originalGradedAt);
     }
 
-    private static async Task ConsumeAsync(GradingCompletedEventConsumer consumer, GradingCompletedEvent message)
+    private static async Task ConsumeAsync(WritingGradingCompletedEventConsumer consumer, GradingCompletedEvent message)
     {
         var context = Substitute.For<ConsumeContext<GradingCompletedEvent>>();
         context.Message.Returns(message);
