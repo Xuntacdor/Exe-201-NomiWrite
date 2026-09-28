@@ -14,10 +14,10 @@ public class GradingCompletedEventConsumerTests
     private static readonly Guid UserId = Guid.NewGuid();
     private static readonly Guid SubmissionId = Guid.NewGuid();
 
-    private static GradingCompletedEventConsumer Build(TestLearningDbContext db)
-        => new(db, NullLogger<GradingCompletedEventConsumer>.Instance);
+    private static LearningGradingCompletedEventConsumer Build(TestLearningDbContext db)
+        => new(db, NullLogger<LearningGradingCompletedEventConsumer>.Instance);
 
-    private static async Task Consume(GradingCompletedEventConsumer consumer, GradingCompletedEvent evt)
+    private static async Task Consume(LearningGradingCompletedEventConsumer consumer, GradingCompletedEvent evt)
     {
         var context = Substitute.For<ConsumeContext<GradingCompletedEvent>>();
         context.Message.Returns(evt);
