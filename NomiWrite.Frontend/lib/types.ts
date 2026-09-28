@@ -427,6 +427,7 @@ export interface SubscriptionStatus {
 export interface GenerateStudyGuideRequest {
   targetExam?: string;
   targetBand?: number;
+  currentLevel?: string;
   forceRefresh?: boolean;
 }
 

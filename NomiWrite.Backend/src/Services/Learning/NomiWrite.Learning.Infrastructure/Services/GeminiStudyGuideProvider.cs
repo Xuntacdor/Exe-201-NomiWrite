@@ -31,7 +31,7 @@ public class GeminiStudyGuideProvider : IStudyGuideAiProvider
         and Accuracy" or "Lexical Resource targets".
 
         INPUT DATA (JSON) you will receive:
-        - target: the exam/type the learner is preparing for and the target band score (may be absent).
+        - learnerProfile: the learner's saved current level, target exam/type, and target band (fields may be absent).
         - essaySummaries: the most recent graded essays. Each contains an overallBand, a createdAt date,
           and criteriaScores (e.g. Task Achievement, Coherence and Cohesion, Lexical Resource,
           Grammatical Range and Accuracy).
@@ -41,7 +41,8 @@ public class GeminiStudyGuideProvider : IStudyGuideAiProvider
         - quizStats: optional accuracy of the learner's recent practice quizzes.
 
         TASK:
-        Diagnose the learner across the four official writing criteria, then emit a STRICT JSON response
+        Diagnose the learner across the four official writing criteria. Compare essays chronologically to identify
+        which criteria are improving, stable, or declining, then emit a STRICT JSON response
         (no markdown fences, no commentary outside the JSON) with EXACTLY this shape:
         {
           "summary": "2-3 sentence overall assessment, referencing real data (current band, strongest and weakest areas).",
@@ -74,6 +75,8 @@ public class GeminiStudyGuideProvider : IStudyGuideAiProvider
 
         RULES:
         - Base EVERY claim on the provided data. Never invent essays, scores, or errors that are not present.
+        - Use the saved current level and target to set the difficulty and explain the remaining gap.
+        - Prioritize recurring or declining weak criteria; preserve strengths and reinforce criteria that are improving.
         - strengths: 2-4 items. Derive them from the highest recurring criterion scores and mastered vocabulary.
           Name the criterion explicitly (e.g. "Coherence and Cohesion is consistently your strongest criterion at 7.0").
         - weaknesses: 2-4 items. Derive them from the lowest criteria and the top recurring grammar categories.
@@ -269,7 +272,7 @@ public class GeminiStudyGuideProvider : IStudyGuideAiProvider
         builder.AppendLine();
         builder.AppendLine("=== INPUT DATA ===");
         builder.AppendLine();
-        builder.AppendLine($"target: {{ \"exam\": \"{request.TargetExam}\", \"band\": {(request.TargetBand.HasValue ? request.TargetBand.Value.ToString("0.0") : "null")} }}");
+        builder.AppendLine($"learnerProfile: {{ \"currentLevel\": \"{request.CurrentLevel ?? "unknown"}\", \"targetExam\": \"{request.TargetExam}\", \"targetBand\": {(request.TargetBand.HasValue ? request.TargetBand.Value.ToString("0.0") : "null")} }}");
         builder.AppendLine();
         builder.AppendLine("essaySummaries:");
         builder.AppendLine(essaysSnapshot);

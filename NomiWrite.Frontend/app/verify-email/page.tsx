@@ -6,7 +6,8 @@ import { useLocale } from "@/lib/i18n/locale";
 import Link from "next/link";
 import { FormEvent, Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { ArrowLeft, Mail, PenLine, Send, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Mail, Send, ShieldCheck } from "lucide-react";
+import BrandMark from "../components/BrandMark";
 import { apiClient } from "@/lib/api/client";
 
 function VerifyEmailContent() {
@@ -68,9 +69,7 @@ function VerifyEmailContent() {
 
         <div className="rounded-xl border border-line bg-surface p-8 shadow-sm">
           <div className="mb-7 flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent shadow-sm">
-              <PenLine className="h-5 w-5 text-ink" />
-            </div>
+            <BrandMark size={40} />
             <div>
               <h1 className="text-xl font-bold text-ink">{translateUi("Verify email")}</h1>
               <p className="text-sm text-muted">{translateUi("Confirm or resend account verification.")}</p>

@@ -47,8 +47,14 @@ public class DeterministicStudyGuideProvider : IFallbackStudyGuideProvider
         var band = ComputeBand(request);
         var weakest = AggregateCriteria(request).OrderBy(c => c.Value).FirstOrDefault().Key;
         var strongest = AggregateCriteria(request).OrderByDescending(c => c.Value).FirstOrDefault().Key;
+        var target = request.TargetBand.HasValue
+            ? $" toward your {request.TargetBand.Value:0.0} target"
+            : string.Empty;
+        var profileLevel = string.IsNullOrWhiteSpace(request.CurrentLevel)
+            ? string.Empty
+            : $" Your profile level is {request.CurrentLevel}.";
 
-        return $"Your recent essays average band {band:0.0}. {strongest} is your strongest area; focus on raising {weakest} to reach your target faster. Điểm trung bình hiện tại của bạn là {band:0.0} — ưu tiên cải thiện {Vi(weakest)}.";
+        return $"Your recent essays average band {band:0.0}{target}.{profileLevel} {strongest} is your strongest area; focus on raising {weakest} to reach your target faster. Điểm trung bình hiện tại của bạn là {band:0.0} — ưu tiên cải thiện {Vi(weakest)}.";
     }
 
     private static List<StudyGuideInsight> BuildStrengths(StudyGuideGenerationRequest request)

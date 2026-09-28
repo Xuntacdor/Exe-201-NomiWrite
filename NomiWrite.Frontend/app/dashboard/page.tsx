@@ -87,6 +87,8 @@ export default function DashboardPage() {
   const recentSubmissions = [...submissions]
     .sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime())
     .slice(0, 5);
+  const targetBand = user?.targetBand != null ? user.targetBand.toFixed(1) : "--";
+  const targetDescription = user?.targetType?.trim() || "Set your goal in Profile";
 
   return (
     <AppShell activePath="/dashboard">
@@ -132,7 +134,7 @@ export default function DashboardPage() {
                 { label: "Avg. Writing Band", value: averageScore, sub: "Based on AI grading", color: "text-accent-ink", bg: "bg-accent", Icon: TrendingUp },
                 { label: "Essays Graded", value: gradedScores.length, sub: "Total completed", color: "text-success-ink", bg: "bg-success", Icon: Award },
                 { label: "Current Plan", value: user?.plan === "premium" ? "PRO" : "Free", sub: "Upgrade for full AI feedback", color: "text-rose-ink", bg: "bg-rose", Icon: Sparkles },
-                { label: "Target Band", value: "7.0+", sub: "Set your goal in Profile", color: "text-accent-ink", bg: "bg-accent", Icon: Flame },
+                { label: "Target Band", value: targetBand, sub: targetDescription, color: "text-accent-ink", bg: "bg-accent", Icon: Flame },
               ].map(({ label, value, sub, color, bg, Icon }) => (
                 <div key={label} className="relative overflow-hidden rounded-xl border border-line bg-surface p-5 shadow-sm transition-all hover:shadow-sm">
                   <div className={`mb-4 flex h-12 w-12 items-center justify-center rounded-xl ${bg}`}>

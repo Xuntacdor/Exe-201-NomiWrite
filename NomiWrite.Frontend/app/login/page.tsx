@@ -6,10 +6,11 @@ import { useLocale } from "@/lib/i18n/locale";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
-import { PenLine, Mail, Lock, ArrowRight } from "lucide-react";
+import { Mail, Lock, ArrowRight } from "lucide-react";
 import { apiClient } from "@/lib/api/client";
 import { redirectAfterAuth, saveSession } from "@/lib/auth/session";
 import GoogleSignInButton from "../components/GoogleSignInButton";
+import BrandMark from "../components/BrandMark";
 
 export default function LoginPage() {
   const { t: translateUi, errorText } = useLocale();
@@ -48,9 +49,7 @@ export default function LoginPage() {
       <div className="relative w-full max-w-sm">
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center shadow-sm">
-              <PenLine className="w-5 h-5 text-ink" strokeWidth={2.5} />
-            </div>
+            <BrandMark size={40} />
             <span className="text-xl font-bold text-ink">{translateUi("NomiWrite")}</span>
           </Link>
           <p className="mt-3 text-sm text-muted font-medium">

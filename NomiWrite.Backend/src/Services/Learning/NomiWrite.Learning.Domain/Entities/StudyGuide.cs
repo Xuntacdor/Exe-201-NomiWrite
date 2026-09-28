@@ -3,8 +3,8 @@ namespace NomiWrite.Learning.Domain.Entities;
 /// <summary>
 /// The stored, personalized study guide (improvement roadmap) produced by the
 /// LLM from the user's writing history. One row per user — the latest row is
-/// the cached guide so re-visiting the Guide page never re-runs the LLM until
-/// the user explicitly regenerates.
+/// the cached guide. A newly completed grading invalidates this row so the
+/// next Guide visit rebuilds the roadmap from the latest learning signals.
 /// </summary>
 public class StudyGuide : Common.BaseEntity
 {

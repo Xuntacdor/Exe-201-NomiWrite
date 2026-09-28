@@ -14,5 +14,9 @@ public class GenerateStudyGuideRequestValidator : AbstractValidator<GenerateStud
         RuleFor(x => x.TargetBand)
             .InclusiveBetween(1m, 9m)
             .WithMessage("targetBand must be between 1.0 and 9.0.");
+
+        RuleFor(x => x.CurrentLevel)
+            .MaximumLength(100)
+            .WithMessage("currentLevel must be at most 100 characters.");
     }
 }

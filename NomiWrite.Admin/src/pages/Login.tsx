@@ -1,9 +1,10 @@
 import axios from "axios";
 import { useState } from "react";
 import type { FormEvent } from "react";
-import { Lock, Mail, ShieldAlert } from "lucide-react";
+import { Lock, Mail } from "lucide-react";
 import { Navigate, useNavigate } from "react-router-dom";
 import { hasAdminSession, isAdminRole, saveAdminSession } from "../lib/authSession";
+import AdminSettingsButton from "../components/AdminSettingsButton";
 
 interface AuthResponse {
   accessToken: string;
@@ -58,41 +59,40 @@ export default function Login() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-950 px-4 text-slate-100">
-      <div className="w-full max-w-sm rounded-2xl border border-slate-800 bg-slate-900 p-7 shadow-2xl">
+    <div className="admin-login flex min-h-screen items-center justify-center px-4">
+      <AdminSettingsButton floating />
+      <div className="admin-login-card w-full max-w-sm rounded-2xl border p-7 shadow-2xl">
         <div className="mb-7 flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-600">
-            <ShieldAlert className="h-5 w-5 text-white" />
-          </div>
+          <img src="/nomiwrite-mark.svg" alt="" aria-hidden="true" className="h-11 w-11 shrink-0" />
           <div>
             <h1 className="text-lg font-extrabold">NomiWrite Admin</h1>
-            <p className="text-xs font-medium text-slate-400">Sign in with an admin account</p>
+            <p className="text-xs font-medium text-[var(--admin-muted)]">Sign in with an admin account</p>
           </div>
         </div>
 
         <form className="space-y-4" onSubmit={handleSubmit}>
           <div>
-            <label className="mb-1.5 block text-xs font-semibold text-slate-300">Email</label>
+            <label className="mb-1.5 block text-xs font-semibold">Email</label>
             <div className="relative">
-              <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+              <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--admin-muted)]" />
               <input
                 type="email"
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
-                className="w-full rounded-xl border border-slate-700 bg-slate-950 py-3 pl-10 pr-3 text-sm outline-none transition focus:border-indigo-500"
+                className="admin-input w-full rounded-xl border py-3 pl-10 pr-3 text-sm outline-none transition"
               />
             </div>
           </div>
 
           <div>
-            <label className="mb-1.5 block text-xs font-semibold text-slate-300">Password</label>
+            <label className="mb-1.5 block text-xs font-semibold">Password</label>
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+              <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--admin-muted)]" />
               <input
                 type="password"
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
-                className="w-full rounded-xl border border-slate-700 bg-slate-950 py-3 pl-10 pr-3 text-sm outline-none transition focus:border-indigo-500"
+                className="admin-input w-full rounded-xl border py-3 pl-10 pr-3 text-sm outline-none transition"
               />
             </div>
           </div>
@@ -106,7 +106,7 @@ export default function Login() {
           <button
             type="submit"
             disabled={submitting}
-            className="w-full rounded-xl bg-indigo-600 py-3 text-sm font-extrabold text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-60"
+            className="admin-primary-button w-full rounded-xl py-3 text-sm font-extrabold transition disabled:cursor-not-allowed disabled:opacity-60"
           >
             {submitting ? "Signing in..." : "Sign in"}
           </button>

@@ -15,6 +15,10 @@ export const metadata: Metadata = {
   title: "NomiWrite - Luyện viết tiếng Anh",
   description:
     "Personalized English writing practice with AI-style feedback, grammar insights, vocabulary suggestions, quizzes, and progress tracking.",
+  icons: {
+    icon: [{ url: "/nomiwrite-mark.svg", type: "image/svg+xml" }],
+    shortcut: "/nomiwrite-mark.svg",
+  },
 };
 
 export default function RootLayout({

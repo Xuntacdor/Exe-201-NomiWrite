@@ -10,6 +10,9 @@ public class GenerateStudyGuideRequestDto
     /// <summary>Target IELTS band score (1.0 - 9.0). Optional.</summary>
     public decimal? TargetBand { get; set; }
 
+    /// <summary>Current English level saved in the learner profile.</summary>
+    public string? CurrentLevel { get; set; }
+
     /// <summary>
     /// When true, the AI analysis is re-run even if a fresh cached guide exists.
     /// </summary>
@@ -119,6 +122,7 @@ public class StudyGuideGenerationRequest
 {
     public string TargetExam { get; set; } = "IELTS Academic - Writing Task 2";
     public decimal? TargetBand { get; set; }
+    public string? CurrentLevel { get; set; }
     public List<GradedEssaySummaryDto> EssaySummaries { get; set; } = new();
     public List<EssayTopicDto> Topics { get; set; } = new();
     public List<GrammarAggregateDto> GrammarAggregates { get; set; } = new();

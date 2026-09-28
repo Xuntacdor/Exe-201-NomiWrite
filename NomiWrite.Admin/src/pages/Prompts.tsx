@@ -69,7 +69,7 @@ export default function AdminPromptsPage() {
           <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Prompts Management</h1>
           <p className="mt-1.5 text-sm font-medium text-slate-500">Create, edit, and publish writing prompts.</p>
         </div>
-        <button className="flex items-center justify-center gap-2 px-5 py-2.5 bg-indigo-600 rounded-xl text-sm font-bold text-white hover:bg-indigo-700 transition-colors shadow-sm shadow-indigo-200">
+        <button className="flex items-center justify-center gap-2 px-5 py-2.5 bg-rose-700 rounded-xl text-sm font-bold text-white hover:bg-rose-800 transition-colors shadow-sm shadow-pink-200">
           <Plus className="h-4 w-4" /> Create Prompt
         </button>
       </div>
@@ -83,7 +83,7 @@ export default function AdminPromptsPage() {
             placeholder="Search prompts..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+            className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
           />
         </div>
         <div className="flex items-center gap-3 w-full sm:w-auto">
@@ -104,7 +104,7 @@ export default function AdminPromptsPage() {
         <div className="overflow-x-auto min-h-[400px] relative">
           {loading && (
             <div className="absolute inset-0 bg-white/50 backdrop-blur-sm z-10 flex items-center justify-center">
-              <Loader2 className="h-8 w-8 animate-spin text-indigo-500" />
+              <Loader2 className="h-8 w-8 animate-spin text-rose-600" />
             </div>
           )}
           <table className="w-full text-left text-sm">
@@ -132,8 +132,8 @@ export default function AdminPromptsPage() {
                 <tr key={prompt.id} className="hover:bg-slate-50/50 transition-colors">
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-xl bg-indigo-50 flex items-center justify-center">
-                        <FileText className="h-5 w-5 text-indigo-600" />
+                      <div className="h-10 w-10 rounded-xl bg-pink-50 flex items-center justify-center">
+                        <FileText className="h-5 w-5 text-rose-700" />
                       </div>
                       <div className="font-bold text-slate-900">{prompt.title}</div>
                     </div>
@@ -152,7 +152,7 @@ export default function AdminPromptsPage() {
                   </td>
                   <td className="px-6 py-4">
                     <span className={`inline-flex px-2.5 py-1 rounded-md text-[11px] font-extrabold uppercase tracking-widest ${
-                      prompt.isActive ? "bg-blue-100 text-blue-700" : "bg-slate-200 text-slate-600"
+                      prompt.isActive ? "bg-pink-100 text-rose-800" : "bg-slate-200 text-slate-600"
                     }`}>
                       {prompt.isActive ? "Published" : "Draft"}
                     </span>
@@ -162,7 +162,7 @@ export default function AdminPromptsPage() {
                   </td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-2">
-                      <button className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors">
+                      <button className="p-2 text-slate-400 hover:text-rose-700 hover:bg-pink-50 rounded-lg transition-colors">
                         <Edit2 className="h-4 w-4" />
                       </button>
                       <button className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">

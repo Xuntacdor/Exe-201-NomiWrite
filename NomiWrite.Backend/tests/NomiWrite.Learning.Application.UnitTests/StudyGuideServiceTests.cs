@@ -230,11 +230,17 @@ public class StudyGuideServiceTests
 
         var sut = Build(db, ai: ai);
         var dto = await sut.GenerateGuideAsync(UserA,
-            new GenerateStudyGuideRequestDto { TargetExam = "IELTS Academic - Writing Task 2", TargetBand = 7m },
+            new GenerateStudyGuideRequestDto
+            {
+                TargetExam = "IELTS Academic - Writing Task 2",
+                TargetBand = 7m,
+                CurrentLevel = "Upper Intermediate"
+            },
             "token");
 
         captured!.TargetExam.Should().Be("IELTS Academic - Writing Task 2");
         captured.TargetBand.Should().Be(7m);
+        captured.CurrentLevel.Should().Be("Upper Intermediate");
         captured.EssaySummaries.Should().ContainSingle(e => e.OverallBand == 6.5m);
         captured.GrammarAggregates.Should().Contain(a => a.Category == "Preposition" && a.Count == 1);
         captured.Vocabulary.Should().ContainSingle(v => v.OriginalWord == "good");

@@ -125,7 +125,8 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--focus); }
 .app-sidebar { width: 15rem; background: var(--surface); border-right: 1px solid var(--line); display: flex; flex-shrink: 0; flex-direction: column; min-height: 0; position: relative; z-index: 60; }
 .app-sidebar.is-collapsed { width: 4rem; }
 .sidebar-brand { display: flex; align-items: center; gap: 0.65rem; height: var(--shell-header-height); flex-shrink: 0; padding: 0.8rem; border-bottom: 1px solid var(--line); font-size: 1.2rem; font-weight: 800; }
-.sidebar-brand-icon { display: grid; place-items: center; width: 2.3rem; height: 2.3rem; flex-shrink: 0; background: var(--accent); border-radius: 0.7rem; }
+.sidebar-brand-icon { display: grid; place-items: center; width: 2.5rem; height: 2.5rem; flex-shrink: 0; }
+.sidebar-brand-icon img { display: block; width: 100%; height: 100%; }
 .sidebar-nav { flex: 1; min-height: 0; overflow-y: auto; padding: 0.75rem 0.5rem; }
 .sidebar-group { margin: 0.9rem 0.75rem 0.3rem; font-size: 0.7rem; color: var(--muted); font-weight: 700; letter-spacing: 0.06em; }
 .sidebar-action { display: flex; align-items: center; gap: 0.75rem; padding: 0.7rem 0.75rem; width: 100%; border-radius: 0.6rem; font-size: 0.9rem; color: var(--ink); min-height: 44px; text-align: left; }
