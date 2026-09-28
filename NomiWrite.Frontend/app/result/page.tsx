@@ -241,24 +241,40 @@ function ResultContent() {
     setCreatingGroup(true);
     try {
       const selectedArr = Array.from(selectedVocabIds);
+      // Refresh to make sure we have the latest items from the database in case of RabbitMQ delay
+      let latestRealVocabs = realVocabs;
+      if (feedback?.submission?.id) {
+        try {
+          latestRealVocabs = await apiClient.listVocabularyBySubmission(feedback.submission.id);
+          setRealVocabs(latestRealVocabs);
+        } catch (err) {
+          console.error("Failed to fetch latest vocabs", err);
+        }
+      }
+
+      if (latestRealVocabs.length === 0) {
+        throw new Error("The vocabulary is still being saved to your notebook in the background. Please wait a few seconds and try again.");
+      }
+
       const realGuidsToGroup: string[] = [];
 
       for (const fakeId of selectedArr) {
         const fakeVocab = feedback?.vocabSuggestions.find(v => v.id === fakeId);
         if (fakeVocab) {
-          const realVocab = realVocabs.find(v =>
-            v.originalWord === fakeVocab.originalWord &&
-            v.suggestedWord.includes(fakeVocab.suggestedWord)
+          const realVocab = latestRealVocabs.find(v =>
+            v.originalWord.trim().toLowerCase() === fakeVocab.originalWord.trim().toLowerCase()
           );
           if (realVocab) {
             realGuidsToGroup.push(realVocab.id);
+          } else {
+            console.warn("Could not match fakeVocab:", fakeVocab, "against realVocabs:", latestRealVocabs);
           }
         }
       }
 
       const uniqueRealGuids = Array.from(new Set(realGuidsToGroup));
       if (uniqueRealGuids.length === 0 && selectedArr.length > 0) {
-        throw new Error("Could not find the vocabulary in your notebook. Please try again in a few seconds.");
+        throw new Error("Could not match the selected AI vocabulary to your saved notebook. This might be a syncing issue.");
       }
 
       if (selectedExistingGroupId) {
