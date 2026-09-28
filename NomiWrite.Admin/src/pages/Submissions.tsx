@@ -58,7 +58,7 @@ export default function AdminSubmissionsPage() {
             placeholder="Search by user or ID..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+            className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
           />
         </div>
         <div className="flex items-center gap-3 w-full sm:w-auto">
@@ -104,7 +104,7 @@ export default function AdminSubmissionsPage() {
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-extrabold uppercase tracking-widest bg-blue-100 text-blue-700">
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-extrabold uppercase tracking-widest bg-pink-100 text-rose-800">
                       <GraduationCap className="h-3 w-3" />
                       {sub.type}
                     </span>
@@ -129,7 +129,7 @@ export default function AdminSubmissionsPage() {
                   </td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-2">
-                      <button className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors border border-indigo-200 bg-white">
+                      <button className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-rose-700 hover:bg-pink-50 rounded-lg transition-colors border border-pink-200 bg-white">
                         <Eye className="h-3.5 w-3.5" /> View
                       </button>
                     </div>

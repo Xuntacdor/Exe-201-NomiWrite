@@ -31,8 +31,8 @@ export default function Dashboard() {
       change: "+12.5%", 
       isPositive: true, 
       icon: Users, 
-      color: "text-blue-600", 
-      bg: "bg-blue-100" 
+      color: "text-rose-700",
+      bg: "bg-rose-100"
     },
     { 
       title: "Active Subscriptions", 
@@ -49,8 +49,8 @@ export default function Dashboard() {
       change: "+2", 
       isPositive: true, 
       icon: FileText, 
-      color: "text-purple-600", 
-      bg: "bg-purple-100" 
+      color: "text-pink-700",
+      bg: "bg-pink-100"
     },
     { 
       title: "Total Submissions", 
@@ -89,7 +89,7 @@ export default function Dashboard() {
         {stats.map((stat, i) => {
           const Icon = stat.icon;
           return (
-            <div key={i} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all hover:shadow-md hover:border-indigo-200 group">
+            <div key={i} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all hover:shadow-md hover:border-pink-200 group">
               <div className="flex items-center justify-between mb-4">
                 <div className={`flex h-12 w-12 items-center justify-center rounded-xl ${stat.bg}`}>
                   <Icon className={`h-6 w-6 ${stat.color}`} strokeWidth={2} />
@@ -101,7 +101,7 @@ export default function Dashboard() {
               <p className="text-sm font-bold text-slate-500">{stat.title}</p>
               {loading ? (
                 <div className="flex items-center h-9 mt-1">
-                  <Loader2 className="h-5 w-5 animate-spin text-indigo-500" />
+                  <Loader2 className="h-5 w-5 animate-spin text-rose-600" />
                 </div>
               ) : (
                 <h3 className="text-3xl font-extrabold text-slate-900 mt-1">{stat.value}</h3>
@@ -117,7 +117,7 @@ export default function Dashboard() {
         <div className="lg:col-span-2 rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
           <div className="border-b border-slate-100 p-6 flex justify-between items-center bg-slate-50/50">
             <h2 className="text-lg font-extrabold text-slate-900">Recent Activity</h2>
-            <button className="text-xs font-bold text-indigo-600 hover:text-indigo-700">View All</button>
+            <button className="text-xs font-bold text-rose-700 hover:text-rose-800">View All</button>
           </div>
           <div className="p-6">
             <div className="flex flex-col items-center justify-center py-12 text-center space-y-3">

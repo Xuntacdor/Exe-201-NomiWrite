@@ -4,7 +4,6 @@ import { useLocale } from "@/lib/i18n/locale";
 
 
 import { useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -23,6 +22,7 @@ import {
 import { apiClient } from "@/lib/api/client";
 import { clearSession } from "@/lib/auth/session";
 import SettingsButton from "./SettingsButton";
+import BrandMark from "./BrandMark";
 
 const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
@@ -56,7 +56,7 @@ export default function AppSidebar({ activePath = "/dashboard" }: AppSidebarProp
     <aside className={`app-sidebar ${collapsed ? "is-collapsed" : ""}`}>
       <Link href="/dashboard" className="sidebar-brand" aria-label={translateUi("NomiWrite - Dashboard")} title={translateUi("NomiWrite")}>
         <span className="sidebar-brand-icon">
-          <Image src="/nomiwrite-mark.svg" alt="" width={40} height={40} aria-hidden="true" priority />
+          <BrandMark size={40} />
         </span>
         {!collapsed && <span className="sidebar-label">{translateUi("NomiWrite")}</span>}
       </Link>

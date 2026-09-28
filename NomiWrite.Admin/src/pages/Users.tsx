@@ -101,7 +101,7 @@ export default function Users() {
             placeholder="Search by name or email..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+            className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
           />
         </div>
         <div className="flex items-center gap-3 w-full sm:w-auto">
@@ -123,7 +123,7 @@ export default function Users() {
         <div className="overflow-x-auto min-h-[400px] relative">
           {loading && (
             <div className="absolute inset-0 bg-white/50 backdrop-blur-sm z-10 flex items-center justify-center">
-              <Loader2 className="h-8 w-8 animate-spin text-indigo-500" />
+              <Loader2 className="h-8 w-8 animate-spin text-rose-600" />
             </div>
           )}
           <table className="w-full text-left text-sm">
@@ -153,7 +153,7 @@ export default function Users() {
                 <tr key={user.id} className="hover:bg-slate-50/50 transition-colors">
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-full bg-gradient-to-br from-indigo-100 to-purple-100 flex items-center justify-center text-indigo-700 font-bold uppercase">
+                      <div className="h-10 w-10 rounded-full bg-gradient-to-br from-pink-100 to-rose-100 flex items-center justify-center text-rose-800 font-bold uppercase">
                         {user.fullName ? user.fullName.charAt(0) : '?'}
                       </div>
                       <div>
@@ -166,7 +166,7 @@ export default function Users() {
                   </td>
                   <td className="px-6 py-4">
                     <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-extrabold uppercase tracking-widest ${
-                      isElevatedRole ? "bg-purple-100 text-purple-700" : "bg-slate-100 text-slate-600"
+                      isElevatedRole ? "bg-pink-100 text-rose-800" : "bg-slate-100 text-slate-600"
                     }`}>
                       {isElevatedRole && <Shield className="h-3 w-3" />}
                       {roleLabel}

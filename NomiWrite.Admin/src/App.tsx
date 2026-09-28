@@ -22,7 +22,7 @@ function RequireAdmin() {
 // Layout component wrapping the sidebar and content area
 function AdminLayout() {
   return (
-    <div className="flex h-screen w-full bg-slate-50 font-sans antialiased text-slate-900">
+    <div className="admin-shell flex h-screen w-full font-sans antialiased">
       <AdminSidebar />
       <main className="flex flex-1 flex-col overflow-hidden">
         <div className="flex-1 overflow-y-auto">
@@ -44,7 +44,6 @@ function App() {
             <Route path="users" element={<Users />} />
             <Route path="prompts" element={<Prompts />} />
             <Route path="submissions" element={<Submissions />} />
-            <Route path="settings" element={<div className="p-8 text-slate-500 font-bold">Settings Placeholder</div>} />
           </Route>
         </Route>
       </Routes>
