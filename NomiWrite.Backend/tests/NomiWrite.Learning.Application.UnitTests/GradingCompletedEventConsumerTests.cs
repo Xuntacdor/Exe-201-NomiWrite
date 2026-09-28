@@ -161,6 +161,27 @@ public class GradingCompletedEventConsumerTests
 
     #endregion
 
+    [Fact]
+    public async Task Consume_NewGrade_InvalidatesCachedStudyGuide()
+    {
+        var db = TestLearningDbContext.Create();
+        db.StudyGuides.Add(new StudyGuide
+        {
+            UserId = UserId,
+            TargetExam = "IELTS Academic",
+            TargetBand = 7m,
+            Summary = "Old plan",
+            EstimatedBand = 6.5m,
+            AnalyzedEssayCount = 1
+        });
+        db.SaveChanges();
+
+        var consumer = Build(db);
+        await Consume(consumer, TestEvent());
+
+        db.StudyGuides.Should().BeEmpty();
+    }
+
     private static GradingCompletedEvent TestEvent(
         List<GradingGrammarErrorEventItem>? grammar = null,
         List<GradingVocabularySuggestionEventItem>? vocab = null) => new(

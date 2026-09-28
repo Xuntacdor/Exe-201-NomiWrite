@@ -4,6 +4,7 @@ import { useLocale } from "@/lib/i18n/locale";
 
 
 import { useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -54,7 +55,9 @@ export default function AppSidebar({ activePath = "/dashboard" }: AppSidebarProp
   return (
     <aside className={`app-sidebar ${collapsed ? "is-collapsed" : ""}`}>
       <Link href="/dashboard" className="sidebar-brand" aria-label={translateUi("NomiWrite - Dashboard")} title={translateUi("NomiWrite")}>
-        <span className="sidebar-brand-icon"><PenLine size={22} aria-hidden="true" /></span>
+        <span className="sidebar-brand-icon">
+          <Image src="/nomiwrite-mark.svg" alt="" width={40} height={40} aria-hidden="true" priority />
+        </span>
         {!collapsed && <span className="sidebar-label">{translateUi("NomiWrite")}</span>}
       </Link>
       <nav className="sidebar-nav" aria-label={translateUi("Điều hướng học tập")}>

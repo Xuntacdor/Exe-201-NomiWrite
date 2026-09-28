@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title description">
+  <title id="title">NomiWrite</title>
+  <desc id="description">Stylized N drawn with a pen stroke on a plum background</desc>
+  <defs>
+    <linearGradient id="background" x1="10" y1="7" x2="55" y2="59" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#B83273"/>
+      <stop offset="1" stop-color="#5A294B"/>
+    </linearGradient>
+    <linearGradient id="stroke" x1="16" y1="18" x2="49" y2="47" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFF8FB"/>
+      <stop offset="1" stop-color="#FFD5E5"/>
+    </linearGradient>
+  </defs>
+  <rect x="2" y="2" width="60" height="60" rx="17" fill="url(#background)"/>
+  <path d="M16.5 44V21.5L47.5 44V20" fill="none" stroke="url(#stroke)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M43.5 17.5L48 12.8L52.5 17.3L47.5 22.2Z" fill="#FFB5D1" stroke="#FFF8FB" stroke-width="1.5" stroke-linejoin="round"/>
+  <path d="M14.5 50C24.8 53 39.2 52.9 50 48.5" fill="none" stroke="#F58AB4" stroke-width="2.5" stroke-linecap="round"/>
+</svg>

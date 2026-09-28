@@ -124,12 +124,19 @@ public class GradingCompletedEventConsumer : IConsumer<GradingCompletedEvent>
             addedCount++;
         }
 
-        if (addedCount > 0)
+        var staleGuides = await _dbContext.StudyGuides
+            .Where(guide => guide.UserId == @event.UserId)
+            .ToListAsync();
+
+        if (staleGuides.Count > 0)
+            _dbContext.StudyGuides.RemoveRange(staleGuides);
+
+        if (addedCount > 0 || staleGuides.Count > 0)
         {
             await _dbContext.SaveChangesAsync();
             _logger.LogInformation(
-                "Persisted {AddedCount} learning items for submission {SubmissionId}.",
-                addedCount, @event.SubmissionId);
+                "Persisted {AddedCount} learning items and invalidated {GuideCount} study guides for submission {SubmissionId}.",
+                addedCount, staleGuides.Count, @event.SubmissionId);
         }
     }
 

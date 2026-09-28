@@ -7,7 +7,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import AppShell from "../components/AppShell";
 import { apiClient } from "@/lib/api/client";
-import type { StudyGuide, StudyGuideInsight, StudyGuideStep, StudyGuideTopic } from "@/lib/types";
+import type { GenerateStudyGuideRequest, StudyGuide, StudyGuideInsight, StudyGuideStep, StudyGuideTopic, User } from "@/lib/types";
 import {
   AlertTriangle,
   ArrowRight,
@@ -72,6 +72,15 @@ function formatBand(band: number | null | undefined) {
 
 function toInsight(item: StudyGuideInsight | string): StudyGuideInsight {
   return typeof item === "string" ? { text: item, explanationVi: undefined } : item;
+}
+
+function buildGenerationRequest(profile: User | null, forceRefresh: boolean): GenerateStudyGuideRequest {
+  return {
+    targetExam: profile?.targetType?.trim() || undefined,
+    targetBand: profile?.targetBand,
+    currentLevel: profile?.currentLevel?.trim() || undefined,
+    forceRefresh,
+  };
 }
 
 function isSafeRoute(target?: string): target is string {
@@ -141,19 +150,59 @@ function StudyPlanContent() {
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
   const [topicOpen, setTopicOpen] = useState(true);
+  const [profile, setProfile] = useState<User | null>(null);
+  const [hasGradedEssays, setHasGradedEssays] = useState(false);
 
   useEffect(() => {
     let ignore = false;
-    apiClient.getStudyGuide()
-      .then(result => {
-        if (!ignore) setGuide(result);
-      })
-      .catch(err => {
+
+    async function loadStudyPlan() {
+      try {
+        const [existingGuide, userProfile, gradingHistory] = await Promise.all([
+          apiClient.getStudyGuide(),
+          apiClient.getMyAccount().catch(() => apiClient.getMe()),
+          apiClient.listGradingHistory(),
+        ]);
+
+        if (ignore) return;
+        setProfile(userProfile);
+        setHasGradedEssays(gradingHistory.length > 0);
+
+        const profileExam = userProfile.targetType?.trim() || undefined;
+        const targetChanged = Boolean(existingGuide) && (
+          (existingGuide?.targetBand ?? null) !== (userProfile.targetBand ?? null) ||
+          Boolean(profileExam && existingGuide?.targetExam !== profileExam)
+        );
+        const guideCreatedAt = existingGuide ? new Date(existingGuide.createdAt).getTime() : 0;
+        const hasNewerGrade = gradingHistory.some(item => new Date(item.createdAt).getTime() > guideCreatedAt);
+        const analyzedCountChanged = existingGuide
+          ? existingGuide.analyzedEssayCount !== Math.min(gradingHistory.length, 15)
+          : false;
+        const shouldGenerate = gradingHistory.length > 0 && (
+          !existingGuide || targetChanged || hasNewerGrade || analyzedCountChanged
+        );
+
+        if (shouldGenerate) {
+          setLoading(false);
+          setGenerating(true);
+          const generatedGuide = await apiClient.generateStudyGuide(
+            buildGenerationRequest(userProfile, true),
+          );
+          if (!ignore) setGuide(generatedGuide);
+        } else {
+          setGuide(existingGuide);
+        }
+      } catch (err) {
         if (!ignore) setError(err instanceof Error ? err.message : "Could not load your study plan.");
-      })
-      .finally(() => {
-        if (!ignore) setLoading(false);
-      });
+      } finally {
+        if (!ignore) {
+          setGenerating(false);
+          setLoading(false);
+        }
+      }
+    }
+
+    void loadStudyPlan();
 
     return () => {
       ignore = true;
@@ -165,14 +214,16 @@ function StudyPlanContent() {
     setError("");
     setCopied(false);
     try {
-      const result = await apiClient.generateStudyGuide({ forceRefresh });
+      const currentProfile = profile ?? await apiClient.getMyAccount().catch(() => apiClient.getMe());
+      setProfile(currentProfile);
+      const result = await apiClient.generateStudyGuide(buildGenerationRequest(currentProfile, forceRefresh));
       setGuide(result);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not generate your study plan.");
     } finally {
       setGenerating(false);
     }
-  }, []);
+  }, [profile]);
 
   const bandGap = useMemo(() => {
     if (!guide || guide.targetBand == null) return null;
@@ -246,7 +297,7 @@ function StudyPlanContent() {
                   {translateUi("Generate my study plan")}</button>
               </div>
             </div>
-            {!error && (
+            {!error && !hasGradedEssays && (
               <p className="text-center text-xs font-medium text-muted">
                 {translateUi("Needs at least one graded writing — add one in")}{" "}
                 <Link href="/write" className="text-accent-ink hover:underline">{translateUi("Write")}</Link> {translateUi(" or")}{" "}

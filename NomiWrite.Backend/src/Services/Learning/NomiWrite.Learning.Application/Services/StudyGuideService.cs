@@ -84,6 +84,9 @@ public class StudyGuideService : IStudyGuideService
                 ? "IELTS Academic - Writing Task 2"
                 : request.TargetExam.Trim(),
             TargetBand = request.TargetBand,
+            CurrentLevel = string.IsNullOrWhiteSpace(request.CurrentLevel)
+                ? null
+                : request.CurrentLevel.Trim(),
             EssaySummaries = essaySummaries
                 .OrderByDescending(e => e.CreatedAt)
                 .Take(MaxEssaysAnalyzed)
