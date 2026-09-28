@@ -310,7 +310,7 @@ public class WritingServiceTests
     [Theory]
     [InlineData(false, true)]
     [InlineData(true, false)]
-    public async Task SubmitSubmissionAsync_DailyLimitAppliesOnlyToFreeUsers(bool isVip, bool blocked)
+    public async Task SubmitSubmissionAsync_MonthlyLimitAppliesOnlyToFreeUsers(bool isVip, bool blocked)
     {
         var db = TestWritingDbContext.Create();
         var type = SeedType(db);
@@ -321,17 +321,17 @@ public class WritingServiceTests
         var publish = Substitute.For<IPublishEndpoint>();
         var sut = Build(db, publish, subClient);
 
-        for (var i = 0; i < 4; i++)
+        for (var i = 0; i < 6; i++)
         {
             var draft = await sut.CreateSubmissionAsync(UserA,
                 new CreateSubmissionRequestDto { WritingPromptId = prompt.Id });
             await sut.UpdateSubmissionAsync(UserA, draft.Id,
                 new UpdateSubmissionRequestDto { Content = "a complete short essay" });
 
-            if (i == 3 && blocked)
+            if (i == 5 && blocked)
             {
                 var act = () => sut.SubmitSubmissionAsync(UserA, draft.Id);
-                await act.Should().ThrowAsync<DailyGradingLimitExceededException>();
+                await act.Should().ThrowAsync<MonthlyGradingLimitExceededException>();
                 db.WritingSubmissions.Single(s => s.Id == draft.Id).Status.Should().Be(SubmissionStatus.Draft);
             }
             else
@@ -341,7 +341,33 @@ public class WritingServiceTests
         }
 
         db.WritingSubmissions.Count(s => s.Status == SubmissionStatus.Submitted)
-            .Should().Be(blocked ? 3 : 4);
+            .Should().Be(blocked ? 5 : 6);
+    }
+
+    [Theory]
+    [InlineData(-1, false)]
+    [InlineData(0, true)]
+    [InlineData(1, false)]
+    public async Task SubmitSubmissionAsync_MonthBoundaryAndUserIsolation(int monthOffset, bool blocked)
+    {
+        var db = TestWritingDbContext.Create();
+        var prompt = SeedPrompt(db, SeedType(db));
+        var now = DateTime.UtcNow;
+        var start = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+        var stamp = monthOffset < 0 ? start.AddTicks(-1) : start.AddMonths(monthOffset);
+        for (var i = 0; i < 5; i++)
+        {
+            db.WritingSubmissions.Add(new WritingSubmission { UserId = UserA, WritingPromptId = prompt.Id, SubmittedAt = stamp, Status = SubmissionStatus.Submitted });
+            db.WritingSubmissions.Add(new WritingSubmission { UserId = UserB, WritingPromptId = prompt.Id, SubmittedAt = now, Status = SubmissionStatus.Submitted });
+            db.WritingSubmissions.Add(new WritingSubmission { UserId = UserA, WritingPromptId = prompt.Id, Status = SubmissionStatus.Draft });
+        }
+        await db.SaveChangesAsync();
+        var sut = Build(db);
+        var draft = await sut.CreateSubmissionAsync(UserA, new CreateSubmissionRequestDto { WritingPromptId = prompt.Id });
+        await sut.UpdateSubmissionAsync(UserA, draft.Id, new UpdateSubmissionRequestDto { Content = "a complete short essay" });
+        var act = () => sut.SubmitSubmissionAsync(UserA, draft.Id);
+        if (blocked) await act.Should().ThrowAsync<MonthlyGradingLimitExceededException>();
+        else await act.Should().NotThrowAsync();
     }
 
     [Fact]

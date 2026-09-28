@@ -21,6 +21,7 @@ public class VocabularyController : ControllerBase
 
     [HttpGet]
     public async Task<IActionResult> GetVocabulary(
+        [FromQuery] Guid? submissionId,
         [FromQuery] string? topic,
         [FromQuery] bool? isMastered,
         [FromQuery] int page = 1,
@@ -30,7 +31,7 @@ public class VocabularyController : ControllerBase
         if (userId is null)
             return Unauthorized();
 
-        var result = await _vocabularyService.GetAllAsync(userId.Value, topic, isMastered, page, pageSize);
+        var result = await _vocabularyService.GetAllAsync(userId.Value, submissionId, topic, isMastered, page, pageSize);
         return Ok(new { success = true, data = result });
     }
 
@@ -43,6 +44,50 @@ public class VocabularyController : ControllerBase
 
         var result = await _vocabularyService.UpdateMasteredAsync(userId.Value, id, request.IsMastered);
         return Ok(new { success = true, data = result });
+    }
+
+    [HttpPost("groups")]
+    public async Task<IActionResult> CreateGroup([FromBody] CreateVocabGroupRequestDto request)
+    {
+        var userId = GetUserId();
+        if (userId is null)
+            return Unauthorized();
+
+        var result = await _vocabularyService.CreateGroupAsync(userId.Value, request);
+        return Ok(new { success = true, data = result });
+    }
+
+    [HttpGet("groups")]
+    public async Task<IActionResult> ListGroups()
+    {
+        var userId = GetUserId();
+        if (userId is null)
+            return Unauthorized();
+
+        var result = await _vocabularyService.ListGroupsAsync(userId.Value);
+        return Ok(new { success = true, data = result });
+    }
+
+    [HttpPost("groups/{groupId:guid}/items")]
+    public async Task<IActionResult> AddToGroup(Guid groupId, [FromBody] AddToVocabGroupRequestDto request)
+    {
+        var userId = GetUserId();
+        if (userId is null)
+            return Unauthorized();
+
+        await _vocabularyService.AddToGroupAsync(userId.Value, groupId, request);
+        return Ok(new { success = true });
+    }
+
+    [HttpDelete("groups/{groupId:guid}/items/{vocabId:guid}")]
+    public async Task<IActionResult> RemoveFromGroup(Guid groupId, Guid vocabId)
+    {
+        var userId = GetUserId();
+        if (userId is null)
+            return Unauthorized();
+
+        await _vocabularyService.RemoveFromGroupAsync(userId.Value, groupId, vocabId);
+        return Ok(new { success = true });
     }
 
     private Guid? GetUserId()

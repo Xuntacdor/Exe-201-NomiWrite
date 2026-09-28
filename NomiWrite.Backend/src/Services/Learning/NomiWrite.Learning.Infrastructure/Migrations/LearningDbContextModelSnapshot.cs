@@ -209,6 +209,48 @@ namespace NomiWrite.Learning.Infrastructure.Migrations
                     b.ToTable("study_guides", (string)null);
                 });
 
+            modelBuilder.Entity("NomiWrite.Learning.Domain.Entities.VocabGroup", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("VocabGroups", (string)null);
+                });
+
+            modelBuilder.Entity("NomiWrite.Learning.Domain.Entities.VocabGroupItem", b =>
+                {
+                    b.Property<Guid>("VocabGroupId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("VocabSuggestionId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("VocabGroupId", "VocabSuggestionId");
+
+                    b.HasIndex("VocabSuggestionId");
+
+                    b.ToTable("VocabGroupItems", (string)null);
+                });
+
             modelBuilder.Entity("NomiWrite.Learning.Domain.Entities.VocabSuggestion", b =>
                 {
                     b.Property<Guid>("Id")
@@ -268,6 +310,30 @@ namespace NomiWrite.Learning.Infrastructure.Migrations
                         .HasForeignKey("QuizId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("NomiWrite.Learning.Domain.Entities.VocabGroupItem", b =>
+                {
+                    b.HasOne("NomiWrite.Learning.Domain.Entities.VocabGroup", "Group")
+                        .WithMany("Items")
+                        .HasForeignKey("VocabGroupId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("NomiWrite.Learning.Domain.Entities.VocabSuggestion", "Vocab")
+                        .WithMany()
+                        .HasForeignKey("VocabSuggestionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Group");
+
+                    b.Navigation("Vocab");
+                });
+
+            modelBuilder.Entity("NomiWrite.Learning.Domain.Entities.VocabGroup", b =>
+                {
+                    b.Navigation("Items");
                 });
 #pragma warning restore 612, 618
         }

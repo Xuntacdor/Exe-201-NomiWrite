@@ -16,6 +16,8 @@ public sealed class TestLearningDbContext : DbContext, ILearningDbContext
     public DbSet<Quiz> Quizzes => Set<Quiz>();
     public DbSet<QuizAttempt> QuizAttempts => Set<QuizAttempt>();
     public DbSet<StudyGuide> StudyGuides => Set<StudyGuide>();
+    public DbSet<VocabGroup> VocabGroups => Set<VocabGroup>();
+    public DbSet<VocabGroupItem> VocabGroupItems => Set<VocabGroupItem>();
 
     public static TestLearningDbContext Create()
     {

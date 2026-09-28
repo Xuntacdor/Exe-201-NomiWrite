@@ -60,7 +60,7 @@ public class ExceptionHandlingMiddleware
                 errors = Array.Empty<string>();
                 break;
 
-            case DailyGradingLimitExceededException:
+            case MonthlyGradingLimitExceededException:
                 statusCode = StatusCodes.Status429TooManyRequests;
                 message = exception.Message;
                 errors = Array.Empty<string>();

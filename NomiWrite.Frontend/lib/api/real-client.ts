@@ -32,6 +32,9 @@ DashboardSummary,
   User,
   UserProgress,
   VocabSuggestion,
+  VocabGroup,
+  CreateVocabGroupRequest,
+  AddToVocabGroupRequest,
   WritingFeedback,
   WritingPrompt,
   WritingType,
@@ -661,11 +664,41 @@ export const realClient: ApiClient = {
       .then(envelope => envelope.data.items);
   },
 
+  listVocabularyBySubmission(submissionId: string) {
+    return request<BackendApiEnvelope<BackendVocabularyPage>>(`${apiRoutes.vocabulary.list}?submissionId=${submissionId}&page=1&pageSize=100`, { method: "GET" }, true)
+      .then(envelope => envelope.data.items);
+  },
+
   updateVocabularyMastered(id: string, requestBody: UpdateVocabularyMasteredRequest) {
     return request<BackendApiEnvelope<VocabSuggestion>>(apiRoutes.vocabulary.mastered(id), {
       method: "PATCH",
       body: JSON.stringify(requestBody),
     }, true).then(envelope => envelope.data);
+  },
+
+  createVocabGroup(requestBody: CreateVocabGroupRequest) {
+    return request<BackendApiEnvelope<VocabGroup>>(apiRoutes.vocabulary.groups, {
+      method: "POST",
+      body: JSON.stringify(requestBody),
+    }, true).then(envelope => envelope.data);
+  },
+
+  listVocabGroups() {
+    return request<BackendApiEnvelope<VocabGroup[]>>(apiRoutes.vocabulary.groups, { method: "GET" }, true)
+      .then(envelope => envelope.data);
+  },
+
+  addVocabGroupItems(groupId: string, requestBody: AddToVocabGroupRequest) {
+    return request<BackendApiEnvelope<void>>(apiRoutes.vocabulary.groupItems(groupId), {
+      method: "POST",
+      body: JSON.stringify(requestBody),
+    }, true).then(() => undefined);
+  },
+
+  removeVocabGroupItem(groupId: string, vocabId: string) {
+    return request<BackendApiEnvelope<void>>(`${apiRoutes.vocabulary.groupItems(groupId)}/${vocabId}`, {
+      method: "DELETE",
+    }, true).then(() => undefined);
   },
 
   generateQuiz(requestBody: GenerateQuizRequest) {

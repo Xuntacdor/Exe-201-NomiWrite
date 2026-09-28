@@ -38,3 +38,23 @@ public class GrammarErrorDto
     public string Suggestion { get; set; } = string.Empty;
     public string Explanation { get; set; } = string.Empty;
 }
+
+public class CreateVocabGroupRequestDto
+{
+    public string Name { get; set; } = string.Empty;
+    public List<Guid>? VocabularyIds { get; set; }
+}
+
+public class VocabGroupDto
+{
+    public Guid Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public DateTime CreatedAt { get; set; }
+    public int WordCount { get; set; }
+    public List<Guid> VocabularyIds { get; set; } = new();
+}
+
+public class AddToVocabGroupRequestDto
+{
+    public List<Guid> VocabularyIds { get; set; } = new();
+}

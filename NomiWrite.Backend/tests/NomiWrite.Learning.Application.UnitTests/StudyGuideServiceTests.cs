@@ -81,7 +81,7 @@ public class StudyGuideServiceTests
                 {
                     Title = "Renewable energy and jobs",
                     Reason = "Exercises the weakest lexical area.",
-                    SuggestedPrompt = "Many people think that..." 
+                    SuggestedPrompt = "Many people think that..."
                 }
             });
         return ai;

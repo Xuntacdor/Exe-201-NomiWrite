@@ -82,7 +82,7 @@ public class VocabularyServiceTests
         Seed(db, UserB, "bad");
 
         var sut = new VocabularyService(db);
-        var page = await sut.GetAllAsync(UserA, null, null, 1, 20);
+        var page = await sut.GetAllAsync(UserA, null, null, null, 1, 20);
 
         page.Items.Should().ContainSingle(v => v.OriginalWord == "good");
         page.TotalCount.Should().Be(1);
@@ -97,7 +97,7 @@ public class VocabularyServiceTests
         Seed(db, UserA, "suite", mastered: true, topic: "Business");
 
         var sut = new VocabularyService(db);
-        var page = await sut.GetAllAsync(UserA, "education", true, 1, 20);
+        var page = await sut.GetAllAsync(UserA, null, "education", true, 1, 20);
 
         page.Items.Should().ContainSingle(v => v.OriginalWord == "good");
         page.TotalCount.Should().Be(1);
@@ -110,7 +110,7 @@ public class VocabularyServiceTests
         Seed(db, UserA, "good", topic: "Education");
 
         var sut = new VocabularyService(db);
-        var page = await sut.GetAllAsync(UserA, "EDUCATION", null, 1, 20);
+        var page = await sut.GetAllAsync(UserA, null, "EDUCATION", null, 1, 20);
 
         page.TotalCount.Should().Be(1);
     }

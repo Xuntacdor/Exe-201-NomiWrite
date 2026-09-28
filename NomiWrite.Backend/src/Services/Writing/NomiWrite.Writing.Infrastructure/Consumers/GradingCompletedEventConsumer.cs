@@ -7,14 +7,14 @@ using NomiWrite.Writing.Domain.Enums;
 
 namespace NomiWrite.Writing.Infrastructure.Consumers;
 
-public class GradingCompletedEventConsumer : IConsumer<GradingCompletedEvent>
+public class WritingGradingCompletedEventConsumer : IConsumer<GradingCompletedEvent>
 {
     private readonly IWritingDbContext _dbContext;
-    private readonly ILogger<GradingCompletedEventConsumer> _logger;
+    private readonly ILogger<WritingGradingCompletedEventConsumer> _logger;
 
-    public GradingCompletedEventConsumer(
+    public WritingGradingCompletedEventConsumer(
         IWritingDbContext dbContext,
-        ILogger<GradingCompletedEventConsumer> logger)
+        ILogger<WritingGradingCompletedEventConsumer> logger)
     {
         _dbContext = dbContext;
         _logger = logger;

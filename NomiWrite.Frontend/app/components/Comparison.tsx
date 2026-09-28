@@ -1,3 +1,6 @@
+"use client";
+
+import { useLocale } from "@/lib/i18n/locale";
 import { Check, Minus, X } from "lucide-react";
 
 type CellValue = boolean | "partial";
@@ -72,7 +75,7 @@ const rows: Row[] = [
 function Cell({ value, highlight }: { value: CellValue; highlight?: boolean }) {
   if (value === true) {
     return (
-      <div className={`flex justify-center ${highlight ? "text-blue-600" : "text-emerald-500"}`}>
+      <div className={`flex justify-center ${highlight ? "text-accent-ink" : "text-success-ink"}`}>
         <Check className="h-5 w-5" strokeWidth={2.5} />
       </div>
     );
@@ -80,66 +83,62 @@ function Cell({ value, highlight }: { value: CellValue; highlight?: boolean }) {
 
   if (value === "partial") {
     return (
-      <div className="flex justify-center text-yellow-500">
+      <div className="flex justify-center text-warning-ink">
         <Minus className="h-5 w-5" strokeWidth={2.5} />
       </div>
     );
   }
 
   return (
-    <div className="flex justify-center text-slate-300">
+    <div className="flex justify-center text-muted">
       <X className="h-5 w-5" strokeWidth={2} />
     </div>
   );
 }
 
 export default function Comparison() {
+  const { t: translateUi } = useLocale();
   return (
-    <section className="bg-slate-50 py-20 sm:py-28">
+    <section className="bg-canvas py-20 sm:py-28">
       <div className="mx-auto max-w-5xl px-4 sm:px-6">
         <div className="mb-12 text-center">
-          <span className="mb-3 inline-block rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-emerald-600">
-            So sánh
-          </span>
-          <h2 className="text-3xl font-extrabold leading-tight text-slate-900 sm:text-4xl">
-            Không chỉ sửa bài. NomiWrite tạo vòng lặp học thật.
-          </h2>
-          <p className="mx-auto mt-4 max-w-2xl text-lg text-slate-600">
-            Nhiều công cụ chỉ giải quyết một phần: sửa lỗi, cho điểm, hoặc giúp ôn tập.
-            NomiWrite nối các bước đó thành một hành trình luyện viết cá nhân hóa.
-          </p>
+          <span className="mb-3 inline-block rounded-full bg-success px-3 py-1 text-xs font-semibold uppercase tracking-wide text-success-ink">
+            {translateUi("So sánh")}</span>
+          <h2 className="text-3xl font-bold leading-tight text-ink sm:text-4xl">
+            {translateUi("Không chỉ sửa bài. NomiWrite tạo vòng lặp học thật.")}</h2>
+          <p className="mx-auto mt-4 max-w-2xl text-lg text-muted">
+            {translateUi("Nhiều công cụ chỉ giải quyết một phần: sửa lỗi, cho điểm, hoặc giúp ôn tập. NomiWrite nối các bước đó thành một hành trình luyện viết cá nhân hóa.")}</p>
         </div>
 
-        <div className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
-          <div className="grid grid-cols-5 gap-0 border-b border-slate-100">
-            <div className="col-span-1 px-4 py-4 text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Năng lực
-            </div>
-            <div className="col-span-1 border-x border-blue-100 bg-blue-50 px-2 py-4 text-center">
-              <p className="text-sm font-bold text-blue-700">NomiWrite</p>
-            </div>
-            <div className="col-span-1 px-2 py-4 text-center">
-              <p className="text-xs font-semibold text-slate-500">Công cụ sửa lỗi</p>
+        <div className="overflow-hidden rounded-xl border border-line bg-surface shadow-sm">
+          <div className="grid grid-cols-5 gap-0 border-b border-line">
+            <div className="col-span-1 px-4 py-4 text-xs font-semibold uppercase tracking-wide text-muted">
+              {translateUi("Năng lực")}</div>
+            <div className="col-span-1 border-x border-line bg-accent px-2 py-4 text-center">
+              <p className="text-sm font-bold text-accent-ink">{translateUi("NomiWrite")}</p>
             </div>
             <div className="col-span-1 px-2 py-4 text-center">
-              <p className="text-xs font-semibold text-slate-500">Công cụ chấm điểm</p>
+              <p className="text-xs font-semibold text-muted">{translateUi("Công cụ sửa lỗi")}</p>
             </div>
             <div className="col-span-1 px-2 py-4 text-center">
-              <p className="text-xs font-semibold text-slate-500">Công cụ ôn tập</p>
+              <p className="text-xs font-semibold text-muted">{translateUi("Công cụ chấm điểm")}</p>
+            </div>
+            <div className="col-span-1 px-2 py-4 text-center">
+              <p className="text-xs font-semibold text-muted">{translateUi("Công cụ ôn tập")}</p>
             </div>
           </div>
 
           {rows.map((row, idx) => (
             <div
               key={row.feature}
-              className={`grid grid-cols-5 gap-0 border-b border-slate-50 ${
-                idx % 2 === 0 ? "bg-white" : "bg-slate-50/50"
+              className={`grid grid-cols-5 gap-0 border-b border-line ${
+                idx % 2 === 0 ? "bg-surface" : "bg-canvas"
               }`}
             >
               <div className="col-span-1 px-4 py-3.5">
-                <p className="text-sm text-slate-700">{row.feature}</p>
+                <p className="text-sm text-ink">{translateUi(row.feature)}</p>
               </div>
-              <div className="col-span-1 border-x border-blue-100 bg-blue-50/60 px-2 py-3.5">
+              <div className="col-span-1 border-x border-line bg-accent px-2 py-3.5">
                 <Cell value={row.nomiwrite} highlight />
               </div>
               <div className="col-span-1 px-2 py-3.5">
@@ -155,18 +154,18 @@ export default function Comparison() {
           ))}
         </div>
 
-        <div className="mt-4 flex items-center justify-center gap-5 text-xs text-slate-500">
+        <div className="mt-4 flex items-center justify-center gap-5 text-xs text-muted">
           <div className="flex items-center gap-1.5">
-            <Check className="h-3.5 w-3.5 text-emerald-500" />
-            <span>Có đầy đủ</span>
+            <Check className="h-3.5 w-3.5 text-success-ink" />
+            <span>{translateUi("Có đầy đủ")}</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <Minus className="h-3.5 w-3.5 text-yellow-500" />
-            <span>Có một phần</span>
+            <Minus className="h-3.5 w-3.5 text-warning-ink" />
+            <span>{translateUi("Có một phần")}</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <X className="h-3.5 w-3.5 text-slate-300" />
-            <span>Không có</span>
+            <X className="h-3.5 w-3.5 text-muted" />
+            <span>{translateUi("Không có")}</span>
           </div>
         </div>
       </div>

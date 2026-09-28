@@ -1,5 +1,8 @@
 "use client";
 
+import { useLocale } from "@/lib/i18n/locale";
+
+
 import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -29,12 +32,13 @@ import type { User, UserProgress } from "@/lib/types";
 const levels = ["Beginner", "Elementary", "Intermediate", "UpperIntermediate", "Advanced", "Proficient"];
 const targets = ["IELTS", "TOEFL", "Business Email", "Academic", "Cover Letter"];
 
-function formatDate(value?: string) {
+function formatDate(value: string | undefined, locale: string) {
   if (!value) return "Not available";
-  return new Intl.DateTimeFormat("en", { dateStyle: "medium" }).format(new Date(value));
+  return new Intl.DateTimeFormat(locale, { dateStyle: "medium" }).format(new Date(value));
 }
 
 export default function ProfilePage() {
+  const { t: translateUi, errorText, locale } = useLocale();
   const router = useRouter();
   const [profile, setProfile] = useState<User | null>(null);
   const [displayName, setDisplayName] = useState("");
@@ -165,7 +169,7 @@ export default function ProfilePage() {
     <AppShell activePath="/profile">
       <AppDialog
         open={confirmAction === "cancel"}
-        title="Cancel subscription?"
+        title={translateUi("Cancel subscription?")}
         description="Your current subscription will be cancelled through the backend subscription service."
         confirmLabel="Cancel subscription"
         tone="danger"
@@ -174,186 +178,177 @@ export default function ProfilePage() {
       />
       <AppDialog
         open={confirmAction === "deactivate"}
-        title="Deactivate account?"
+        title={translateUi("Deactivate account?")}
         description="You will be signed out after the account deactivation request succeeds."
         confirmLabel="Deactivate account"
         tone="danger"
         onCancel={() => setConfirmAction("")}
         onConfirm={handleConfirmAccountAction}
       />
-      <div className="sticky top-0 z-10 flex h-14 items-center justify-between border-b border-slate-100 bg-white/90 px-6 backdrop-blur">
+      <div className="sticky top-0 z-10 flex h-14 items-center justify-between border-b border-line bg-surface px-6">
         <div className="flex items-center gap-2">
-          <UserIcon className="h-4 w-4 text-slate-500" />
-          <h1 className="text-sm font-extrabold text-slate-900">Learning profile</h1>
+          <UserIcon className="h-4 w-4 text-muted" />
+          <h1 className="text-sm font-bold text-ink">{translateUi("Learning profile")}</h1>
         </div>
         <button
           type="button"
           onClick={() => setEditing(value => !value)}
-          className="flex items-center gap-1.5 rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-200"
+          className="flex items-center gap-1.5 rounded-lg bg-surface-muted px-3 py-1.5 text-xs font-semibold text-muted transition-colors hover:bg-surface-muted"
         >
           {editing ? <X className="h-3.5 w-3.5" /> : <Edit2 className="h-3.5 w-3.5" />}
-          {editing ? "Cancel" : "Edit"}
+          {translateUi(editing ? "Cancel" : "Edit")}
         </button>
       </div>
 
       <div className="w-full space-y-5 p-6">
         {loading && (
-          <div className="flex items-center justify-center gap-2 rounded-2xl border border-slate-100 bg-white p-8 text-sm font-semibold text-slate-500 shadow-sm">
+          <div className="flex items-center justify-center gap-2 rounded-xl border border-line bg-surface p-8 text-sm font-semibold text-muted shadow-sm">
             <Loader2 className="h-4 w-4 animate-spin" />
-            Loading profile
-          </div>
+            {translateUi("Loading profile")}</div>
         )}
 
         {!loading && error && (
-          <p className="rounded-2xl border border-red-100 bg-red-50 p-4 text-sm font-semibold text-red-600">{error}</p>
+          <p className="rounded-xl border border-line bg-danger p-4 text-sm font-semibold text-danger-ink">{errorText(error)}</p>
         )}
 
         {!loading && profile && (
           <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
             <div className="space-y-4 lg:col-span-1">
-              <div className="rounded-2xl border border-slate-100 bg-white p-6 text-center shadow-sm">
-                <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-violet-600 text-3xl font-extrabold text-white shadow-lg shadow-blue-200">
-                  {initial}
+              <div className="rounded-xl border border-line bg-surface p-6 text-center shadow-sm">
+                <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-xl bg-accent text-3xl font-bold text-ink shadow-sm">
+                  {translateUi(initial)}
                 </div>
-                <h2 className="text-base font-extrabold text-slate-900">{profile.displayName}</h2>
-                <div className="mt-1 flex items-center justify-center gap-1.5 text-xs text-slate-500">
+                <h2 className="text-base font-bold text-ink">{profile.displayName}</h2>
+                <div className="mt-1 flex items-center justify-center gap-1.5 text-xs text-muted">
                   <Mail className="h-3 w-3" />
-                  <span>{profile.email ?? getSession()?.email ?? "No email in profile service"}</span>
+                  <span>{translateUi(profile.email ?? getSession()?.email ?? "No email in profile service")}</span>
                 </div>
 
                 <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
-                  <span className="rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700">
-                    {profile.currentLevel ?? "Level not set"}
+                  <span className="rounded-full border border-line bg-accent px-3 py-1 text-xs font-bold text-accent-ink">
+                    {translateUi(profile.currentLevel ?? "Level not set")}
                   </span>
-                  <span className="rounded-full border border-violet-200 bg-violet-50 px-3 py-1 text-xs font-bold text-violet-700">
-                    {planLabel}
+                  <span className="rounded-full border border-line bg-rose px-3 py-1 text-xs font-bold text-rose-ink">
+                    {translateUi(planLabel)}
                   </span>
                 </div>
 
-                <div className="mt-5 border-t border-slate-100 pt-5">
-                  <div className="mb-2 flex items-center gap-2 text-xs text-slate-500">
-                    <Target className="h-3.5 w-3.5 text-blue-500" />
-                    <span className="font-semibold text-slate-700">Goal:</span>
-                    {profile.targetType ?? "Not set"} {profile.targetBand ? `Band ${profile.targetBand}` : ""}
+                <div className="mt-5 border-t border-line pt-5">
+                  <div className="mb-2 flex items-center gap-2 text-xs text-muted">
+                    <Target className="h-3.5 w-3.5 text-accent-ink" />
+                    <span className="font-semibold text-ink">{translateUi("Goal:")}</span>
+                    {translateUi(profile.targetType ?? "Not set")} {profile.targetBand ? translateUi("Score {score}", { score: profile.targetBand }) : ""}
                   </div>
-                  <div className="flex items-center gap-2 text-xs text-slate-500">
-                    <TrendingUp className="h-3.5 w-3.5 text-emerald-500" />
-                    <span className="font-semibold text-slate-700">Subscription end:</span>
-                    {formatDate(profile.subscriptionEndDate)}
+                  <div className="flex items-center gap-2 text-xs text-muted">
+                    <TrendingUp className="h-3.5 w-3.5 text-success-ink" />
+                    <span className="font-semibold text-ink">{translateUi("Subscription end:")}</span>
+                    {translateUi(formatDate(profile.subscriptionEndDate, locale))}
                   </div>
                 </div>
               </div>
 
-              <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                <p className="mb-3 text-xs font-bold uppercase tracking-widest text-slate-400">Current plan</p>
-                <p className="mb-1 text-base font-extrabold text-slate-900">{planLabel}</p>
-                <Link href="/upgrade" className="block w-full rounded-xl bg-gradient-to-r from-blue-600 to-violet-600 py-2.5 text-center text-xs font-bold text-white transition-opacity hover:opacity-90">
-                  Upgrade Premium
-                </Link>
+              <div className="rounded-xl border border-line bg-surface p-5 shadow-sm">
+                <p className="mb-3 text-xs font-bold uppercase tracking-widest text-muted">{translateUi("Current plan")}</p>
+                <p className="mb-1 text-base font-bold text-ink">{translateUi(planLabel)}</p>
+                <Link href="/upgrade" className="block w-full rounded-xl bg-accent py-2.5 text-center text-xs font-bold text-ink transition-opacity hover:opacity-90">
+                  {translateUi("Upgrade Premium")}</Link>
                 {profile.plan === "premium" && (
                   <button
                     type="button"
                     onClick={() => setConfirmAction("cancel")}
                     disabled={accountAction === "cancel"}
-                    className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl border border-amber-200 bg-amber-50 py-2.5 text-xs font-bold text-amber-700 transition-colors hover:bg-amber-100 disabled:opacity-60"
+                    className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl border border-line bg-warning py-2.5 text-xs font-bold text-warning-ink transition-colors hover:bg-warning disabled:opacity-60"
                   >
                     {accountAction === "cancel" && <LoaderCircle className="h-3.5 w-3.5 animate-spin" />}
-                    Cancel subscription
-                  </button>
+                    {translateUi("Cancel subscription")}</button>
                 )}
               </div>
 
-              <div className="rounded-2xl border border-red-100 bg-white p-5 shadow-sm">
-                <p className="mb-2 text-xs font-bold uppercase tracking-widest text-red-400">Account safety</p>
+              <div className="rounded-xl border border-line bg-surface p-5 shadow-sm">
+                <p className="mb-2 text-xs font-bold uppercase tracking-widest text-danger-ink">{translateUi("Account safety")}</p>
                 <button
                   type="button"
                   onClick={() => setConfirmAction("deactivate")}
                   disabled={accountAction === "deactivate"}
-                  className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 py-2.5 text-xs font-bold text-red-700 transition-colors hover:bg-red-100 disabled:opacity-60"
+                  className="flex w-full items-center justify-center gap-2 rounded-xl border border-line bg-danger py-2.5 text-xs font-bold text-danger-ink transition-colors hover:bg-danger disabled:opacity-60"
                 >
                   {accountAction === "deactivate" ? <LoaderCircle className="h-3.5 w-3.5 animate-spin" /> : <ShieldOff className="h-3.5 w-3.5" />}
-                  Deactivate account
-                </button>
+                  {translateUi("Deactivate account")}</button>
               </div>
             </div>
 
             <div className="space-y-4 lg:col-span-2">
               {editing ? (
-                <form onSubmit={handleSubmit} className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
-                  <h3 className="mb-4 text-sm font-extrabold text-slate-900">Edit profile</h3>
+                <form onSubmit={handleSubmit} className="rounded-xl border border-line bg-surface p-5 shadow-sm">
+                  <h3 className="mb-4 text-sm font-bold text-ink">{translateUi("Edit profile")}</h3>
                   <div className="grid gap-4 sm:grid-cols-2">
-                    <label className="text-xs font-semibold text-slate-600">
-                      Display name
-                      <input
+                    <label className="text-xs font-semibold text-muted">
+                      {translateUi("Display name")}<input
                         value={displayName}
                         onChange={event => setDisplayName(event.target.value)}
-                        className="mt-1.5 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm text-slate-800 focus:border-blue-400 focus:outline-none"
+                        className="mt-1.5 w-full rounded-xl border border-line px-3 py-2.5 text-sm text-ink focus:border-focus focus:outline-none"
                       />
                     </label>
-                    <label className="text-xs font-semibold text-slate-600">
-                      Current level
-                      <select
+                    <label className="text-xs font-semibold text-muted">
+                      {translateUi("Current level")}<select
                         value={currentLevel}
                         onChange={event => setCurrentLevel(event.target.value)}
-                        className="mt-1.5 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm text-slate-800 focus:border-blue-400 focus:outline-none"
+                        className="mt-1.5 w-full rounded-xl border border-line px-3 py-2.5 text-sm text-ink focus:border-focus focus:outline-none"
                       >
-                        <option value="">Not set</option>
-                        {levels.map(level => <option key={level} value={level}>{level}</option>)}
+                        <option value="">{translateUi("Not set")}</option>
+                        {levels.map(level => <option key={level} value={level}>{translateUi(level)}</option>)}
                       </select>
                     </label>
-                    <label className="text-xs font-semibold text-slate-600">
-                      Target
-                      <select
+                    <label className="text-xs font-semibold text-muted">
+                      {translateUi("Target")}<select
                         value={targetType}
                         onChange={event => setTargetType(event.target.value)}
-                        className="mt-1.5 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm text-slate-800 focus:border-blue-400 focus:outline-none"
+                        className="mt-1.5 w-full rounded-xl border border-line px-3 py-2.5 text-sm text-ink focus:border-focus focus:outline-none"
                       >
-                        <option value="">Not set</option>
-                        {targets.map(target => <option key={target} value={target}>{target}</option>)}
+                        <option value="">{translateUi("Not set")}</option>
+                        {targets.map(target => <option key={target} value={target}>{translateUi(target)}</option>)}
                       </select>
                     </label>
-                    <label className="text-xs font-semibold text-slate-600">
-                      Target band
-                      <input
+                    <label className="text-xs font-semibold text-muted">
+                      {translateUi("Target band")}<input
                         type="number"
                         min="0"
                         max="9"
                         step="0.5"
                         value={targetBand}
                         onChange={event => setTargetBand(event.target.value)}
-                        className="mt-1.5 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm text-slate-800 focus:border-blue-400 focus:outline-none"
+                        className="mt-1.5 w-full rounded-xl border border-line px-3 py-2.5 text-sm text-ink focus:border-focus focus:outline-none"
                       />
                     </label>
                   </div>
                   <button
                     type="submit"
                     disabled={saving}
-                    className="mt-5 flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-xs font-bold text-white transition-colors hover:bg-blue-700 disabled:opacity-60"
+                    className="mt-5 flex items-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-xs font-bold text-ink transition-colors hover:bg-accent-hover disabled:opacity-60"
                   >
                     {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
-                    Save profile
-                  </button>
+                    {translateUi("Save profile")}</button>
                 </form>
               ) : (
                 <div className="grid grid-cols-3 gap-3">
                   {[
-                    { label: "Level", value: profile.currentLevel ?? "--", color: "text-slate-900", icon: PenLine },
-                    { label: "Target", value: profile.targetType ?? "--", color: "text-blue-600", icon: Target },
-                    { label: "Plan", value: planLabel, color: "text-orange-500", icon: Award },
+                    { label: "Level", value: profile.currentLevel ?? "--", color: "text-ink", icon: PenLine },
+                    { label: "Target", value: profile.targetType ?? "--", color: "text-accent-ink", icon: Target },
+                    { label: "Plan", value: planLabel, color: "text-accent-ink", icon: Award },
                   ].map(({ label, value, color, icon: Icon }) => (
-                    <div key={label} className="rounded-2xl border border-slate-100 bg-white p-4 text-center shadow-sm">
-                      <Icon className="mx-auto mb-2 h-4 w-4 text-slate-300" />
-                      <p className={`text-xl font-extrabold ${color}`}>{value}</p>
-                      <p className="mt-0.5 text-xs text-slate-500">{label}</p>
+                    <div key={label} className="rounded-xl border border-line bg-surface p-4 text-center shadow-sm">
+                      <Icon className="mx-auto mb-2 h-4 w-4 text-muted" />
+                      <p className={`text-xl font-bold ${color}`}>{translateUi(value)}</p>
+                      <p className="mt-0.5 text-xs text-muted">{translateUi(label)}</p>
                     </div>
                   ))}
                 </div>
               )}
 
-              <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+              <div className="rounded-xl border border-line bg-surface p-5 shadow-sm">
                 <div className="mb-4 flex items-center justify-between">
-                  <h3 className="text-sm font-extrabold text-slate-900">Learning progress</h3>
-                  {loadingProgress && <Loader2 className="h-4 w-4 animate-spin text-slate-400" />}
+                  <h3 className="text-sm font-bold text-ink">{translateUi("Learning progress")}</h3>
+                  {loadingProgress && <Loader2 className="h-4 w-4 animate-spin text-muted" />}
                 </div>
                 {progress ? (
                   <div className="space-y-4">
@@ -363,38 +358,37 @@ export default function ProfilePage() {
                         { label: "Streak", value: progress.currentStreak, icon: Zap },
                         { label: "Target", value: progress.targetBand ?? "--", icon: Target },
                       ].map(({ label, value, icon: Icon }) => (
-                        <div key={label} className="rounded-xl border border-slate-100 bg-slate-50 p-3 text-center">
-                          <Icon className="mx-auto mb-2 h-4 w-4 text-blue-500" />
-                          <p className="text-xl font-extrabold text-slate-900">{value}</p>
-                          <p className="text-xs text-slate-500">{label}</p>
+                        <div key={label} className="rounded-xl border border-line bg-canvas p-3 text-center">
+                          <Icon className="mx-auto mb-2 h-4 w-4 text-accent-ink" />
+                          <p className="text-xl font-bold text-ink">{value}</p>
+                          <p className="text-xs text-muted">{translateUi(label)}</p>
                         </div>
                       ))}
                     </div>
                     {progress.strengthsWeaknesses && (
-                      <p className="rounded-xl border border-blue-100 bg-blue-50 p-3 text-xs leading-relaxed text-blue-700">
-                        {progress.strengthsWeaknesses}
+                      <p className="rounded-xl border border-line bg-accent p-3 text-xs leading-relaxed text-accent-ink">
+                        {translateUi(progress.strengthsWeaknesses)}
                       </p>
                     )}
                     <div className="flex flex-wrap gap-2">
                       {progress.badges.map(badge => (
                         <span
                           key={badge.name}
-                          className={`rounded-full px-3 py-1 text-xs font-bold ${badge.achieved ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-400"}`}
+                          className={`rounded-full px-3 py-1 text-xs font-bold ${badge.achieved ? "bg-success text-success-ink" : "bg-surface-muted text-muted"}`}
                         >
-                          {badge.name}
+                          {translateUi(badge.name)}
                         </span>
                       ))}
                     </div>
                   </div>
                 ) : (
-                  <p className="rounded-xl bg-slate-50 p-4 text-sm text-slate-500">
-                    Progress endpoint is ready in the frontend; no progress data was returned yet.
-                  </p>
+                  <p className="rounded-xl bg-canvas p-4 text-sm text-muted">
+                    {translateUi("Progress endpoint is ready in the frontend; no progress data was returned yet.")}</p>
                 )}
               </div>
 
-              <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
-                <h3 className="mb-4 text-sm font-extrabold text-slate-900">API-backed profile fields</h3>
+              <div className="rounded-xl border border-line bg-surface p-5 shadow-sm">
+                <h3 className="mb-4 text-sm font-bold text-ink">{translateUi("API-backed profile fields")}</h3>
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                   {[
                     { icon: UserIcon, label: "Profile", done: true },
@@ -404,11 +398,11 @@ export default function ProfilePage() {
                     { icon: Zap, label: "Progress", done: Boolean(progress) },
                     { icon: PenLine, label: "Usage quota", done: false },
                   ].map(({ icon: Icon, label, done }) => (
-                    <div key={label} className={`flex items-center gap-3 rounded-xl border p-3 ${done ? "border-emerald-200 bg-emerald-50" : "border-slate-100 bg-slate-50 opacity-60"}`}>
-                      <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${done ? "bg-emerald-500" : "bg-slate-200"}`}>
-                        {done ? <Check className="h-4 w-4 text-white" /> : <Icon className="h-4 w-4 text-slate-400" />}
+                    <div key={label} className={`flex items-center gap-3 rounded-xl border p-3 ${done ? "border-line bg-success" : "border-line bg-canvas opacity-60"}`}>
+                      <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${done ? "bg-success" : "bg-surface-muted"}`}>
+                        {done ? <Check className="h-4 w-4 text-ink" /> : <Icon className="h-4 w-4 text-muted" />}
                       </div>
-                      <span className={`text-xs font-semibold leading-tight ${done ? "text-emerald-800" : "text-slate-500"}`}>{label}</span>
+                      <span className={`text-xs font-semibold leading-tight ${done ? "text-success-ink" : "text-muted"}`}>{translateUi(label)}</span>
                     </div>
                   ))}
                 </div>

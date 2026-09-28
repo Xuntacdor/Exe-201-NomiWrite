@@ -38,7 +38,7 @@ public static class DependencyInjection
         {
             x.SetEndpointNameFormatter(new KebabCaseEndpointNameFormatter("notification", false));
             x.AddConsumer<UserRegisteredEventConsumer>();
-            x.AddConsumer<GradingCompletedEventConsumer>();
+            x.AddConsumer<NotificationGradingCompletedEventConsumer>();
             x.AddConsumer<ForumCommentCreatedEventConsumer>();
             x.AddConsumer<PostLikedEventConsumer>();
             x.AddConsumer<SubscriptionExpiringEventConsumer>();
