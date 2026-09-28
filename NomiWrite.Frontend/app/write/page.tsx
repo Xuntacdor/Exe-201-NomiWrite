@@ -389,9 +389,15 @@ function WriteContent() {
                   <h2 className="text-lg font-extrabold text-slate-900">Topic: {currentPrompt.topic}</h2>
                 </div>
                 <div className="prose prose-slate max-w-none text-[15px] leading-relaxed text-slate-700">
-                  {currentPrompt.prompt.split('\n').map((paragraph, idx) => (
-                    <p key={idx} className="mb-4">{paragraph}</p>
-                  ))}
+                  {currentPrompt.prompt
+                    ? currentPrompt.prompt.split('\n').map((paragraph, idx) => (
+                      <p key={idx} className="mb-4">{paragraph}</p>
+                    ))
+                    : (
+                      <p className="mb-4 italic text-slate-400">
+                        No instructions were returned for this prompt.
+                      </p>
+                    )}
                 </div>
               </div>
             ) : (
