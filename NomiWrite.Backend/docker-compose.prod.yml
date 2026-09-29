@@ -677,7 +677,9 @@ services:
     environment:
       ASPNETCORE_URLS: "http://+:8080"
       ASPNETCORE_ENVIRONMENT: Production
-      ConnectionStrings__MongoDb: "mongodb+srv://quannguyenthanh1309_db_user:zoylPnxVNMuvPAsm@cluster0-nomiwrite.zgir78d.mongodb.net/NomiWriteLogDb?retryWrites=true&w=majority&appName=Cluster0-NomiWrite"
+      # ConnectionStrings__MongoDb is supplied by .env.production (same as every
+      # other service's connection strings). Set it there to the local `mongodb`
+      # container URI or to a MongoDB Atlas SRV string — never inline it here.
       MongoDb__DatabaseName: NomiWriteLogDb
       MongoDb__TtlExpireAfterDays: "180"
     depends_on:
