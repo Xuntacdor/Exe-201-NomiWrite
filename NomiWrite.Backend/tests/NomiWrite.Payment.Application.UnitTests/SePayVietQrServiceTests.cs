@@ -148,6 +148,14 @@ public class SePayVietQrServiceTests
     }
 
     [Fact]
+    public void BuildCheckout_TrimsSurroundedWhitespaceBeforeValidating()
+    {
+        Build(s => s.BankId = "  970422  ")
+            .BuildCheckout(Order("NWQ0123456789ABCDEFGHI", 100_000m))
+            .BankId.Should().Be("970422");
+    }
+
+    [Fact]
     public void BuildCheckout_HonoursACustomImageHost()
     {
         var checkout = Build(s => s.QrImageBaseUrl = "https://cdn.example.com/qr/")
@@ -172,6 +180,32 @@ public class SePayVietQrServiceTests
     {
         Build(s => s.BankName = "  VPBank  ").BuildCheckout(Order("NWQ0123456789ABCDEFGHI", 100_000m))
             .BankName.Should().Be("VPBank");
+    }
+
+    [Theory]
+    [InlineData("MBBank")]
+    [InlineData("MB")]
+    [InlineData("vpbank")]
+    [InlineData("97042a")]
+    public void BuildCheckout_BankIdMustBeTheNumericCode_Throws(string badBankId)
+    {
+        // A bank *name* here produces a well-formed URL that 404s, so the customer
+        // sees an unscanable QR instead of an error.
+        var ex = FluentActions.Invoking(() => Build(s => s.BankId = badBankId)
+                .BuildCheckout(Order("NWQ0123456789ABCDEFGHI", 100_000m)));
+
+        ex.Should().Throw<InvalidOperationException>().WithMessage("*numeric VietQR bank code*");
+    }
+
+    [Theory]
+    [InlineData("0200.269-329999")]
+    [InlineData("account")]
+    public void BuildCheckout_AccountNumberMustBeDigits_Throws(string badAccountNumber)
+    {
+        var ex = FluentActions.Invoking(() => Build(s => s.AccountNumber = badAccountNumber)
+                .BuildCheckout(Order("NWQ0123456789ABCDEFGHI", 100_000m)));
+
+        ex.Should().Throw<InvalidOperationException>().WithMessage("*must be digits only*");
     }
 
     [Theory]

@@ -83,6 +83,22 @@ public sealed class SePayVietQrService
         var accountNumber = _settings.AccountNumber.Trim();
         var accountName = _settings.AccountName.Trim();
 
+        // VietQR addresses the bank by its numeric BIN-like code, not by name.
+        // "MBBank" instead of "970422" still produces a well-formed URL that 404s,
+        // which surfaces to the customer as an unscanable QR and a dead checkout.
+        if (!bankId.All(char.IsAsciiDigit))
+        {
+            throw new InvalidOperationException(
+                $"'{SePaySettings.SectionName}:BankId' must be the numeric VietQR bank code " +
+                $"(e.g. 970422 for MB Bank), but was '{bankId}'.");
+        }
+
+        if (!accountNumber.All(char.IsAsciiDigit))
+        {
+            throw new InvalidOperationException(
+                $"'{SePaySettings.SectionName}:AccountNumber' must be digits only, but was '{accountNumber}'.");
+        }
+
         // VND has no minor unit, but a discounted order is stored as e.g. 159200.00.
         // Banking apps reject fractional dong, so round half away from zero.
         var amount = decimal.Round(order.Amount, 0, MidpointRounding.AwayFromZero);
