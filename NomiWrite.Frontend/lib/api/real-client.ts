@@ -50,6 +50,17 @@ interface ApiErrorBody {
   errors?: string[];
 }
 
+interface BackendVietQrCheckout {
+  bankId: string;
+  /** Optional on older deployments that predate the setting. */
+  bankName?: string;
+  accountNumber: string;
+  accountName: string;
+  amount: number;
+  transferContent: string;
+  qrImageUrl: string;
+}
+
 interface BackendPaymentResponse {
   paymentId: string;
   orderReference: string;
@@ -58,6 +69,7 @@ interface BackendPaymentResponse {
   provider: "VNPay" | "Momo" | "VietQR";
   status: "Pending" | "Completed" | "Failed" | "Refunded";
   paymentUrl?: string;
+  vietQr?: BackendVietQrCheckout;
   createdAt?: string;
   updatedAt?: string;
   appliedDiscountPercent?: number;
@@ -229,6 +241,10 @@ function toCheckoutResponse(response: BackendPaymentResponse): CheckoutResponse 
     provider: response.provider,
     status: toCheckoutStatus(response.status),
     checkoutUrl: response.paymentUrl,
+    vietQr: response.vietQr
+      ? { ...response.vietQr, bankName: response.vietQr.bankName ?? "" }
+      : undefined,
+
     createdAt: response.createdAt,
     updatedAt: response.updatedAt,
     appliedDiscountPercent: response.appliedDiscountPercent,
@@ -746,6 +762,11 @@ export const realClient: ApiClient = {
 
   getPaymentStatus(id: string) {
     return request<BackendPaymentResponse>(apiRoutes.payments.status(id), { method: "GET" }, true)
+      .then(toCheckoutResponse);
+  },
+
+  getOrderStatus(orderId: string) {
+    return request<BackendPaymentResponse>(apiRoutes.payments.orderStatus(orderId), { method: "GET" }, true)
       .then(toCheckoutResponse);
   },
 

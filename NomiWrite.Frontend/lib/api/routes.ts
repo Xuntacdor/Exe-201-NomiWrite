@@ -59,6 +59,7 @@ export const apiRoutes = {
   payments: {
     checkout: "/api/payment",
     status: (id: string) => `/api/payment/${id}`,
+    orderStatus: (id: string) => `/api/payment/orders/${encodeURIComponent(id)}/status`,
     history: "/api/payment/history",
     refundRequest: (id: string) => `/api/payment/${id}/refund-request`,
     refundRequests: "/api/payment/refund-requests",

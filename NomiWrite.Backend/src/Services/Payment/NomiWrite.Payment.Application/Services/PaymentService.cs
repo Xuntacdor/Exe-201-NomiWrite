@@ -86,7 +86,11 @@ public class PaymentService : IPaymentService
             Currency = NormalizeCurrency(request.Currency),
             Provider = request.Provider,
             Status = PaymentStatus.Pending,
-            OrderReference = GenerateOrderReference(),
+            // VietQR orders need a reference that survives a bank transfer; see
+            // SePayOrderReference for why PAY-{guid} cannot be used there.
+            OrderReference = request.Provider == PaymentProvider.VietQR
+                ? SePayOrderReference.Create()
+                : GenerateOrderReference(),
             PlanId = request.PlanId,
             AppliedDiscountPercent = appliedDiscountPercent,
             AppliedPromoCode = appliedPromoCode,
@@ -188,6 +192,28 @@ public class PaymentService : IPaymentService
     {
         var payment = await _dbContext.Payments.FirstOrDefaultAsync(p => p.Id == paymentId)
             ?? throw new PaymentNotFoundException(paymentId);
+
+        if (payment.UserId != userId)
+            throw new InvalidRefundException("Payment does not belong to the caller.", 403);
+
+        return ToStatusResponse(payment);
+    }
+
+    /// <summary>
+    /// Resolves an order by payment id or by order reference. References are
+    /// normalised to upper case because a bank transfer can echo the payment code
+    /// back in a different case than we issued it.
+    /// </summary>
+    public async Task<PaymentStatusResponseDto> GetOrderStatusAsync(Guid userId, string orderId)
+    {
+        var normalized = orderId.Trim().ToUpperInvariant();
+
+        var payment = Guid.TryParse(normalized, out var paymentId)
+            ? await _dbContext.Payments.FirstOrDefaultAsync(p => p.Id == paymentId)
+            : await _dbContext.Payments.FirstOrDefaultAsync(p => p.OrderReference == normalized);
+
+        if (payment is null)
+            throw new PaymentNotFoundException(orderId);
 
         if (payment.UserId != userId)
             throw new InvalidRefundException("Payment does not belong to the caller.", 403);

@@ -8370,5 +8370,61 @@
   "Không có hướng dẫn nào được trả về cho đề này.": {
     "en": "No instructions were returned for this prompt.",
     "vi": "Không có hướng dẫn nào được trả về cho đề này."
+  },
+  "Scan to pay with VietQR": {
+    "en": "Scan to pay with VietQR",
+    "vi": "Quét mã để thanh toán VietQR"
+  },
+  "Payment received": {
+    "en": "Payment received",
+    "vi": "Đã nhận thanh toán"
+  },
+  "Your premium plan is active. Welcome to NomiWrite.": {
+    "en": "Your premium plan is active. Welcome to NomiWrite.",
+    "vi": "Gói cao cấp của bạn đã được kích hoạt. Chào mừng đến với NomiWrite."
+  },
+  "Open your banking app, scan the code and keep the transfer content exactly as shown.": {
+    "en": "Open your banking app, scan the code and keep the transfer content exactly as shown.",
+    "vi": "Mở ứng dụng ngân hàng, quét mã và giữ nguyên nội dung chuyển khoản như hiển thị."
+  },
+  "VietQR payment code": {
+    "en": "VietQR payment code",
+    "vi": "Mã thanh toán VietQR"
+  },
+  "Amount to transfer": {
+    "en": "Amount to transfer",
+    "vi": "Số tiền cần chuyển"
+  },
+  "Bank name": {
+    "en": "Bank name",
+    "vi": "Tên ngân hàng"
+  },
+  "Account name": {
+    "en": "Account name",
+    "vi": "Tên chủ tài khoản"
+  },
+  "Account number": {
+    "en": "Account number",
+    "vi": "Số tài khoản"
+  },
+  "Transfer content": {
+    "en": "Transfer content",
+    "vi": "Nội dung chuyển khoản"
+  },
+  "Refresh": {
+    "en": "Refresh",
+    "vi": "Làm mới"
+  },
+  "Could not copy to clipboard.": {
+    "en": "Could not copy to clipboard.",
+    "vi": "Không thể sao chép vào bộ nhớ tạm."
+  },
+  "Waiting for the bank to confirm your transfer. This page updates automatically.": {
+    "en": "Waiting for the bank to confirm your transfer. This page updates automatically.",
+    "vi": "Đang chờ ngân hàng xác nhận giao dịch. Trang này sẽ tự động cập nhật."
+  },
+  "Keep the transfer content unchanged. If you cancel now the order stays pending and you can pay again from the same reference.": {
+    "en": "Keep the transfer content unchanged. If you cancel now the order stays pending and you can pay again from the same reference.",
+    "vi": "Giữ nguyên nội dung chuyển khoản. Nếu hủy bây giờ, đơn hàng vẫn ở trạng thái chờ và bạn có thể thanh toán lại bằng cùng mã này."
   }
 }

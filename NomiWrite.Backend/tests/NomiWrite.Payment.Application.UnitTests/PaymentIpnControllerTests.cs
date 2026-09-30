@@ -50,10 +50,21 @@ public class PaymentIpnControllerTests
             new HttpClient(),
             NullLogger<MomoGatewayService>.Instance);
 
+        var sePay = new SePayVietQrService(
+            Options.Create(new SePaySettings
+            {
+                ApiKey = "sepay-api-key-test",
+                BankId = "970436",
+                AccountNumber = "1234567890",
+                AccountName = "NOMIWRITE"
+            }),
+            NullLogger<SePayVietQrService>.Instance);
+
         return new PaymentController(
             Substitute.For<IPaymentService>(),
             vnPay,
             momo,
+            sePay,
             db,
             publish,
             NullLogger<PaymentController>.Instance)

@@ -20,6 +20,7 @@ public class CreatePaymentResponseDto
     public PaymentProvider Provider { get; set; }
     public PaymentStatus Status { get; set; }
     public string? PaymentUrl { get; set; }
+    public VietQrCheckoutDto? VietQr { get; set; }
     public DateTime CreatedAt { get; set; }
     public int? AppliedDiscountPercent { get; set; }
 }
