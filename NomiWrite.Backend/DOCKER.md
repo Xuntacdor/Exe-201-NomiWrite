@@ -5,6 +5,26 @@
 - Docker and Docker Compose (v2+)
 - All Supabase databases must already exist and have EF Core migrations applied locally
 
+## Local Configuration
+
+Per-service `appsettings.json` files are **git-ignored** because they hold real
+credentials. Only sanitized `appsettings.Example.json` templates are tracked.
+Copy them once after cloning (required for running a service directly with
+`dotnet run`; containers ignore these files and take config from `.env*`):
+
+```bash
+cp src/Services/Auth/NomiWrite.Auth.API/appsettings.Example.json \
+   src/Services/Auth/NomiWrite.Auth.API/appsettings.json
+cp src/Services/Payment/NomiWrite.Payment.API/appsettings.Example.json \
+   src/Services/Payment/NomiWrite.Payment.API/appsettings.json
+# ...and fill in the <placeholder> values
+```
+
+Never commit a filled-in `appsettings.json`. If you previously used
+`git update-index --skip-worktree` to hide one, drop the flag with
+`git update-index --no-skip-worktree <path>` — it hides real changes from
+`git status` and is how credentials end up committed by accident.
+
 ## Quick Start
 
 ```bash

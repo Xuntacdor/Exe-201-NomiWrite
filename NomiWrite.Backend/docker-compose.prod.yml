@@ -105,8 +105,8 @@ services:
     container_name: nomiwrite-gateway
     restart: unless-stopped
     init: true
-    ports:
-      - "80:8080"
+    expose:
+      - "8080"
     env_file:
       - .env.production
     environment:
@@ -150,7 +150,24 @@ services:
       options:
         max-size: "20m"
         max-file: "5"
-
+# ── Caddy (TLS Reverse Proxy) ─────────────────────────────────────
+  caddy:
+    image: caddy:2-alpine
+    container_name: nomiwrite-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - nomiwrite-public
+      - nomiwrite-internal
+    depends_on:
+      gateway:
+        condition: service_healthy
   # ────────────────────────────────────────────────────────────────────────────
   # Auth API (port 5100 local) — DB: nomiwrite_auth, publishes UserRegisteredEvent
   # ────────────────────────────────────────────────────────────────────────────
@@ -660,7 +677,9 @@ services:
     environment:
       ASPNETCORE_URLS: "http://+:8080"
       ASPNETCORE_ENVIRONMENT: Production
-      ConnectionStrings__MongoDb: mongodb://root:CHANGE_ME_MONGO_PASSWORD@mongodb:27017
+      # ConnectionStrings__MongoDb is supplied by .env.production (same as every
+      # other service's connection strings). Set it there to the local `mongodb`
+      # container URI or to a MongoDB Atlas SRV string — never inline it here.
       MongoDb__DatabaseName: NomiWriteLogDb
       MongoDb__TtlExpireAfterDays: "180"
     depends_on:
@@ -755,6 +774,8 @@ volumes:
   rabbitmq_data:
   mongodb_data:
   nomiwrite-backups:
+  caddy_data:
+  caddy_config:
 
 networks:
   nomiwrite-internal:
