@@ -86,6 +86,8 @@ public class AdminPromptServiceTests
         var result = await sut.CreatePromptAsync(ValidCreate(type.Id));
 
         result.Title.Should().Be("Describe a chart");
+        result.Instructions.Should().Be("Write about the chart.");
+        result.SampleAnswer.Should().Be("A strong sample answer.");
         result.IsVipOnly.Should().BeTrue();
         result.IsActive.Should().BeTrue();
         result.MinWords.Should().Be(150);
@@ -137,6 +139,8 @@ public class AdminPromptServiceTests
         var result = await sut.UpdatePromptAsync(prompt.Id, dto);
 
         result.Title.Should().Be("New title");
+        result.Instructions.Should().Be("Write about the chart.");
+        result.SampleAnswer.Should().Be("A strong sample answer.");
         result.IsVipOnly.Should().BeTrue();
         db.WritingPrompts.Single().IsVipOnly.Should().BeTrue();
         db.WritingPrompts.Single().Difficulty.Should().Be(DifficultyLevel.Intermediate);
@@ -236,6 +240,30 @@ public class AdminPromptServiceTests
         var act = () => sut.GetPromptByIdAsync(Guid.NewGuid());
 
         await act.Should().ThrowAsync<PromptNotFoundException>();
+    }
+
+    [Fact]
+    public async Task GetPromptByIdAsync_ReturnsEditableContent()
+    {
+        var db = TestWritingDbContext.Create();
+        var type = SeedType(db);
+        var prompt = new WritingPrompt
+        {
+            WritingTypeId = type.Id,
+            Title = "Editable",
+            Instructions = "Keep these instructions",
+            SampleAnswer = "Keep this sample",
+            Difficulty = DifficultyLevel.Intermediate,
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow
+        };
+        db.WritingPrompts.Add(prompt);
+        db.SaveChanges();
+
+        var result = await Build(db).GetPromptByIdAsync(prompt.Id);
+
+        result.Instructions.Should().Be("Keep these instructions");
+        result.SampleAnswer.Should().Be("Keep this sample");
     }
 
     #endregion
