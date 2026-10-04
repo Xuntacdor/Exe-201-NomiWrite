@@ -26,12 +26,15 @@ namespace NomiWrite.AICoordinator.Infrastructure.Migrations
                 maxLength: 100,
                 nullable: true);
 
-            migrationBuilder.UpdateData(
-                table: "ai_grading_configs",
-                keyColumn: "id",
-                keyValue: new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaa01"),
-                column: "fallback_model_name",
-                value: "gemini-2.5-flash");
+            // This migration is intentionally self-contained (there is no generated
+            // designer file), so UpdateData cannot resolve property mappings from a
+            // target model. Use typed PostgreSQL SQL for the existing seeded row.
+            migrationBuilder.Sql(
+                """
+                UPDATE ai_grading_configs
+                SET fallback_model_name = 'gemini-2.5-flash'
+                WHERE id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaa01'::uuid;
+                """);
         }
 
         protected override void Down(MigrationBuilder migrationBuilder)
