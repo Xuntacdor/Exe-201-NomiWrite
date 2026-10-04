@@ -1,4 +1,5 @@
 using FluentValidation;
+using System.Security.Cryptography;
 using Microsoft.EntityFrameworkCore;
 using NomiWrite.AICoordinator.Application.DTOs;
 using NomiWrite.AICoordinator.Application.Exceptions;
@@ -11,15 +12,18 @@ public class AdminAiConfigService : IAdminAiConfigService
 {
     private readonly IGradingDbContext _dbContext;
     private readonly IAiGradingProvider _gradingProvider;
+    private readonly IAiSecretProtector _secretProtector;
     private readonly IValidator<UpdateAiGradingConfigRequestDto> _updateConfigValidator;
 
     public AdminAiConfigService(
         IGradingDbContext dbContext,
         IAiGradingProvider gradingProvider,
+        IAiSecretProtector secretProtector,
         IValidator<UpdateAiGradingConfigRequestDto> updateConfigValidator)
     {
         _dbContext = dbContext;
         _gradingProvider = gradingProvider;
+        _secretProtector = secretProtector;
         _updateConfigValidator = updateConfigValidator;
     }
 
@@ -29,22 +33,10 @@ public class AdminAiConfigService : IAdminAiConfigService
             .AsNoTracking()
             .Where(c => c.IsActive)
             .OrderByDescending(c => c.UpdatedAt)
-            .Select(c => new AiGradingConfigDto
-            {
-                Id = c.Id,
-                ProviderName = c.ProviderName,
-                ModelName = c.ModelName,
-                Temperature = c.Temperature,
-                SystemPromptTemplate = c.SystemPromptTemplate,
-                MaxOutputTokens = c.MaxOutputTokens,
-                IsActive = c.IsActive,
-                CreatedAt = c.CreatedAt,
-                UpdatedAt = c.UpdatedAt
-            })
             .FirstOrDefaultAsync()
             ?? throw new AiGradingConfigNotFoundException();
 
-        return config;
+        return ToDto(config);
     }
 
     /// <summary>
@@ -57,10 +49,18 @@ public class AdminAiConfigService : IAdminAiConfigService
         if (!validationResult.IsValid)
             throw new ValidationException(validationResult.Errors);
 
-        // Deactivate all currently active configs.
+        // Keep the current encrypted key unless the admin explicitly replaces
+        // or clears it. The plaintext key is never loaded for this copy path.
         var activeConfigs = await _dbContext.AiGradingConfigs
             .Where(c => c.IsActive)
+            .OrderByDescending(c => c.UpdatedAt)
             .ToListAsync();
+
+        var apiKeyCiphertext = activeConfigs.FirstOrDefault()?.ApiKeyCiphertext;
+        if (request.ClearApiKey)
+            apiKeyCiphertext = null;
+        else if (!string.IsNullOrWhiteSpace(request.ApiKey))
+            apiKeyCiphertext = _secretProtector.Protect(request.ApiKey.Trim());
 
         foreach (var c in activeConfigs)
             c.IsActive = false;
@@ -70,6 +70,10 @@ public class AdminAiConfigService : IAdminAiConfigService
         {
             ProviderName = request.ProviderName.Trim(),
             ModelName = request.ModelName.Trim(),
+            FallbackModelName = string.IsNullOrWhiteSpace(request.FallbackModelName)
+                ? null
+                : request.FallbackModelName.Trim(),
+            ApiKeyCiphertext = apiKeyCiphertext,
             Temperature = request.Temperature,
             SystemPromptTemplate = request.SystemPromptTemplate?.Trim(),
             MaxOutputTokens = request.MaxOutputTokens,
@@ -81,17 +85,41 @@ public class AdminAiConfigService : IAdminAiConfigService
 
         _gradingProvider.InvalidateActiveConfigCache();
 
+        return ToDto(newConfig);
+    }
+
+    private AiGradingConfigDto ToDto(AiGradingConfig config)
+    {
+        string? apiKeyHint = null;
+        if (!string.IsNullOrWhiteSpace(config.ApiKeyCiphertext) && _secretProtector.IsConfigured)
+        {
+            try
+            {
+                var plaintext = _secretProtector.Unprotect(config.ApiKeyCiphertext);
+                apiKeyHint = plaintext.Length <= 4 ? "••••" : $"••••{plaintext[^4..]}";
+            }
+            catch (Exception exception) when (exception is CryptographicException or InvalidOperationException)
+            {
+                // Keep the admin recovery screen usable after a master-key
+                // rotation or configuration mistake. The plaintext is never exposed.
+                apiKeyHint = "Configured (replace required)";
+            }
+        }
+
         return new AiGradingConfigDto
         {
-            Id = newConfig.Id,
-            ProviderName = newConfig.ProviderName,
-            ModelName = newConfig.ModelName,
-            Temperature = newConfig.Temperature,
-            SystemPromptTemplate = newConfig.SystemPromptTemplate,
-            MaxOutputTokens = newConfig.MaxOutputTokens,
-            IsActive = newConfig.IsActive,
-            CreatedAt = newConfig.CreatedAt,
-            UpdatedAt = newConfig.UpdatedAt
+            Id = config.Id,
+            ProviderName = config.ProviderName,
+            ModelName = config.ModelName,
+            FallbackModelName = config.FallbackModelName,
+            HasStoredApiKey = !string.IsNullOrWhiteSpace(config.ApiKeyCiphertext),
+            ApiKeyHint = apiKeyHint,
+            Temperature = config.Temperature,
+            SystemPromptTemplate = config.SystemPromptTemplate,
+            MaxOutputTokens = config.MaxOutputTokens,
+            IsActive = config.IsActive,
+            CreatedAt = config.CreatedAt,
+            UpdatedAt = config.UpdatedAt
         };
     }
 }

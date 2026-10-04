@@ -28,6 +28,14 @@ public class AiGradingConfigConfiguration : IEntityTypeConfiguration<AiGradingCo
             .IsRequired()
             .HasMaxLength(100);
 
+        builder.Property(c => c.FallbackModelName)
+            .HasColumnName("fallback_model_name")
+            .HasMaxLength(100);
+
+        builder.Property(c => c.ApiKeyCiphertext)
+            .HasColumnName("api_key_ciphertext")
+            .HasMaxLength(2048);
+
         builder.Property(c => c.Temperature)
             .HasColumnName("temperature");
 
@@ -56,6 +64,7 @@ public class AiGradingConfigConfiguration : IEntityTypeConfiguration<AiGradingCo
                 Id = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaa01"),
                 ProviderName = "Gemini",
                 ModelName = "gemini-3.6-flash",
+                FallbackModelName = "gemini-2.5-flash",
                 Temperature = null,
                 SystemPromptTemplate = null,
                 MaxOutputTokens = null,

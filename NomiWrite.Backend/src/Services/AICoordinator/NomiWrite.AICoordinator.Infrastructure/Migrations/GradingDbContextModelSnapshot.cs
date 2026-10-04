@@ -33,6 +33,16 @@ namespace NomiWrite.AICoordinator.Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
+                    b.Property<string>("ApiKeyCiphertext")
+                        .HasMaxLength(2048)
+                        .HasColumnType("character varying(2048)")
+                        .HasColumnName("api_key_ciphertext");
+
+                    b.Property<string>("FallbackModelName")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("fallback_model_name");
+
                     b.Property<bool>("IsActive")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")
@@ -78,6 +88,7 @@ namespace NomiWrite.AICoordinator.Infrastructure.Migrations
                         {
                             Id = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaa01"),
                             CreatedAt = new DateTime(2026, 9, 7, 0, 0, 0, 0, DateTimeKind.Utc),
+                            FallbackModelName = "gemini-2.5-flash",
                             IsActive = true,
                             ModelName = "gemini-3.6-flash",
                             ProviderName = "Gemini"

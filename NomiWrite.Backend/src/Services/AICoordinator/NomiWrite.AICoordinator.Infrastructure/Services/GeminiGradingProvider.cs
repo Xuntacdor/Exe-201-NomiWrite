@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
@@ -18,6 +19,7 @@ public class GeminiGradingProvider : IAiGradingProvider
     private readonly HttpClient _httpClient;
     private readonly GeminiSettings _settings;
     private readonly IGradingDbContext _dbContext;
+    private readonly IAiSecretProtector _secretProtector;
     private readonly IMemoryCache _cache;
     private readonly ILogger<GeminiGradingProvider> _logger;
 
@@ -49,25 +51,32 @@ public class GeminiGradingProvider : IAiGradingProvider
         HttpClient httpClient,
         IOptions<GeminiSettings> settings,
         IGradingDbContext dbContext,
+        IAiSecretProtector secretProtector,
         IMemoryCache cache,
         ILogger<GeminiGradingProvider> logger)
     {
         _httpClient = httpClient;
         _settings = settings.Value;
         _dbContext = dbContext;
+        _secretProtector = secretProtector;
         _cache = cache;
         _logger = logger;
 
-        _httpClient.DefaultRequestHeaders.Add("x-goog-api-key", _settings.ApiKey);
     }
 
     public async Task<GeminiGradingResponseSchema> GradeEssayAsync(string essayContent)
     {
         var config = await GetActiveConfigAsync();
 
-        var modelName = !string.IsNullOrWhiteSpace(_settings.Model)
-            ? _settings.Model
-            : config?.ModelName ?? "gemini-3.5-flash";
+        var modelName = !string.IsNullOrWhiteSpace(config?.ModelName)
+            ? config!.ModelName
+            : !string.IsNullOrWhiteSpace(_settings.Model)
+                ? _settings.Model
+                : "gemini-2.5-flash";
+        var fallbackModel = !string.IsNullOrWhiteSpace(config?.FallbackModelName)
+            ? config!.FallbackModelName
+            : _settings.FallbackModel;
+        var apiKey = ResolveApiKey(config);
         var systemPrompt = !string.IsNullOrWhiteSpace(config?.SystemPromptTemplate)
             ? config!.SystemPromptTemplate!
             : DefaultGradingPrompt;
@@ -79,8 +88,8 @@ public class GeminiGradingProvider : IAiGradingProvider
 
         for (var attempt = 1; attempt <= MaxAttempts; attempt++)
         {
-            var endpoint = endpointTemplate.Replace("{model}", modelName, StringComparison.OrdinalIgnoreCase);
-            using var response = await _httpClient.PostAsJsonAsync(endpoint, requestBody);
+            var endpoint = ResolveEndpoint(endpointTemplate, modelName);
+            using var response = await SendRequestAsync(endpoint, requestBody, apiKey);
 
             if (response.IsSuccessStatusCode)
                 return await ParseGeminiResponseAsync(response);
@@ -98,13 +107,12 @@ public class GeminiGradingProvider : IAiGradingProvider
             }
 
             if (response.StatusCode == HttpStatusCode.ServiceUnavailable &&
-                endpointTemplate.Contains("{model}", StringComparison.OrdinalIgnoreCase) &&
-                !string.IsNullOrWhiteSpace(_settings.FallbackModel) &&
-                !string.Equals(modelName, _settings.FallbackModel, StringComparison.OrdinalIgnoreCase))
+                !string.IsNullOrWhiteSpace(fallbackModel) &&
+                !string.Equals(modelName, fallbackModel, StringComparison.OrdinalIgnoreCase))
             {
-                var fallbackEndpoint = endpointTemplate.Replace("{model}", _settings.FallbackModel, StringComparison.OrdinalIgnoreCase);
-                _logger.LogWarning("Gemini model {Model} is unavailable; trying fallback model {FallbackModel}.", modelName, _settings.FallbackModel);
-                using var fallbackResponse = await _httpClient.PostAsJsonAsync(fallbackEndpoint, requestBody);
+                var fallbackEndpoint = ResolveEndpoint(endpointTemplate, fallbackModel);
+                _logger.LogWarning("Gemini model {Model} is unavailable; trying fallback model {FallbackModel}.", modelName, fallbackModel);
+                using var fallbackResponse = await SendRequestAsync(fallbackEndpoint, requestBody, apiKey);
                 if (fallbackResponse.IsSuccessStatusCode)
                     return await ParseGeminiResponseAsync(fallbackResponse);
 
@@ -140,6 +148,41 @@ public class GeminiGradingProvider : IAiGradingProvider
 
     private static bool IsTransientGeminiError(HttpStatusCode statusCode) =>
         statusCode is HttpStatusCode.ServiceUnavailable or HttpStatusCode.TooManyRequests;
+
+    private string ResolveApiKey(AiGradingConfig? config)
+    {
+        if (!string.IsNullOrWhiteSpace(config?.ApiKeyCiphertext))
+            return _secretProtector.Unprotect(config.ApiKeyCiphertext);
+
+        if (!string.IsNullOrWhiteSpace(_settings.ApiKey))
+            return _settings.ApiKey;
+
+        throw new InvalidOperationException("No Gemini API key is configured.");
+    }
+
+    private static string ResolveEndpoint(string endpointTemplate, string modelName)
+    {
+        if (endpointTemplate.Contains("{model}", StringComparison.OrdinalIgnoreCase))
+            return endpointTemplate.Replace("{model}", modelName, StringComparison.OrdinalIgnoreCase);
+
+        // Backward compatibility for deployments that configured a concrete
+        // model in the endpoint before runtime model switching was available.
+        return Regex.Replace(
+            endpointTemplate,
+            @"(?<=/models/)[^/:]+(?=:generateContent)",
+            modelName,
+            RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+    }
+
+    private async Task<HttpResponseMessage> SendRequestAsync(string endpoint, object requestBody, string apiKey)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Post, endpoint)
+        {
+            Content = JsonContent.Create(requestBody)
+        };
+        request.Headers.Add("x-goog-api-key", apiKey);
+        return await _httpClient.SendAsync(request);
+    }
 
     private static async Task<GeminiGradingResponseSchema> ParseGeminiResponseAsync(HttpResponseMessage response)
     {
