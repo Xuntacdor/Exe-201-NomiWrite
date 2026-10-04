@@ -60,15 +60,17 @@ class _VocabularyTabState extends State<_VocabularyTab> {
   Widget build(BuildContext context) => FutureBuilder<List<VocabularyItem>>(
     future: data,
     builder: (_, snap) {
-      if (snap.connectionState == ConnectionState.waiting)
+      if (snap.connectionState == ConnectionState.waiting) {
         return const Center(child: CircularProgressIndicator());
+      }
       if (snap.hasError) return ErrorView(error: snap.error!, retry: reload);
-      if (snap.data!.isEmpty)
+      if (snap.data!.isEmpty) {
         return const EmptyState(
           icon: Icons.menu_book_outlined,
           title: 'Chưa có từ gợi ý',
           message: 'Từ vựng hay sẽ được rút ra sau khi AI chấm bài.',
         );
+      }
       return RefreshIndicator(
         onRefresh: () async {
           reload();
@@ -129,10 +131,11 @@ class _VocabularyTabState extends State<_VocabularyTab> {
                           );
                           reload();
                         } catch (e) {
-                          if (context.mounted)
+                          if (context.mounted) {
                             ScaffoldMessenger.of(
                               context,
                             ).showSnackBar(SnackBar(content: Text('$e')));
+                          }
                         }
                       },
                     ),
@@ -176,10 +179,11 @@ class _QuizTabState extends State<_QuizTab> {
         reload();
       }
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('$e')));
+      }
     }
   }
 
@@ -187,8 +191,9 @@ class _QuizTabState extends State<_QuizTab> {
   Widget build(BuildContext context) => FutureBuilder<List<QuizSummary>>(
     future: data,
     builder: (_, snap) {
-      if (snap.connectionState == ConnectionState.waiting)
+      if (snap.connectionState == ConnectionState.waiting) {
         return const Center(child: CircularProgressIndicator());
+      }
       if (snap.hasError) return ErrorView(error: snap.error!, retry: reload);
       return ListView(
         padding: const EdgeInsets.all(16),
@@ -224,7 +229,7 @@ class _QuizTabState extends State<_QuizTab> {
                   trailing: const Icon(Icons.play_arrow_rounded),
                   onTap: () async {
                     final value = await widget.state.api.quiz(q.id);
-                    if (context.mounted)
+                    if (context.mounted) {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -232,6 +237,7 @@ class _QuizTabState extends State<_QuizTab> {
                               QuizPlayScreen(state: widget.state, quiz: value),
                         ),
                       );
+                    }
                   },
                 ),
               ),
@@ -297,13 +303,21 @@ class _QuizPlayScreenState extends State<QuizPlayScreen> {
             ),
             const SizedBox(height: 10),
             if (options.isNotEmpty)
-              ...options.map(
-                (o) => RadioListTile<String>(
-                  contentPadding: EdgeInsets.zero,
-                  value: o,
-                  groupValue: answers[id],
-                  title: Text(o),
-                  onChanged: (v) => setState(() => answers[id] = v!),
+              RadioGroup<String>(
+                groupValue: answers[id],
+                onChanged: (value) => setState(() {
+                  if (value != null) answers[id] = value;
+                }),
+                child: Column(
+                  children: options
+                      .map(
+                        (option) => RadioListTile<String>(
+                          contentPadding: EdgeInsets.zero,
+                          value: option,
+                          title: Text(option),
+                        ),
+                      )
+                      .toList(),
                 ),
               )
             else
@@ -330,7 +344,7 @@ class _QuizPlayScreenState extends State<QuizPlayScreen> {
         asText(widget.quiz['id']),
         answers,
       );
-      if (mounted)
+      if (mounted) {
         showDialog(
           context: context,
           builder: (_) => AlertDialog(
@@ -349,11 +363,13 @@ class _QuizPlayScreenState extends State<QuizPlayScreen> {
             ],
           ),
         );
+      }
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('$e')));
+      }
     } finally {
       if (mounted) setState(() => sending = false);
     }
@@ -382,10 +398,11 @@ class _GuideTabState extends State<_GuideTab> {
       final guide = await widget.state.api.generateStudyGuide();
       setState(() => data = Future.value(guide));
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('$e')));
+      }
     } finally {
       if (mounted) setState(() => generating = false);
     }
@@ -395,15 +412,17 @@ class _GuideTabState extends State<_GuideTab> {
   Widget build(BuildContext context) => FutureBuilder<Json?>(
     future: data,
     builder: (_, snap) {
-      if (snap.connectionState == ConnectionState.waiting)
+      if (snap.connectionState == ConnectionState.waiting) {
         return const Center(child: CircularProgressIndicator());
-      if (snap.hasError)
+      }
+      if (snap.hasError) {
         return ErrorView(
           error: snap.error!,
           retry: () => setState(() => data = widget.state.api.studyGuide()),
         );
+      }
       final g = snap.data;
-      if (g == null)
+      if (g == null) {
         return EmptyStateWithAction(
           icon: Icons.route_outlined,
           title: 'Chưa có lộ trình',
@@ -412,6 +431,7 @@ class _GuideTabState extends State<_GuideTab> {
           label: generating ? 'Đang tạo…' : 'Tạo lộ trình',
           action: generating ? null : generate,
         );
+      }
       final steps = asJsonList(g['nextSteps']);
       return ListView(
         padding: const EdgeInsets.all(18),

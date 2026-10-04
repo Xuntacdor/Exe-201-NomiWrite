@@ -20,11 +20,86 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<List<dynamic>> _load() => Future.wait([
-    widget.state.api.getProfile(),
+    widget.state.api.getAccount(),
     widget.state.api.subscription(),
     widget.state.api.plans(),
   ]);
   void reload() => setState(() => data = _load());
+  bool actionBusy = false;
+
+  Future<void> cancelSubscription() async {
+    final confirmed = await _confirm(
+      title: 'Hủy gói hiện tại?',
+      message:
+          'Quyền lợi vẫn tuân theo trạng thái mà hệ thống trả về sau khi hủy.',
+      action: 'Hủy gói',
+    );
+    if (!confirmed) return;
+    setState(() => actionBusy = true);
+    try {
+      await widget.state.api.cancelSubscription();
+      reload();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Đã cập nhật trạng thái gói.')),
+        );
+      }
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('$error')));
+      }
+    } finally {
+      if (mounted) setState(() => actionBusy = false);
+    }
+  }
+
+  Future<void> deactivateAccount() async {
+    final confirmed = await _confirm(
+      title: 'Vô hiệu hóa tài khoản?',
+      message: 'Bạn sẽ bị đăng xuất và cần liên hệ hỗ trợ để kích hoạt lại.',
+      action: 'Vô hiệu hóa',
+    );
+    if (!confirmed) return;
+    setState(() => actionBusy = true);
+    try {
+      await widget.state.api.deactivateAccount();
+      await widget.state.signOut();
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('$error')));
+      }
+    } finally {
+      if (mounted) setState(() => actionBusy = false);
+    }
+  }
+
+  Future<bool> _confirm({
+    required String title,
+    required String message,
+    required String action,
+  }) async =>
+      await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text(title),
+          content: Text(message),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Đóng'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: Text(action),
+            ),
+          ],
+        ),
+      ) ??
+      false;
   @override
   Widget build(BuildContext context) {
     return SafeArea(
@@ -40,10 +115,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
             child: FutureBuilder<List<dynamic>>(
               future: data,
               builder: (_, snap) {
-                if (snap.connectionState == ConnectionState.waiting)
+                if (snap.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
-                if (snap.hasError)
+                }
+                if (snap.hasError) {
                   return ErrorView(error: snap.error!, retry: reload);
+                }
                 final profile = snap.data![0] as Json;
                 final subscription = snap.data![1] as Json?;
                 final plans = snap.data![2] as List<Json>;
@@ -193,6 +270,45 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ),
                         ),
                       ],
+                      const SizedBox(height: 12),
+                      Card(
+                        child: Column(
+                          children: [
+                            ListTile(
+                              leading: const Icon(Icons.receipt_long_outlined),
+                              title: const Text('Lịch sử thanh toán'),
+                              trailing: const Icon(Icons.chevron_right),
+                              onTap: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      PaymentHistoryScreen(state: widget.state),
+                                ),
+                              ),
+                            ),
+                            if (subscription != null) ...[
+                              const Divider(height: 1),
+                              ListTile(
+                                leading: const Icon(Icons.cancel_outlined),
+                                title: const Text('Hủy gói đăng ký'),
+                                onTap: actionBusy ? null : cancelSubscription,
+                              ),
+                            ],
+                            const Divider(height: 1),
+                            ListTile(
+                              leading: const Icon(
+                                Icons.person_off_outlined,
+                                color: Colors.redAccent,
+                              ),
+                              title: const Text(
+                                'Vô hiệu hóa tài khoản',
+                                style: TextStyle(color: Colors.redAccent),
+                              ),
+                              onTap: actionBusy ? null : deactivateAccount,
+                            ),
+                          ],
+                        ),
+                      ),
                       const SizedBox(height: 18),
                       OutlinedButton.icon(
                         onPressed: () => widget.state.signOut(),
@@ -270,10 +386,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       await widget.state.loadProfile();
       if (mounted) Navigator.pop(context);
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('$e')));
+      }
     } finally {
       if (mounted) setState(() => saving = false);
     }
@@ -353,6 +470,47 @@ class PlansScreen extends StatefulWidget {
 class _PlansScreenState extends State<PlansScreen> {
   String provider = 'VNPay';
   String? loadingId;
+  final promo = TextEditingController();
+  int? discountPercent;
+  bool validatingPromo = false;
+
+  @override
+  void dispose() {
+    promo.dispose();
+    super.dispose();
+  }
+
+  Future<void> validatePromo() async {
+    if (promo.text.trim().isEmpty) return;
+    setState(() => validatingPromo = true);
+    try {
+      final value = await widget.state.api.validatePromoCode(promo.text.trim());
+      final valid = value['valid'] == true;
+      setState(() {
+        discountPercent = valid ? asInt(value['discountPercent']) : null;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              valid
+                  ? 'Mã hợp lệ: giảm $discountPercent%.'
+                  : 'Mã khuyến mãi không hợp lệ.',
+            ),
+          ),
+        );
+      }
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('$error')));
+      }
+    } finally {
+      if (mounted) setState(() => validatingPromo = false);
+    }
+  }
+
   Future<void> pay(Json plan) async {
     setState(() => loadingId = asText(plan['id']));
     try {
@@ -360,19 +518,22 @@ class _PlansScreenState extends State<PlansScreen> {
         asText(plan['id']),
         asDouble(plan['price']) ?? 0,
         provider,
+        promoCode: promo.text.trim().isEmpty ? null : promo.text.trim(),
       );
       final url = asText(result['paymentUrl']);
       if (url.isEmpty ||
           !await launchUrl(
             Uri.parse(url),
             mode: LaunchMode.externalApplication,
-          ))
+          )) {
         throw Exception('Không thể mở cổng thanh toán.');
+      }
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('$e')));
+      }
     } finally {
       if (mounted) setState(() => loadingId = null);
     }
@@ -403,6 +564,35 @@ class _PlansScreenState extends State<PlansScreen> {
             ],
             selected: {provider},
             onSelectionChanged: (v) => setState(() => provider = v.first),
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: promo,
+                  textCapitalization: TextCapitalization.characters,
+                  decoration: InputDecoration(
+                    labelText: 'Mã khuyến mãi',
+                    prefixIcon: const Icon(Icons.local_offer_outlined),
+                    helperText: discountPercent == null
+                        ? null
+                        : 'Đang áp dụng giảm $discountPercent%',
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              IconButton.filledTonal(
+                onPressed: validatingPromo ? null : validatePromo,
+                tooltip: 'Kiểm tra mã',
+                icon: validatingPromo
+                    ? const SizedBox.square(
+                        dimension: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.check_rounded),
+              ),
+            ],
           ),
           const SizedBox(height: 16),
           if (widget.plans.isEmpty)
@@ -462,4 +652,150 @@ class _PlansScreenState extends State<PlansScreen> {
     final raw = value.toStringAsFixed(0);
     return raw.replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (_) => '.');
   }
+}
+
+class PaymentHistoryScreen extends StatefulWidget {
+  const PaymentHistoryScreen({super.key, required this.state});
+
+  final AppState state;
+
+  @override
+  State<PaymentHistoryScreen> createState() => _PaymentHistoryScreenState();
+}
+
+class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
+  late Future<List<dynamic>> data = load();
+
+  Future<List<dynamic>> load() => Future.wait([
+    widget.state.api.paymentHistory(),
+    widget.state.api.refundRequests(),
+  ]);
+
+  void reload() => setState(() => data = load());
+
+  Future<void> requestRefund(Json payment) async {
+    final reason = TextEditingController();
+    final accepted = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Yêu cầu hoàn tiền'),
+        content: TextField(
+          controller: reason,
+          minLines: 2,
+          maxLines: 4,
+          decoration: const InputDecoration(
+            labelText: 'Lý do',
+            alignLabelWithHint: true,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Đóng'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Gửi yêu cầu'),
+          ),
+        ],
+      ),
+    );
+    final message = reason.text.trim();
+    reason.dispose();
+    if (accepted != true || message.isEmpty) return;
+    try {
+      await widget.state.api.requestRefund(asText(payment['id']), message);
+      reload();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Đã gửi yêu cầu hoàn tiền.')),
+        );
+      }
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('$error')));
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(
+      title: const Text('Lịch sử thanh toán'),
+      actions: [IconButton(onPressed: reload, icon: const Icon(Icons.refresh))],
+    ),
+    body: FutureBuilder<List<dynamic>>(
+      future: data,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (snapshot.hasError) {
+          return ErrorView(error: snapshot.error!, retry: reload);
+        }
+        final payments = snapshot.data![0] as List<Json>;
+        final refunds = snapshot.data![1] as List<Json>;
+        final refundedIds = refunds
+            .map((item) => asText(item['paymentOrderId']))
+            .toSet();
+        if (payments.isEmpty) {
+          return const EmptyState(
+            icon: Icons.receipt_long_outlined,
+            title: 'Chưa có giao dịch',
+            message: 'Các giao dịch của bạn sẽ xuất hiện tại đây.',
+          );
+        }
+        return RefreshIndicator(
+          onRefresh: () async {
+            reload();
+            await data;
+          },
+          child: ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: payments.length,
+            itemBuilder: (context, index) {
+              final payment = payments[index];
+              final status = asText(payment['status']);
+              final completed = status.toLowerCase() == 'completed';
+              final refundSent = refundedIds.contains(asText(payment['id']));
+              return Card(
+                child: ListTile(
+                  isThreeLine: true,
+                  leading: CircleAvatar(
+                    child: Icon(
+                      completed ? Icons.check_rounded : Icons.payments_outlined,
+                    ),
+                  ),
+                  title: Text(
+                    '${asDouble(payment['amount'])?.toStringAsFixed(0) ?? '0'} ${asText(payment['currency'], 'VND')}',
+                    style: const TextStyle(fontWeight: FontWeight.w800),
+                  ),
+                  subtitle: Text(
+                    '${asText(payment['provider'])} • $status\n${_dateText(asText(payment['createdAt']))}',
+                  ),
+                  trailing: completed && !refundSent
+                      ? IconButton(
+                          tooltip: 'Yêu cầu hoàn tiền',
+                          onPressed: () => requestRefund(payment),
+                          icon: const Icon(Icons.undo_rounded),
+                        )
+                      : refundSent
+                      ? const Icon(Icons.hourglass_top_rounded)
+                      : null,
+                ),
+              );
+            },
+          ),
+        );
+      },
+    ),
+  );
+}
+
+String _dateText(String value) {
+  final date = DateTime.tryParse(value)?.toLocal();
+  if (date == null) return value;
+  return '${date.day}/${date.month}/${date.year}';
 }

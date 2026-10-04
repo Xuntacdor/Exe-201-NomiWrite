@@ -21,12 +21,14 @@ export interface AdminPromptListItemDto {
   writingTypeId: string;
   writingTypeName?: string;
   title: string;
+  instructions: string;
   difficulty: number | string;
   isActive: boolean;
   timeLimitMinutes?: number | null;
   minWords?: number | null;
   maxWords?: number | null;
   imageUrl?: string | null;
+  sampleAnswer?: string | null;
   isVipOnly: boolean;
   createdAt: string;
 }

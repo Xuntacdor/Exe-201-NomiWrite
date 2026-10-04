@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'core/api_client.dart';
 import 'core/app_state.dart';
 import 'screens/auth_screen.dart';
+import 'screens/admin/admin_shell.dart';
 import 'screens/home_shell.dart';
 import 'ui/theme.dart';
 
@@ -38,8 +39,8 @@ class _NomiWriteAppState extends State<NomiWriteApp> {
     theme: NomiTheme.light,
     home: AnimatedBuilder(
       animation: state,
-      builder: (_, __) {
-        if (!state.ready)
+      builder: (_, _) {
+        if (!state.ready) {
           return const Scaffold(
             body: Center(
               child: Column(
@@ -52,9 +53,11 @@ class _NomiWriteAppState extends State<NomiWriteApp> {
               ),
             ),
           );
-        return state.signedIn
-            ? HomeShell(state: state)
-            : AuthScreen(state: state);
+        }
+        if (!state.signedIn) return AuthScreen(state: state);
+        return state.isAdmin
+            ? AdminShell(state: state)
+            : HomeShell(state: state);
       },
     ),
   );

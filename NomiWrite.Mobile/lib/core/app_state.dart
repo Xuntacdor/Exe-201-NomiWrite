@@ -5,7 +5,9 @@ import 'api_client.dart';
 import 'models.dart';
 
 class AppState extends ChangeNotifier {
-  AppState(this.api);
+  AppState(this.api) {
+    api.onSessionRefreshed = _storeRefreshedSession;
+  }
   final ApiClient api;
   final _storage = const FlutterSecureStorage(
     aOptions: AndroidOptions(encryptedSharedPreferences: true),
@@ -18,6 +20,10 @@ class AppState extends ChangeNotifier {
   bool busy = false;
   String? error;
   bool get signedIn => session != null;
+  bool get isAdmin {
+    final role = session?.role.trim().toLowerCase();
+    return role == 'admin' || role == '1';
+  }
 
   Future<void> restore() async {
     try {
@@ -58,8 +64,19 @@ class AppState extends ChangeNotifier {
     await loadProfile();
   }
 
+  Future<void> _storeRefreshedSession(AuthSession value) async {
+    session = value;
+    api.session = value;
+    await _storage.write(key: _sessionKey, value: jsonEncode(value.toJson()));
+    notifyListeners();
+  }
+
   Future<void> loadProfile() async {
-    profile = await api.getProfile();
+    try {
+      profile = await api.getAccount();
+    } catch (_) {
+      profile = await api.getProfile();
+    }
     notifyListeners();
   }
 

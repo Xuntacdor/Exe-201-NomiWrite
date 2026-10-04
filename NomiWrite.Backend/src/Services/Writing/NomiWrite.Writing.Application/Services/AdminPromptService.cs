@@ -53,12 +53,14 @@ public class AdminPromptService : IAdminPromptService
                 WritingTypeId = p.WritingTypeId,
                 WritingTypeName = p.WritingType != null ? p.WritingType.Name : string.Empty,
                 Title = p.Title,
+                Instructions = p.Instructions,
                 Difficulty = p.Difficulty,
                 IsActive = p.IsActive,
                 TimeLimitMinutes = p.TimeLimitMinutes,
                 MinWords = p.MinWords,
                 MaxWords = p.MaxWords,
                 ImageUrl = p.ImageUrl,
+                SampleAnswer = p.SampleAnswer,
                 IsVipOnly = p.IsVipOnly,
                 CreatedAt = p.CreatedAt
             })
@@ -88,12 +90,14 @@ public class AdminPromptService : IAdminPromptService
             WritingTypeId = prompt.WritingTypeId,
             WritingTypeName = prompt.WritingType?.Name ?? string.Empty,
             Title = prompt.Title,
+            Instructions = prompt.Instructions,
             Difficulty = prompt.Difficulty,
             IsActive = prompt.IsActive,
             TimeLimitMinutes = prompt.TimeLimitMinutes,
             MinWords = prompt.MinWords,
             MaxWords = prompt.MaxWords,
             ImageUrl = prompt.ImageUrl,
+            SampleAnswer = prompt.SampleAnswer,
             IsVipOnly = prompt.IsVipOnly,
             CreatedAt = prompt.CreatedAt
         };
@@ -134,12 +138,14 @@ public class AdminPromptService : IAdminPromptService
             WritingTypeId = prompt.WritingTypeId,
             WritingTypeName = writingTypeName,
             Title = prompt.Title,
+            Instructions = prompt.Instructions,
             Difficulty = prompt.Difficulty,
             IsActive = prompt.IsActive,
             TimeLimitMinutes = prompt.TimeLimitMinutes,
             MinWords = prompt.MinWords,
             MaxWords = prompt.MaxWords,
             ImageUrl = prompt.ImageUrl,
+            SampleAnswer = prompt.SampleAnswer,
             IsVipOnly = prompt.IsVipOnly,
             CreatedAt = prompt.CreatedAt
         };
@@ -179,12 +185,14 @@ public class AdminPromptService : IAdminPromptService
             WritingTypeId = prompt.WritingTypeId,
             WritingTypeName = writingTypeName,
             Title = prompt.Title,
+            Instructions = prompt.Instructions,
             Difficulty = prompt.Difficulty,
             IsActive = prompt.IsActive,
             TimeLimitMinutes = prompt.TimeLimitMinutes,
             MinWords = prompt.MinWords,
             MaxWords = prompt.MaxWords,
             ImageUrl = prompt.ImageUrl,
+            SampleAnswer = prompt.SampleAnswer,
             IsVipOnly = prompt.IsVipOnly,
             CreatedAt = prompt.CreatedAt
         };

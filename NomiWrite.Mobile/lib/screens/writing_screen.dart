@@ -39,10 +39,12 @@ class _WritingScreenState extends State<WritingScreen> {
           child: FutureBuilder<List<dynamic>>(
             future: data,
             builder: (context, snap) {
-              if (snap.connectionState == ConnectionState.waiting)
+              if (snap.connectionState == ConnectionState.waiting) {
                 return const Center(child: CircularProgressIndicator());
-              if (snap.hasError)
+              }
+              if (snap.hasError) {
                 return ErrorView(error: snap.error!, retry: _reload);
+              }
               final types = snap.data![0] as List<WritingType>,
                   prompts = snap.data![1] as List<WritingPrompt>;
               return RefreshIndicator(
@@ -264,6 +266,52 @@ class PromptScreen extends StatelessWidget {
           icon: const Icon(Icons.edit_rounded),
           label: const Text('Bắt đầu viết'),
         ),
+        const SizedBox(height: 10),
+        OutlinedButton.icon(
+          onPressed: () async {
+            try {
+              final answer = await state.api.sampleAnswer(prompt.id);
+              if (!context.mounted) return;
+              await showModalBottomSheet<void>(
+                context: context,
+                isScrollControlled: true,
+                builder: (context) => SafeArea(
+                  child: DraggableScrollableSheet(
+                    expand: false,
+                    initialChildSize: .65,
+                    maxChildSize: .9,
+                    builder: (context, controller) => ListView(
+                      controller: controller,
+                      padding: const EdgeInsets.all(20),
+                      children: [
+                        const Text(
+                          'Bài viết mẫu',
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          answer ?? 'Đề bài này chưa có bài mẫu.',
+                          style: const TextStyle(fontSize: 16, height: 1.6),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            } catch (error) {
+              if (context.mounted) {
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(SnackBar(content: Text('$error')));
+              }
+            }
+          },
+          icon: const Icon(Icons.menu_book_outlined),
+          label: const Text('Xem bài mẫu'),
+        ),
       ],
     ),
   );
@@ -344,10 +392,11 @@ class _EssayEditorScreenState extends State<EssayEditorScreen> {
         ),
       );
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('$e')));
+      }
     } finally {
       if (mounted) setState(() => sending = false);
     }
@@ -462,10 +511,81 @@ class SubmissionResultScreen extends StatefulWidget {
 
 class _SubmissionResultScreenState extends State<SubmissionResultScreen> {
   late Future<Json> feedback;
+  bool actionBusy = false;
   @override
   void initState() {
     super.initState();
     feedback = widget.state.api.feedback(widget.submission.id);
+  }
+
+  Future<void> retryGrading() async {
+    setState(() => actionBusy = true);
+    try {
+      await widget.state.api.retryGrading(widget.submission.id);
+      setState(
+        () => feedback = widget.state.api.feedback(widget.submission.id),
+      );
+    } catch (error) {
+      if (mounted) _showMessage('$error');
+    } finally {
+      if (mounted) setState(() => actionBusy = false);
+    }
+  }
+
+  Future<void> requestTutorReview() async {
+    setState(() => actionBusy = true);
+    try {
+      await widget.state.api.requestTutorReview(widget.submission.id);
+      if (mounted) _showMessage('Đã gửi yêu cầu giảng viên đánh giá.');
+    } catch (error) {
+      if (mounted) _showMessage('$error');
+    } finally {
+      if (mounted) setState(() => actionBusy = false);
+    }
+  }
+
+  Future<void> flagResult(String resultId) async {
+    final controller = TextEditingController();
+    final accepted = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Báo cáo phản hồi AI'),
+        content: TextField(
+          controller: controller,
+          minLines: 2,
+          maxLines: 4,
+          decoration: const InputDecoration(labelText: 'Lý do'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Đóng'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Gửi'),
+          ),
+        ],
+      ),
+    );
+    final reason = controller.text.trim();
+    controller.dispose();
+    if (accepted != true || reason.isEmpty) return;
+    setState(() => actionBusy = true);
+    try {
+      await widget.state.api.flagFeedback(resultId, reason);
+      if (mounted) _showMessage('Đã gửi báo cáo phản hồi.');
+    } catch (error) {
+      if (mounted) _showMessage('$error');
+    } finally {
+      if (mounted) setState(() => actionBusy = false);
+    }
+  }
+
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
@@ -474,7 +594,7 @@ class _SubmissionResultScreenState extends State<SubmissionResultScreen> {
     body: FutureBuilder<Json>(
       future: feedback,
       builder: (context, snap) {
-        if (snap.connectionState == ConnectionState.waiting)
+        if (snap.connectionState == ConnectionState.waiting) {
           return const Center(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -485,16 +605,20 @@ class _SubmissionResultScreenState extends State<SubmissionResultScreen> {
               ],
             ),
           );
-        if (snap.hasError)
+        }
+        if (snap.hasError) {
           return ErrorView(
             error: snap.error!,
             retry: () => setState(
               () => feedback = widget.state.api.feedback(widget.submission.id),
             ),
           );
+        }
         final f = snap.data!,
             scores = asJsonList(f['criterionScores']),
-            errors = asJsonList(f['grammarErrors']);
+            errors = asJsonList(f['grammarErrors']),
+            vocabulary = asJsonList(f['vocabularySuggestions']),
+            rewrites = asJsonList(f['restructuringSuggestions']);
         return ListView(
           padding: const EdgeInsets.all(20),
           children: [
@@ -553,6 +677,76 @@ class _SubmissionResultScreenState extends State<SubmissionResultScreen> {
                 ),
               ),
             ],
+            if (vocabulary.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              const Text(
+                'Gợi ý từ vựng',
+                style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18),
+              ),
+              ...vocabulary.map(
+                (item) => Card(
+                  child: ListTile(
+                    title: Text(asText(item['originalWord'])),
+                    subtitle: Text(
+                      (item['suggestedAlternatives'] as List?)
+                              ?.map(asText)
+                              .join(', ') ??
+                          '',
+                    ),
+                  ),
+                ),
+              ),
+            ],
+            if (rewrites.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              const Text(
+                'Gợi ý viết lại',
+                style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18),
+              ),
+              ...rewrites.map(
+                (item) => Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(14),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(asText(item['originalSentence'])),
+                        const SizedBox(height: 8),
+                        Text(
+                          asText(item['suggestedRewrite']),
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w700,
+                            color: NomiTheme.primary,
+                          ),
+                        ),
+                        if (asText(item['reason']).isNotEmpty) ...[
+                          const SizedBox(height: 6),
+                          Text(asText(item['reason'])),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+            const SizedBox(height: 20),
+            OutlinedButton.icon(
+              onPressed: actionBusy ? null : requestTutorReview,
+              icon: const Icon(Icons.rate_review_outlined),
+              label: const Text('Yêu cầu giảng viên đánh giá'),
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              onPressed: actionBusy ? null : () => flagResult(asText(f['id'])),
+              icon: const Icon(Icons.flag_outlined),
+              label: const Text('Báo cáo phản hồi AI'),
+            ),
+            const SizedBox(height: 8),
+            TextButton.icon(
+              onPressed: actionBusy ? null : retryGrading,
+              icon: const Icon(Icons.refresh_rounded),
+              label: const Text('Chấm lại bài viết'),
+            ),
           ],
         );
       },

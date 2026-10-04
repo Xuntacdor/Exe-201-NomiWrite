@@ -15,6 +15,8 @@ class ApiClient {
   ApiClient({http.Client? client}) : _client = client ?? http.Client();
   final http.Client _client;
   AuthSession? session;
+  Future<void> Function(AuthSession session)? onSessionRefreshed;
+  Future<AuthSession>? _refreshing;
 
   Future<dynamic> request(
     String path, {
@@ -22,6 +24,7 @@ class ApiClient {
     Object? body,
     bool auth = false,
     Map<String, String>? query,
+    bool allowRefresh = true,
   }) async {
     final uri = Uri.parse(
       '${AppConfig.apiBaseUrl}$path',
@@ -30,8 +33,9 @@ class ApiClient {
       'Accept': 'application/json',
       'Content-Type': 'application/json',
     };
-    if (auth && session?.accessToken.isNotEmpty == true)
+    if (auth && session?.accessToken.isNotEmpty == true) {
       headers['Authorization'] = 'Bearer ${session!.accessToken}';
+    }
     http.Response response;
     final encoded = body == null ? null : jsonEncode(body);
     switch (method) {
@@ -58,18 +62,43 @@ class ApiClient {
         data = response.body;
       }
     }
+    if (response.statusCode == 401 &&
+        auth &&
+        allowRefresh &&
+        session?.refreshToken.isNotEmpty == true) {
+      final refreshed = await _refreshSession();
+      session = refreshed;
+      await onSessionRefreshed?.call(refreshed);
+      return request(
+        path,
+        method: method,
+        body: body,
+        auth: auth,
+        query: query,
+        allowRefresh: false,
+      );
+    }
     if (response.statusCode < 200 || response.statusCode >= 300) {
       var message = 'Không thể kết nối máy chủ (${response.statusCode}).';
       if (data is Map) {
         message = asText(data['message'], message);
-        if (data['errors'] is List)
+        if (data['errors'] is List) {
           message = (data['errors'] as List).join(' ');
+        }
       } else if (data is String && data.isNotEmpty) {
         message = data;
       }
       throw ApiException(message, response.statusCode);
     }
     return data;
+  }
+
+  Future<AuthSession> _refreshSession() {
+    final active = _refreshing;
+    if (active != null) return active;
+    final operation = refresh(session!.refreshToken);
+    _refreshing = operation;
+    return operation.whenComplete(() => _refreshing = null);
   }
 
   dynamic unwrap(dynamic data) =>
@@ -110,8 +139,50 @@ class ApiClient {
   Future<void> logout() async =>
       request('/api/auth/logout', method: 'POST', auth: true);
 
+  Future<String> forgotPassword(String email) async {
+    final value = await request(
+      '/api/auth/forgot-password',
+      method: 'POST',
+      body: {'email': email},
+    );
+    return asText(
+      value is Map ? value['message'] : null,
+      'Yêu cầu đã được gửi.',
+    );
+  }
+
+  Future<String> resetPassword(String token, String newPassword) async {
+    final value = await request(
+      '/api/auth/reset-password',
+      method: 'POST',
+      body: {'token': token, 'newPassword': newPassword},
+    );
+    return asText(
+      value is Map ? value['message'] : null,
+      'Đã đặt lại mật khẩu.',
+    );
+  }
+
+  Future<String> verifyEmail(String token) async {
+    final value = await request(
+      '/api/auth/verify-email',
+      method: 'POST',
+      body: {'token': token},
+    );
+    return asText(
+      value is Map ? value['message'] : null,
+      'Email đã được xác minh.',
+    );
+  }
+
+  Future<void> deactivateAccount() async =>
+      request('/api/auth/deactivate', method: 'POST', auth: true);
+
   Future<Json> getProfile() async =>
       Map<String, dynamic>.from(await request('/api/users/me', auth: true));
+  Future<Json> getAccount() async => Map<String, dynamic>.from(
+    await request('/api/users/me/account', auth: true),
+  );
   Future<Json> getProgress() async => Map<String, dynamic>.from(
     await request('/api/users/me/progress', auth: true),
   );
@@ -128,10 +199,7 @@ class ApiClient {
   }) async =>
       (await request(
                 '/api/writing/prompts',
-                query: {
-                  if (typeId != null) 'typeId': typeId,
-                  if (difficulty != null) 'difficulty': difficulty,
-                },
+                query: {'typeId': ?typeId, 'difficulty': ?difficulty},
               )
               as List)
           .map((e) => WritingPrompt.fromJson(Map<String, dynamic>.from(e)))
@@ -139,6 +207,15 @@ class ApiClient {
   Future<WritingPrompt> prompt(String id) async => WritingPrompt.fromJson(
     Map<String, dynamic>.from(await request('/api/writing/prompts/$id')),
   );
+  Future<String?> sampleAnswer(String id) async {
+    final value = await request(
+      '/api/writing/prompts/$id/sample-answer',
+      auth: true,
+    );
+    final answer = value is Map ? asText(value['sampleAnswer']) : '';
+    return answer.isEmpty ? null : answer;
+  }
+
   Future<Submission> submitEssay(
     String promptId,
     String content,
@@ -177,6 +254,32 @@ class ApiClient {
   Future<Json> feedback(String id) async => Map<String, dynamic>.from(
     unwrap(await request('/api/grading/submissions/$id', auth: true)),
   );
+  Future<void> retryGrading(String submissionId) async => request(
+    '/api/writing/submissions/$submissionId/retry-grading',
+    method: 'POST',
+    auth: true,
+  );
+  Future<Json> requestTutorReview(String submissionId) async =>
+      Map<String, dynamic>.from(
+        unwrap(
+          await request(
+            '/api/grading/submissions/$submissionId/request-tutor-review',
+            method: 'POST',
+            auth: true,
+          ),
+        ),
+      );
+  Future<Json> flagFeedback(String gradingResultId, String reason) async =>
+      Map<String, dynamic>.from(
+        unwrap(
+          await request(
+            '/api/grading/results/$gradingResultId/flag',
+            method: 'POST',
+            body: {'reason': reason},
+            auth: true,
+          ),
+        ),
+      );
   Future<List<VocabularyItem>> vocabulary() async {
     final value = unwrap(
       await request(
@@ -220,8 +323,8 @@ class ApiClient {
         '/api/quizzes/generate',
         method: 'POST',
         body: {
-          if (submissionId != null) 'sourceSubmissionId': submissionId,
-          if (vocabularyIds != null) 'vocabularyIds': vocabularyIds,
+          'sourceSubmissionId': ?submissionId,
+          'vocabularyIds': ?vocabularyIds,
         },
         auth: true,
       ),
@@ -266,6 +369,40 @@ class ApiClient {
     return value == null ? null : Map<String, dynamic>.from(value);
   }
 
+  Future<Json?> cancelSubscription() async {
+    final value = await request(
+      '/api/subscriptions/me/cancel',
+      method: 'POST',
+      auth: true,
+    );
+    return value == null ? null : Map<String, dynamic>.from(value);
+  }
+
+  Future<Json> validatePromoCode(
+    String code,
+  ) async => Map<String, dynamic>.from(
+    await request(
+      '/api/subscriptions/promo-codes/${Uri.encodeComponent(code)}/validate',
+      auth: true,
+    ),
+  );
+
+  Future<List<Json>> paymentHistory() async =>
+      asJsonList(await request('/api/payment/history', auth: true));
+
+  Future<List<Json>> refundRequests() async =>
+      asJsonList(await request('/api/payment/refund-requests', auth: true));
+
+  Future<Json> requestRefund(String paymentId, String reason) async =>
+      Map<String, dynamic>.from(
+        await request(
+          '/api/payment/$paymentId/refund-request',
+          method: 'POST',
+          body: {'reason': reason},
+          auth: true,
+        ),
+      );
+
   Future<Json> checkout(
     String planId,
     num amount,
@@ -285,4 +422,93 @@ class ApiClient {
       },
     ),
   );
+
+  Future<Json> adminOverview() async => Map<String, dynamic>.from(
+    unwrap(await request('/api/admin/analytics/overview', auth: true)),
+  );
+
+  Future<Json> adminUsers({
+    String? search,
+    int page = 1,
+    int pageSize = 20,
+  }) async => Map<String, dynamic>.from(
+    unwrap(
+      await request(
+        '/api/admin/users',
+        auth: true,
+        query: {
+          if (search?.trim().isNotEmpty == true) 'search': search!.trim(),
+          'page': '$page',
+          'pageSize': '$pageSize',
+        },
+      ),
+    ),
+  );
+
+  Future<void> updateAdminUserStatus(String id, int status) async => request(
+    '/api/admin/users/$id/status',
+    method: 'PATCH',
+    body: {'status': status},
+    auth: true,
+  );
+
+  Future<void> updateAdminUserRole(String id, int role) async => request(
+    '/api/admin/users/$id/role',
+    method: 'PATCH',
+    body: {'role': role},
+    auth: true,
+  );
+
+  Future<Json> adminPrompts({int page = 1, int pageSize = 20}) async =>
+      Map<String, dynamic>.from(
+        unwrap(
+          await request(
+            '/api/admin/prompts',
+            auth: true,
+            query: {'page': '$page', 'pageSize': '$pageSize'},
+          ),
+        ),
+      );
+
+  Future<Json> adminPrompt(String id) async => Map<String, dynamic>.from(
+    await request('/api/admin/prompts/$id', auth: true),
+  );
+
+  Future<Json> createAdminPrompt(Json value) async => Map<String, dynamic>.from(
+    await request(
+      '/api/admin/prompts',
+      method: 'POST',
+      body: value,
+      auth: true,
+    ),
+  );
+
+  Future<Json> updateAdminPrompt(String id, Json value) async =>
+      Map<String, dynamic>.from(
+        await request(
+          '/api/admin/prompts/$id',
+          method: 'PUT',
+          body: value,
+          auth: true,
+        ),
+      );
+
+  Future<void> deleteAdminPrompt(String id) async =>
+      request('/api/admin/prompts/$id', method: 'DELETE', auth: true);
+
+  Future<Json> adminAiConfig() async => Map<String, dynamic>.from(
+    unwrap(await request('/api/admin/ai-config', auth: true)),
+  );
+
+  Future<Json> updateAdminAiConfig(Json value) async =>
+      Map<String, dynamic>.from(
+        unwrap(
+          await request(
+            '/api/admin/ai-config',
+            method: 'PUT',
+            body: value,
+            auth: true,
+          ),
+        ),
+      );
 }

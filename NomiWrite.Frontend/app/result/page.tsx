@@ -339,8 +339,6 @@ function ResultContent() {
 
   async function handleRemoveGroupItem(groupId: string, fakeId: string) {
     try {
-      const realId = getGroupsForFakeId(fakeId)[0]?.vocabularyIds.find(id => realVocabs.find(rv => rv.id === id)?.originalWord === feedback?.vocabSuggestions.find(v => v.id === fakeId)?.originalWord);
-      // Wait, a better way to find the realId is:
       const fakeVocab = feedback?.vocabSuggestions.find(v => v.id === fakeId);
       const realVocab = realVocabs.find(v => v.originalWord === fakeVocab?.originalWord && v.suggestedWord.includes(fakeVocab?.suggestedWord ?? ""));
       if (!realVocab) return;

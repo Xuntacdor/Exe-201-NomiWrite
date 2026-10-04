@@ -36,12 +36,14 @@ public class AdminPromptListItemDto
     public Guid WritingTypeId { get; set; }
     public string WritingTypeName { get; set; } = string.Empty;
     public string Title { get; set; } = string.Empty;
+    public string Instructions { get; set; } = string.Empty;
     public DifficultyLevel Difficulty { get; set; }
     public bool IsActive { get; set; }
     public int? TimeLimitMinutes { get; set; }
     public int? MinWords { get; set; }
     public int? MaxWords { get; set; }
     public string? ImageUrl { get; set; }
+    public string? SampleAnswer { get; set; }
     public bool IsVipOnly { get; set; }
     public DateTime CreatedAt { get; set; }
 }

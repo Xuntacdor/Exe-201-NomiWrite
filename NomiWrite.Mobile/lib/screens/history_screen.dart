@@ -38,17 +38,20 @@ class _HistoryScreenState extends State<HistoryScreen> {
             child: FutureBuilder<List<Submission>>(
               future: data,
               builder: (context, snap) {
-                if (snap.connectionState == ConnectionState.waiting)
+                if (snap.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
-                if (snap.hasError)
+                }
+                if (snap.hasError) {
                   return ErrorView(error: snap.error!, retry: reload);
+                }
                 final items = snap.data!;
-                if (items.isEmpty)
+                if (items.isEmpty) {
                   return const EmptyState(
                     icon: Icons.history_edu,
                     title: 'Chưa có lịch sử',
                     message: 'Những bài bạn đã nộp sẽ được lưu tại đây.',
                   );
+                }
                 return RefreshIndicator(
                   onRefresh: () async {
                     reload();
@@ -57,7 +60,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   child: ListView.separated(
                     padding: const EdgeInsets.all(20),
                     itemCount: items.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 8),
+                    separatorBuilder: (_, _) => const SizedBox(height: 8),
                     itemBuilder: (_, i) {
                       final s = items[i];
                       final ready = s.status.toLowerCase() == 'graded';
