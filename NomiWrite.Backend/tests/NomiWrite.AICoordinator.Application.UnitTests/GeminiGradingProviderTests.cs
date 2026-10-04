@@ -7,6 +7,8 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using NomiWrite.AICoordinator.Application.DTOs;
+using NomiWrite.AICoordinator.Application.Interfaces;
+using NomiWrite.AICoordinator.Domain.Entities;
 using NomiWrite.AICoordinator.Application.UnitTests.Persistence;
 using NomiWrite.AICoordinator.Infrastructure.Options;
 using NomiWrite.AICoordinator.Infrastructure.Services;
@@ -46,6 +48,7 @@ public class GeminiGradingProviderTests
             httpClient,
             settings,
             TestGradingDbContext.Create(),
+            new TestSecretProtector(),
             new MemoryCache(new MemoryCacheOptions()),
             NullLogger<GeminiGradingProvider>.Instance);
     }
@@ -57,6 +60,7 @@ public class GeminiGradingProviderTests
             new HttpClient(handler),
             Options.Create(new GeminiSettings { ApiKey = ApiKey, Model = "gemini-2.5-flash", Endpoint = Endpoint }),
             TestGradingDbContext.Create(),
+            new TestSecretProtector(),
             new MemoryCache(new MemoryCacheOptions()),
             NullLogger<GeminiGradingProvider>.Instance);
     }
@@ -191,6 +195,7 @@ public class GeminiGradingProviderTests
             new HttpClient(handler),
             Options.Create(new GeminiSettings { ApiKey = ApiKey, Model = "gemini-3.5-flash", FallbackModel = "gemini-3.5-flash-lite", Endpoint = Endpoint }),
             TestGradingDbContext.Create(),
+            new TestSecretProtector(),
             new MemoryCache(new MemoryCacheOptions()),
             NullLogger<GeminiGradingProvider>.Instance);
 
@@ -202,6 +207,49 @@ public class GeminiGradingProviderTests
         requestedModels.Last().Should().Contain("gemini-3.5-flash-lite");
     }
 
+    [Fact]
+    public async Task GradeEssayAsync_RuntimeConfig_OverridesEnvironmentModelAndApiKey()
+    {
+        var context = TestGradingDbContext.Create();
+        context.AiGradingConfigs.Add(new AiGradingConfig
+        {
+            ProviderName = "Gemini",
+            ModelName = "gemini-runtime-model",
+            ApiKeyCiphertext = "protected:runtime-secret-key",
+            IsActive = true
+        });
+        await context.SaveChangesAsync();
+
+        string? requestedPath = null;
+        string? requestedKey = null;
+        var handler = new CallbackHttpMessageHandler(request =>
+        {
+            requestedPath = request.RequestUri!.AbsolutePath;
+            requestedKey = request.Headers.GetValues("x-goog-api-key").Single();
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(GeminiBody(ValidGradingJson))
+            };
+        });
+        var sut = new GeminiGradingProvider(
+            new HttpClient(handler),
+            Options.Create(new GeminiSettings
+            {
+                ApiKey = "environment-key",
+                Model = "environment-model",
+                Endpoint = "https://generativelanguage.googleapis.com/v1beta/models/environment-model:generateContent"
+            }),
+            context,
+            new TestSecretProtector(),
+            new MemoryCache(new MemoryCacheOptions()),
+            NullLogger<GeminiGradingProvider>.Instance);
+
+        await sut.GradeEssayAsync("essay");
+
+        requestedPath.Should().Contain("gemini-runtime-model:generateContent");
+        requestedKey.Should().Be("runtime-secret-key");
+    }
+
     #endregion
 
     private sealed class NoBackoffGradingProvider : GeminiGradingProvider
@@ -210,14 +258,22 @@ public class GeminiGradingProviderTests
             HttpClient httpClient,
             IOptions<GeminiSettings> settings,
             NomiWrite.AICoordinator.Application.Interfaces.IGradingDbContext dbContext,
+            IAiSecretProtector secretProtector,
             IMemoryCache cache,
             ILogger<GeminiGradingProvider> logger)
-            : base(httpClient, settings, dbContext, cache, logger)
+            : base(httpClient, settings, dbContext, secretProtector, cache, logger)
         {
         }
 
         protected override Task DelayBackoffAsync(TimeSpan delay, CancellationToken cancellationToken) =>
             Task.CompletedTask;
+    }
+
+    private sealed class TestSecretProtector : IAiSecretProtector
+    {
+        public bool IsConfigured => true;
+        public string Protect(string plaintext) => $"protected:{plaintext}";
+        public string Unprotect(string ciphertext) => ciphertext.StartsWith("protected:") ? ciphertext[10..] : ciphertext;
     }
 
     private sealed class StubHttpMessageHandler : HttpMessageHandler

@@ -8,6 +8,7 @@ import {
   ChevronLeft,
   ChevronRight,
   LogOut,
+  Bot,
 } from "lucide-react";
 import { clearAdminSession } from "../lib/authSession";
 import AdminSettingsButton from "./AdminSettingsButton";
@@ -19,6 +20,7 @@ const adminNavItems = [
   { icon: Users, label: "Users", href: "/users" },
   { icon: FileText, label: "Prompts", href: "/prompts" },
   { icon: MessageSquare, label: "Submissions", href: "/submissions" },
+  { icon: Bot, label: "AI Configuration", href: "/ai-configuration" },
 ];
 
 export default function AdminSidebar() {

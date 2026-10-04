@@ -39,6 +39,32 @@ export interface PagedResultDto<T> {
   totalPages: number;
 }
 
+export interface AiGradingConfigDto {
+  id: string;
+  providerName: string;
+  modelName: string;
+  fallbackModelName?: string | null;
+  hasStoredApiKey: boolean;
+  apiKeyHint?: string | null;
+  temperature?: number | null;
+  systemPromptTemplate?: string | null;
+  maxOutputTokens?: number | null;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt?: string | null;
+}
+
+export interface UpdateAiGradingConfigRequest {
+  providerName: string;
+  modelName: string;
+  fallbackModelName?: string | null;
+  apiKey?: string;
+  clearApiKey?: boolean;
+  temperature?: number | null;
+  systemPromptTemplate?: string | null;
+  maxOutputTokens?: number | null;
+}
+
 export const adminService = {
   getAnalytics: async (): Promise<UserAnalyticsDto> => {
     const response = await apiClient.get('/users/analytics');
@@ -65,5 +91,15 @@ export const adminService = {
 
   updateUserRole: async (id: string, role: number | string): Promise<void> => {
     await apiClient.patch(`/users/${id}/role`, { role });
+  },
+
+  getAiConfig: async (): Promise<AiGradingConfigDto> => {
+    const response = await apiClient.get('/ai-config');
+    return response.data;
+  },
+
+  updateAiConfig: async (request: UpdateAiGradingConfigRequest): Promise<AiGradingConfigDto> => {
+    const response = await apiClient.put('/ai-config', request);
+    return response.data;
   },
 };

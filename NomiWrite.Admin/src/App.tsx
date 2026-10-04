@@ -6,6 +6,7 @@ import Users from "./pages/Users";
 import Prompts from "./pages/Prompts";
 import Submissions from "./pages/Submissions";
 import Login from "./pages/Login";
+import AiConfiguration from "./pages/AiConfiguration";
 import { hasAdminSession, importSessionFromHash } from "./lib/authSession";
 
 function RequireAdmin() {
@@ -44,6 +45,7 @@ function App() {
             <Route path="users" element={<Users />} />
             <Route path="prompts" element={<Prompts />} />
             <Route path="submissions" element={<Submissions />} />
+            <Route path="ai-configuration" element={<AiConfiguration />} />
           </Route>
         </Route>
       </Routes>

@@ -63,6 +63,26 @@ docker-compose logs -f rabbitmq
 
 Databases live on **Supabase** and are **not** containerized. The 6 databases (`nomiwrite_auth`, `nomiwrite_user`, `nomiwrite_payment`, `nomiwrite_writing`, `nomiwrite_grading`, `nomiwrite_subscription`) must already exist and have their schema applied before running Docker.
 
+## Runtime AI credentials
+
+The Admin app can rotate the Gemini API key and switch the primary/fallback
+models without rebuilding containers. API keys saved from Admin are encrypted
+before being persisted. Configure a stable 32-byte encryption key once in the
+deployment environment as `AiSecretProtection__MasterKey`.
+
+Generate a value locally and place only the output in `.env.production` or the
+deployment secret store (never commit the generated value):
+
+```powershell
+$bytes = New-Object byte[] 32
+[Security.Cryptography.RandomNumberGenerator]::Fill($bytes)
+[Convert]::ToBase64String($bytes)
+```
+
+Changing this master key makes previously stored API keys unreadable. Keep a
+secure backup and rotate the Gemini key through Admin after any intentional
+master-key rotation.
+
 EF Core migrations continue to be run locally from the host machine:
 
 ```bash
