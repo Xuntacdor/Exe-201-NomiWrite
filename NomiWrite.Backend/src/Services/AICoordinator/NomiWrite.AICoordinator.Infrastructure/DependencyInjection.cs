@@ -12,6 +12,7 @@ using NomiWrite.AICoordinator.Infrastructure.Consumers;
 using NomiWrite.AICoordinator.Infrastructure.Options;
 using NomiWrite.AICoordinator.Infrastructure.Persistence;
 using NomiWrite.AICoordinator.Infrastructure.Services;
+using NomiWrite.AICoordinator.Infrastructure.Security;
 
 namespace NomiWrite.AICoordinator.Infrastructure;
 
@@ -42,7 +43,9 @@ public static class DependencyInjection
         services.AddScoped<IGradingDbContext>(sp => sp.GetRequiredService<GradingDbContext>());
 
         services.Configure<GeminiSettings>(configuration.GetSection(GeminiSettings.SectionName));
+        services.Configure<AiSecretProtectionSettings>(configuration.GetSection(AiSecretProtectionSettings.SectionName));
         services.Configure<JwtSettings>(configuration.GetSection(JwtSettings.SectionName));
+        services.AddSingleton<IAiSecretProtector, AesAiSecretProtector>();
 
         var serviceUrls = configuration.GetSection(ServiceUrls.SectionName).Get<ServiceUrls>() ?? new ServiceUrls();
         services.AddHttpClient<ISubscriptionStatusClient, SubscriptionServiceClient>(client =>
