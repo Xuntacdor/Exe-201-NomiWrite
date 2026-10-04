@@ -4,12 +4,21 @@ import { Bot, CheckCircle2, Eye, EyeOff, KeyRound, Loader2, RefreshCw, Save, Shi
 import { adminService } from "../services/adminService";
 import type { AiGradingConfigDto, UpdateAiGradingConfigRequest } from "../services/adminService";
 
-const suggestedModels = [
-  "gemini-2.5-flash",
-  "gemini-2.5-flash-lite",
-  "gemini-2.5-pro",
-  "gemini-3-flash-preview",
-];
+const geminiModels = [
+  { id: "gemini-3.8-flash", label: "Gemini 3.8 Flash" },
+  { id: "gemini-3.7-flash", label: "Gemini 3.7 Flash" },
+  { id: "gemini-3.6-flash", label: "Gemini 3.6 Flash" },
+  { id: "gemini-3.5-flash", label: "Gemini 3.5 Flash" },
+  { id: "gemini-3.5-flash-lite", label: "Gemini 3.5 Flash-Lite" },
+  { id: "gemini-3.1-flash-lite", label: "Gemini 3.1 Flash-Lite" },
+  { id: "gemini-3.1-pro-preview", label: "Gemini 3.1 Pro Preview" },
+  { id: "gemini-3-flash-preview", label: "Gemini 3 Flash Preview" },
+  { id: "gemini-2.5-pro", label: "Gemini 2.5 Pro" },
+  { id: "gemini-2.5-flash", label: "Gemini 2.5 Flash" },
+  { id: "gemini-2.5-flash-lite", label: "Gemini 2.5 Flash-Lite" },
+] as const;
+
+const customModelValue = "__custom__";
 
 type FormState = {
   providerName: string;
@@ -158,14 +167,13 @@ export default function AiConfiguration() {
             <div><h2 className="text-lg font-extrabold text-slate-900">Provider and models</h2><p className="mt-1 text-sm text-slate-500">Model values are sent directly to Gemini, so preview or future model IDs can also be entered.</p></div>
             <div className="grid gap-5 md:grid-cols-2">
               <Field label="Provider"><select value={form.providerName} onChange={(e) => update("providerName", e.target.value)} className="admin-input w-full rounded-xl border px-3 py-2.5 text-sm" disabled><option>Gemini</option></select></Field>
-              <Field label="Primary model" required><input required list="gemini-models" value={form.modelName} onChange={(e) => update("modelName", e.target.value)} className="admin-input w-full rounded-xl border px-3 py-2.5 text-sm" placeholder="gemini-2.5-flash" /></Field>
-              <Field label="Fallback model"><input list="gemini-models" value={form.fallbackModelName} onChange={(e) => update("fallbackModelName", e.target.value)} className="admin-input w-full rounded-xl border px-3 py-2.5 text-sm" placeholder="Optional" /></Field>
+              <ModelPicker label="Primary model" required value={form.modelName} onChange={(value) => update("modelName", value)} />
+              <ModelPicker label="Fallback model" allowEmpty value={form.fallbackModelName} onChange={(value) => update("fallbackModelName", value)} />
               <div className="grid grid-cols-2 gap-3">
                 <Field label="Temperature"><input type="number" min="0" max="2" step="0.1" value={form.temperature} onChange={(e) => update("temperature", e.target.value)} className="admin-input w-full rounded-xl border px-3 py-2.5 text-sm" placeholder="Default" /></Field>
                 <Field label="Max tokens"><input type="number" min="1" step="1" value={form.maxOutputTokens} onChange={(e) => update("maxOutputTokens", e.target.value)} className="admin-input w-full rounded-xl border px-3 py-2.5 text-sm" placeholder="Default" /></Field>
               </div>
             </div>
-            <datalist id="gemini-models">{suggestedModels.map((model) => <option key={model} value={model} />)}</datalist>
           </section>
 
           <section className="space-y-5 border-b border-slate-100 p-6">
@@ -186,6 +194,64 @@ export default function AiConfiguration() {
 
 function Field({ label, required, children }: { label: string; required?: boolean; children: ReactNode }) {
   return <label className="block"><span className="mb-1.5 block text-xs font-extrabold uppercase tracking-wider text-slate-600">{label}{required && <span className="ml-1 text-red-500">*</span>}</span>{children}</label>;
+}
+
+function ModelPicker({
+  label,
+  value,
+  onChange,
+  required = false,
+  allowEmpty = false,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  required?: boolean;
+  allowEmpty?: boolean;
+}) {
+  const isKnownModel = geminiModels.some((model) => model.id === value);
+  const selectedValue = value === "" && allowEmpty
+    ? ""
+    : isKnownModel
+      ? value
+      : customModelValue;
+
+  const selectModel = (nextValue: string) => {
+    if (nextValue === customModelValue) {
+      if (isKnownModel || (allowEmpty && value === "")) onChange("");
+      return;
+    }
+    onChange(nextValue);
+  };
+
+  return (
+    <Field label={label} required={required}>
+      <div className="space-y-2">
+        <select
+          value={selectedValue}
+          onChange={(event) => selectModel(event.target.value)}
+          className="admin-input w-full rounded-xl border px-3 py-2.5 text-sm"
+          required={required && selectedValue !== customModelValue}
+        >
+          {allowEmpty && <option value="">No fallback</option>}
+          {geminiModels.map((model) => (
+            <option key={model.id} value={model.id}>{model.label} — {model.id}</option>
+          ))}
+          <option value={customModelValue}>Custom model ID…</option>
+        </select>
+        {selectedValue === customModelValue && (
+          <input
+            required={required}
+            value={value}
+            onChange={(event) => onChange(event.target.value)}
+            className="admin-input w-full rounded-xl border px-3 py-2.5 font-mono text-sm"
+            placeholder="gemini-model-id"
+            aria-label={`${label} custom model ID`}
+          />
+        )}
+      </div>
+    </Field>
+  );
 }
 
 function StatusCard({ label, value, icon }: { label: string; value: string; icon: ReactNode }) {
