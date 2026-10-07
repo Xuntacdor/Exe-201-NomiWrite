@@ -310,6 +310,18 @@ export interface CheckoutRequest {
   promoCode?: string;
 }
 
+export interface VietQrCheckout {
+  bankId: string;
+  /** Display name of the receiving bank, e.g. "VPBank". May be empty if unconfigured. */
+  bankName: string;
+  accountNumber: string;
+  accountName: string;
+  amount: number;
+  /** Must be quoted verbatim as the transfer content so SePay can match the order. */
+  transferContent: string;
+  qrImageUrl: string;
+}
+
 export interface CheckoutResponse {
   id: string;
   orderReference?: string;
@@ -318,6 +330,7 @@ export interface CheckoutResponse {
   provider?: "VNPay" | "Momo" | "VietQR";
   status: "pending" | "success" | "failed" | "refunded";
   checkoutUrl?: string;
+  vietQr?: VietQrCheckout;
   createdAt?: string;
   updatedAt?: string;
   appliedDiscountPercent?: number;
@@ -392,6 +405,8 @@ export interface ApiClient {
   submitQuizAttempt(request: SubmitQuizAttemptRequest): Promise<QuizAttempt>;
   createCheckout(request: CheckoutRequest): Promise<CheckoutResponse>;
   getPaymentStatus(id: string): Promise<CheckoutResponse>;
+  /** Order status by payment id or by order reference. Used to poll VietQR transfers. */
+  getOrderStatus(orderId: string): Promise<CheckoutResponse>;
   listPaymentHistory(): Promise<PaymentHistoryItem[]>;
   createRefundRequest(paymentOrderId: string, reason: string): Promise<RefundRequest>;
   listRefundRequests(): Promise<RefundRequest[]>;

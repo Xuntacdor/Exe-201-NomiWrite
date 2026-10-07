@@ -1,6 +1,7 @@
 import type {
   ApiClient,
   AuthResponse,
+  CheckoutRequest,
   CheckoutResponse,
   GoogleLoginRequest,
   GradingHistoryItem,
@@ -375,11 +376,29 @@ export const mockClient: ApiClient = {
     };
   },
 
-  async createCheckout(): Promise<CheckoutResponse> {
+  async createCheckout(request?: CheckoutRequest): Promise<CheckoutResponse> {
     await delay();
+    const orderReference = `NWQ${Math.random().toString(36).slice(2, 22).toUpperCase().padEnd(20, "0")}`;
+    const amount = request?.amount ?? 199_000;
+
     return {
       id: `pay_${Date.now()}`,
+      orderReference,
+      amount,
+      currency: request?.currency ?? "VND",
+      provider: request?.paymentMethod === "momo" ? "Momo" : request?.paymentMethod === "vietqr" ? "VietQR" : "VNPay",
       status: "pending",
+      vietQr: request?.paymentMethod === "vietqr"
+        ? {
+            bankId: "970436",
+            bankName: "VPBank",
+            accountNumber: "0123456789",
+            accountName: "NOMIWRITE COMPANY",
+            amount,
+            transferContent: orderReference,
+            qrImageUrl: `https://img.vietqr.io/image/970436-0123456789-compact2.png?amount=${amount}&addInfo=${orderReference}&accountName=NOMIWRITE%20COMPANY`,
+          }
+        : undefined,
     };
   },
 
@@ -387,6 +406,15 @@ export const mockClient: ApiClient = {
     await delay();
     return {
       id,
+      status: "pending",
+    };
+  },
+
+  async getOrderStatus(orderId: string): Promise<CheckoutResponse> {
+    await delay();
+    return {
+      id: orderId,
+      orderReference: orderId,
       status: "pending",
     };
   },

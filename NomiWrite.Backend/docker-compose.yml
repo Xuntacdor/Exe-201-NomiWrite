@@ -150,6 +150,11 @@ services:
       - MomoSettings__SecretKey=${MomoSettings__SecretKey}
       - MomoSettings__RedirectUrl=${MomoSettings__RedirectUrl}
       - MomoSettings__IpnUrl=${MomoSettings__IpnUrl}
+      - SePaySettings__ApiKey=${SePaySettings__ApiKey}
+      - SePaySettings__BankId=${SePaySettings__BankId}
+      - SePaySettings__BankName=${SePaySettings__BankName}
+      - SePaySettings__AccountNumber=${SePaySettings__AccountNumber}
+      - SePaySettings__AccountName=${SePaySettings__AccountName}
     depends_on:
       rabbitmq:
         condition: service_healthy

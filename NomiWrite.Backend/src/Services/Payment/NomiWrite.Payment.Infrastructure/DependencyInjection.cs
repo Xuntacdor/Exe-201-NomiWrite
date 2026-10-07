@@ -30,6 +30,7 @@ public static class DependencyInjection
 
         services.Configure<VnPaySettings>(configuration.GetSection(VnPaySettings.SectionName));
         services.Configure<MomoSettings>(configuration.GetSection(MomoSettings.SectionName));
+        services.Configure<SePaySettings>(configuration.GetSection(SePaySettings.SectionName));
 
         var serviceUrls = configuration.GetSection(ServiceUrls.SectionName).Get<ServiceUrls>() ?? new ServiceUrls();
         services.AddHttpClient<IPromoCodeValidator, PromoCodeValidatorClient>(client =>
@@ -48,6 +49,8 @@ public static class DependencyInjection
         services.AddScoped<IPaymentGatewayService, MockedPaymentGatewayService>();
         services.AddScoped<VnPayGatewayService>();
         services.AddHttpClient<MomoGatewayService>();
+        services.AddScoped<SePayVietQrService>();
+        services.AddScoped<ISePayWebhookService, SePayWebhookService>();
         services.AddScoped<IPaymentService, PaymentService>();
         services.AddScoped<IAdminPaymentService, AdminPaymentService>();
 

@@ -9,6 +9,7 @@ import AppDialog from "../components/AppDialog";
 import AppShell from "../components/AppShell";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
+import VietQrCheckoutDialog from "./VietQrCheckoutDialog";
 import {
   ArrowLeft,
   BadgeCheck,
@@ -42,7 +43,7 @@ const proFeatures = [
 
 const paymentMethods: { id: PaymentMethod; label: string; icon: ElementType; sub: string }[] = [
   { id: "vnpay", label: "VNPay", icon: CreditCard, sub: "Redirect to the VNPay gateway" },
-  { id: "vietqr", label: "VietQR", icon: Building2, sub: "Create a QR payment order" },
+  { id: "vietqr", label: "VietQR", icon: Building2, sub: "Scan a QR code and transfer via your bank" },
   { id: "momo", label: "MoMo", icon: Wallet, sub: "Redirect to MoMo payment" },
 ];
 
@@ -85,6 +86,7 @@ export default function UpgradePage() {
   const [paymentHistory, setPaymentHistory] = useState<PaymentHistoryItem[]>([]);
   const [refundRequests, setRefundRequests] = useState<RefundRequest[]>([]);
   const [checkoutResult, setCheckoutResult] = useState<CheckoutResponse | null>(null);
+  const [vietQrCheckout, setVietQrCheckout] = useState<CheckoutResponse | null>(null);
   const [promoCode, setPromoCode] = useState("");
   const [promoDiscount, setPromoDiscount] = useState<number | null>(null);
   const [promoMessage, setPromoMessage] = useState("");
@@ -207,6 +209,13 @@ export default function UpgradePage() {
         promoCode: promoCode.trim() || undefined,
       });
 
+      if (checkout.vietQr) {
+        // VietQR has no redirect: the customer scans a QR or transfers by hand,
+        // then the dialog polls until SePay confirms the webhook landed.
+        setVietQrCheckout(checkout);
+        return;
+      }
+
       if (checkout.checkoutUrl) {
         window.location.assign(checkout.checkoutUrl);
         return;
@@ -219,6 +228,15 @@ export default function UpgradePage() {
     } finally {
       setLoading(false);
     }
+  }
+
+  function handleVietQrPaid(paid: CheckoutResponse) {
+    setCheckoutResult(paid);
+    setPaymentHistory(items => (
+      items.length
+        ? items.map(item => (item.id === paid.id ? { ...item, status: paid.status } : item))
+        : items
+    ));
   }
 
   async function handleStatusCheck(paymentId: string) {
@@ -298,6 +316,17 @@ export default function UpgradePage() {
 
   return (
     <PageFrame signedIn={signedIn}>
+      <VietQrCheckoutDialog
+        key={vietQrCheckout?.id ?? "vietqr-closed"}
+        open={Boolean(vietQrCheckout)}
+        checkout={vietQrCheckout}
+        onClose={() => setVietQrCheckout(null)}
+        onPaid={handleVietQrPaid}
+        onFinish={() => {
+          setVietQrCheckout(null);
+          window.location.assign("/dashboard");
+        }}
+      />
       <AppDialog
         open={Boolean(refundPaymentId)}
         title={translateUi("Request refund")}

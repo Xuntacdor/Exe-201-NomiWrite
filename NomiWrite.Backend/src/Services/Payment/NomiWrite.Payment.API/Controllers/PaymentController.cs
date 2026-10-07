@@ -21,6 +21,7 @@ public class PaymentController : ControllerBase
     private readonly IPaymentService _paymentService;
     private readonly VnPayGatewayService _vnPayGateway;
     private readonly MomoGatewayService _momoGateway;
+    private readonly SePayVietQrService _sePayVietQr;
     private readonly IPaymentDbContext _dbContext;
     private readonly IPublishEndpoint _publishEndpoint;
     private readonly ILogger<PaymentController> _logger;
@@ -29,6 +30,7 @@ public class PaymentController : ControllerBase
         IPaymentService paymentService,
         VnPayGatewayService vnPayGateway,
         MomoGatewayService momoGateway,
+        SePayVietQrService sePayVietQr,
         IPaymentDbContext dbContext,
         IPublishEndpoint publishEndpoint,
         ILogger<PaymentController> logger)
@@ -36,6 +38,7 @@ public class PaymentController : ControllerBase
         _paymentService = paymentService;
         _vnPayGateway = vnPayGateway;
         _momoGateway = momoGateway;
+        _sePayVietQr = sePayVietQr;
         _dbContext = dbContext;
         _publishEndpoint = publishEndpoint;
         _logger = logger;
@@ -74,8 +77,40 @@ public class PaymentController : ControllerBase
 
             result.PaymentUrl = await _momoGateway.CreatePaymentAsync(order);
         }
+        else if (request.Provider == PaymentProvider.VietQR)
+        {
+            // VietQR has no hosted checkout page: the customer scans a QR or
+            // transfers manually, so the response carries the bank details and
+            // the transfer content to quote back to us.
+            var order = new PaymentOrder
+            {
+                Amount = result.Amount,
+                OrderReference = result.OrderReference,
+                PlanId = request.PlanId
+            };
+
+            result.VietQr = _sePayVietQr.BuildCheckout(order);
+        }
 
         return Ok(result);
+    }
+
+    /// <summary>
+    /// Status lookup for a single order, by payment id or by order reference.
+    /// Used by the VietQR checkout to poll until SePay confirms the transfer.
+    /// </summary>
+    [HttpGet("orders/{orderId}/status")]
+    [Authorize]
+    public async Task<ActionResult<PaymentStatusResponseDto>> GetOrderStatus(string orderId)
+    {
+        var userId = GetUserId();
+        if (userId is null)
+            return Unauthorized();
+
+        if (string.IsNullOrWhiteSpace(orderId))
+            return BadRequest();
+
+        return Ok(await _paymentService.GetOrderStatusAsync(userId.Value, orderId));
     }
 
     [HttpGet("{paymentId:guid}")]
