@@ -21,12 +21,14 @@ export interface AdminPromptListItemDto {
   writingTypeId: string;
   writingTypeName?: string;
   title: string;
+  instructions: string;
   difficulty: number | string;
   isActive: boolean;
   timeLimitMinutes?: number | null;
   minWords?: number | null;
   maxWords?: number | null;
   imageUrl?: string | null;
+  sampleAnswer?: string | null;
   isVipOnly: boolean;
   createdAt: string;
 }
@@ -37,6 +39,32 @@ export interface PagedResultDto<T> {
   page: number;
   pageSize: number;
   totalPages: number;
+}
+
+export interface AiGradingConfigDto {
+  id: string;
+  providerName: string;
+  modelName: string;
+  fallbackModelName?: string | null;
+  hasStoredApiKey: boolean;
+  apiKeyHint?: string | null;
+  temperature?: number | null;
+  systemPromptTemplate?: string | null;
+  maxOutputTokens?: number | null;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt?: string | null;
+}
+
+export interface UpdateAiGradingConfigRequest {
+  providerName: string;
+  modelName: string;
+  fallbackModelName?: string | null;
+  apiKey?: string;
+  clearApiKey?: boolean;
+  temperature?: number | null;
+  systemPromptTemplate?: string | null;
+  maxOutputTokens?: number | null;
 }
 
 export const adminService = {
@@ -65,5 +93,15 @@ export const adminService = {
 
   updateUserRole: async (id: string, role: number | string): Promise<void> => {
     await apiClient.patch(`/users/${id}/role`, { role });
+  },
+
+  getAiConfig: async (): Promise<AiGradingConfigDto> => {
+    const response = await apiClient.get('/ai-config');
+    return response.data;
+  },
+
+  updateAiConfig: async (request: UpdateAiGradingConfigRequest): Promise<AiGradingConfigDto> => {
+    const response = await apiClient.put('/ai-config', request);
+    return response.data;
   },
 };
