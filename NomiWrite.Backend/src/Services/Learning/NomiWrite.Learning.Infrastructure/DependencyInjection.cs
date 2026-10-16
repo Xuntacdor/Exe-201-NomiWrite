@@ -18,7 +18,7 @@ public static class DependencyInjection
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        services.Configure<GeminiSettings>(configuration.GetSection(GeminiSettings.SectionName));
+        services.Configure<OpenRouterSettings>(configuration.GetSection(OpenRouterSettings.SectionName));
 
         var serviceUrls = configuration.GetSection(ServiceUrls.SectionName).Get<ServiceUrls>() ?? new ServiceUrls();
 
@@ -33,9 +33,9 @@ public static class DependencyInjection
         services.AddScoped<IQuizService, QuizService>();
         services.AddScoped<IStudyGuideService, StudyGuideService>();
 
-        services.AddScoped<IAiQuizProvider, GeminiQuizProvider>();
+        services.AddScoped<IAiQuizProvider, OpenRouterQuizProvider>();
         services.AddScoped<IFallbackQuizProvider, DeterministicQuizProvider>();
-        services.AddScoped<IStudyGuideAiProvider, GeminiStudyGuideProvider>();
+        services.AddScoped<IStudyGuideAiProvider, OpenRouterStudyGuideProvider>();
         services.AddScoped<IFallbackStudyGuideProvider, DeterministicStudyGuideProvider>();
 
         services.AddScoped<IEssayHistoryClient, EssayHistoryClient>();
@@ -50,7 +50,7 @@ public static class DependencyInjection
             client.Timeout = TimeSpan.FromSeconds(15);
         });
 
-        services.AddHttpClient("Gemini", client =>
+        services.AddHttpClient("OpenRouter", client =>
         {
             client.Timeout = TimeSpan.FromSeconds(60);
         });

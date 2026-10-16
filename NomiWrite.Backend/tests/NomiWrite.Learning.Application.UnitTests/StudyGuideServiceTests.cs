@@ -279,7 +279,7 @@ public class StudyGuideServiceTests
 
         var ai = Substitute.For<IStudyGuideAiProvider>();
         ai.GenerateGuideAsync(Arg.Any<StudyGuideGenerationRequest>())
-            .Throws(new HttpRequestException("Gemini down", null, HttpStatusCode.ServiceUnavailable));
+            .Throws(new HttpRequestException("OpenRouter down", null, HttpStatusCode.ServiceUnavailable));
 
         var fallback = Substitute.For<IFallbackStudyGuideProvider>();
         fallback.GenerateGuide(Arg.Any<StudyGuideGenerationRequest>())

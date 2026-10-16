@@ -13,10 +13,14 @@ public class UpdateAiGradingConfigRequestValidator : AbstractValidator<UpdateAiG
 
         RuleFor(x => x.ModelName)
             .NotEmpty().WithMessage("ModelName is required.")
-            .MaximumLength(100).WithMessage("ModelName must not exceed 100 characters.");
+            .MaximumLength(100).WithMessage("ModelName must not exceed 100 characters.")
+            .Must(BeFreeModel)
+            .WithMessage("Only free OpenRouter models are allowed; the id must end with ':free' or be 'openrouter/free'.");
 
         RuleFor(x => x.FallbackModelName)
-            .MaximumLength(100).WithMessage("FallbackModelName must not exceed 100 characters.");
+            .MaximumLength(100).WithMessage("FallbackModelName must not exceed 100 characters.")
+            .Must(BeFreeModel).When(x => !string.IsNullOrWhiteSpace(x.FallbackModelName))
+            .WithMessage("Only free OpenRouter models are allowed; the id must end with ':free' or be 'openrouter/free'.");
 
         RuleFor(x => x.ApiKey)
             .MinimumLength(12).When(x => !string.IsNullOrWhiteSpace(x.ApiKey))
@@ -35,5 +39,15 @@ public class UpdateAiGradingConfigRequestValidator : AbstractValidator<UpdateAiG
         RuleFor(x => x.MaxOutputTokens)
             .GreaterThan(0).When(x => x.MaxOutputTokens.HasValue)
             .WithMessage("MaxOutputTokens must be greater than 0.");
+    }
+
+    private static bool BeFreeModel(string? model)
+    {
+        if (string.IsNullOrWhiteSpace(model))
+            return false;
+
+        var trimmed = model.Trim();
+        return trimmed.EndsWith(":free", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(trimmed, "openrouter/free", StringComparison.OrdinalIgnoreCase);
     }
 }

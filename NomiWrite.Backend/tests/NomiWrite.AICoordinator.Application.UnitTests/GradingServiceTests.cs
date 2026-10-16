@@ -42,24 +42,24 @@ public class GradingServiceTests
             new Valid<FlagGradingResultRequestDto>());
     }
 
-    private static GeminiGradingResponseSchema SampleResponse() => new()
+    private static AiGradingResponseSchema SampleResponse() => new()
     {
         OverallBand = 6.5m,
         OverallFeedback = "Good attempt with room to improve.",
-        Criteria = new List<GeminiCriterionScoreSchema>
+        Criteria = new List<AiCriterionScoreSchema>
         {
             new() { Name = "Task Achievement", Score = 6.0m, Comment = "Clear position." },
             new() { Name = "Grammatical Range and Accuracy", Score = 7.0m, Comment = "Good variety." }
         },
-        GrammarErrors = new List<GeminiGrammarErrorSchema>
+        GrammarErrors = new List<AiGrammarErrorSchema>
         {
             new() { OriginalText = "he go", Suggestion = "he goes", Explanation = "Subject-verb agreement." }
         },
-        VocabularySuggestions = new List<GeminiVocabularySuggestionSchema>
+        VocabularySuggestions = new List<AiVocabularySuggestionSchema>
         {
             new() { OriginalWord = "good", SuggestedAlternatives = new List<string> { "beneficial" }, Context = "the good habit" }
         },
-        RestructuringSuggestions = new List<GeminiRestructuringSuggestionSchema>
+        RestructuringSuggestions = new List<AiRestructuringSuggestionSchema>
         {
             new() { OriginalSentence = "It is important.", SuggestedRewrite = "It is of paramount importance.", Reason = "Formality." }
         }
@@ -128,7 +128,7 @@ public class GradingServiceTests
         var db = TestGradingDbContext.Create();
         var provider = Substitute.For<IAiGradingProvider>();
         provider.GradeEssayAsync(Arg.Any<string>())
-            .Throws(new InvalidOperationException("Gemini API error: 429"));
+            .Throws(new InvalidOperationException("OpenRouter API error: 429"));
         var publish = Substitute.For<IPublishEndpoint>();
 
         var sut = Build(db, provider: provider, publish: publish);

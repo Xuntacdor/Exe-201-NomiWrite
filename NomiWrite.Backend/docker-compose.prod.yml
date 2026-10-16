@@ -387,7 +387,7 @@ services:
   # ────────────────────────────────────────────────────────────────────────────
   # AI Coordinator API (port 5150 local) — DB: nomiwrite_grading
   # Consumes WritingSubmittedEvent -> publishes GradingCompletedEvent; calls
-  # Subscription and the Gemini API.
+  # Subscription and the OpenRouter API.
   # ────────────────────────────────────────────────────────────────────────────
   aicoordinator-service:
     build:
@@ -607,7 +607,7 @@ services:
 
   # ────────────────────────────────────────────────────────────────────────────
   # Learning API (port 5181 local) — DB: nomiwrite_learning
-  # Consumes GradingCompletedEvent (vocabulary/grammar feedback); calls Gemini.
+  # Consumes GradingCompletedEvent (vocabulary/grammar feedback); calls OpenRouter.
   # ────────────────────────────────────────────────────────────────────────────
   learning-service:
     build:

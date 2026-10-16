@@ -4,7 +4,7 @@ namespace NomiWrite.AICoordinator.Domain.Entities;
 
 public class AiGradingConfig : BaseEntity
 {
-    public string ProviderName { get; set; } = "Gemini";
+    public string ProviderName { get; set; } = "OpenRouter";
     public string ModelName { get; set; } = string.Empty;
     public string? FallbackModelName { get; set; }
     public string? ApiKeyCiphertext { get; set; }

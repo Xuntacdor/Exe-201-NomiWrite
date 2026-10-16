@@ -55,7 +55,7 @@ docker-compose logs -f rabbitmq
 | `user-service`        | 5101      | User profiles                          |
 | `payment-service`     | 5132      | Payment processing (VNPay/Momo)        |
 | `writing-service`     | 5133      | Essay writing                          |
-| `aicoordinator-service` | 5150    | AI grading (Gemini)                    |
+| `aicoordinator-service` | 5150    | AI grading (OpenRouter)                |
 | `subscription-service` | 5160     | Subscription management                |
 | `rabbitmq`            | 5672/15672 | Message broker                        |
 
@@ -65,7 +65,7 @@ Databases live on **Supabase** and are **not** containerized. The 6 databases (`
 
 ## Runtime AI credentials
 
-The Admin app can rotate the Gemini API key and switch the primary/fallback
+The Admin app can rotate the OpenRouter API key and switch the primary/fallback
 models without rebuilding containers. API keys saved from Admin are encrypted
 before being persisted. Configure a stable 32-byte encryption key once in the
 deployment environment as `AiSecretProtection__MasterKey`.
@@ -80,7 +80,7 @@ $bytes = New-Object byte[] 32
 ```
 
 Changing this master key makes previously stored API keys unreadable. Keep a
-secure backup and rotate the Gemini key through Admin after any intentional
+secure backup and rotate the OpenRouter key through Admin after any intentional
 master-key rotation.
 
 EF Core migrations continue to be run locally from the host machine:

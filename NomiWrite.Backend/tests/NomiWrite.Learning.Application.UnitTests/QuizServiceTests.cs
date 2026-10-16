@@ -515,7 +515,7 @@ public class QuizServiceTests
 
         var ai = Substitute.For<IAiQuizProvider>();
         ai.GenerateQuestionsAsync(Arg.Any<QuizGenerationRequest>(), Arg.Any<int>())
-            .Throws(new HttpRequestException("Gemini down", null, HttpStatusCode.ServiceUnavailable));
+            .Throws(new HttpRequestException("OpenRouter down", null, HttpStatusCode.ServiceUnavailable));
 
         var fallback = Substitute.For<IFallbackQuizProvider>();
         fallback.GenerateQuestions(Arg.Any<QuizGenerationRequest>(), Arg.Any<int>())

@@ -3,7 +3,7 @@ namespace NomiWrite.AICoordinator.Application.DTOs;
 public class AiGradingConfigDto
 {
     public Guid Id { get; set; }
-    public string ProviderName { get; set; } = "Gemini";
+    public string ProviderName { get; set; } = "OpenRouter";
     public string ModelName { get; set; } = string.Empty;
     public string? FallbackModelName { get; set; }
     public bool HasStoredApiKey { get; set; }
@@ -18,7 +18,7 @@ public class AiGradingConfigDto
 
 public class UpdateAiGradingConfigRequestDto
 {
-    public string ProviderName { get; set; } = "Gemini";
+    public string ProviderName { get; set; } = "OpenRouter";
     public string ModelName { get; set; } = string.Empty;
     public string? FallbackModelName { get; set; }
     public string? ApiKey { get; set; }

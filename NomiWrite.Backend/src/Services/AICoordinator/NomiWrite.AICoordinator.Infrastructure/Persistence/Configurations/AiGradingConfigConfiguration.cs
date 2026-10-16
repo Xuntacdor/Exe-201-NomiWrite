@@ -21,7 +21,7 @@ public class AiGradingConfigConfiguration : IEntityTypeConfiguration<AiGradingCo
             .HasColumnName("provider_name")
             .IsRequired()
             .HasMaxLength(50)
-            .HasDefaultValue("Gemini");
+            .HasDefaultValue("OpenRouter");
 
         builder.Property(c => c.ModelName)
             .HasColumnName("model_name")
@@ -57,14 +57,15 @@ public class AiGradingConfigConfiguration : IEntityTypeConfiguration<AiGradingCo
         builder.Property(c => c.UpdatedAt)
             .HasColumnName("updated_at");
 
-        // Seed one row matching the currently supported Gemini default.
+        // Seed one row using free OpenRouter models. The provider only ever calls
+        // ":free" models, so a paid subscription can never be triggered.
         builder.HasData(
             new AiGradingConfig
             {
                 Id = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaa01"),
-                ProviderName = "Gemini",
-                ModelName = "gemini-3.6-flash",
-                FallbackModelName = "gemini-2.5-flash",
+                ProviderName = "OpenRouter",
+                ModelName = "nvidia/nemotron-3.5-lightning:free",
+                FallbackModelName = "openrouter/free",
                 Temperature = null,
                 SystemPromptTemplate = null,
                 MaxOutputTokens = null,

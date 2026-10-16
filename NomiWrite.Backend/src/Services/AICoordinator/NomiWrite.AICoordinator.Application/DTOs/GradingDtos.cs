@@ -81,38 +81,38 @@ public class FeedbackFlagConfirmationDto
     public DateTime CreatedAt { get; set; }
 }
 
-public class GeminiGradingResponseSchema
+public class AiGradingResponseSchema
 {
     public decimal OverallBand { get; set; }
-    public List<GeminiCriterionScoreSchema> Criteria { get; set; } = new();
+    public List<AiCriterionScoreSchema> Criteria { get; set; } = new();
     public string OverallFeedback { get; set; } = string.Empty;
-    public List<GeminiGrammarErrorSchema> GrammarErrors { get; set; } = new();
-    public List<GeminiVocabularySuggestionSchema> VocabularySuggestions { get; set; } = new();
-    public List<GeminiRestructuringSuggestionSchema> RestructuringSuggestions { get; set; } = new();
+    public List<AiGrammarErrorSchema> GrammarErrors { get; set; } = new();
+    public List<AiVocabularySuggestionSchema> VocabularySuggestions { get; set; } = new();
+    public List<AiRestructuringSuggestionSchema> RestructuringSuggestions { get; set; } = new();
 }
 
-public class GeminiCriterionScoreSchema
+public class AiCriterionScoreSchema
 {
     public string Name { get; set; } = string.Empty;
     public decimal Score { get; set; }
     public string Comment { get; set; } = string.Empty;
 }
 
-public class GeminiGrammarErrorSchema
+public class AiGrammarErrorSchema
 {
     public string OriginalText { get; set; } = string.Empty;
     public string Suggestion { get; set; } = string.Empty;
     public string Explanation { get; set; } = string.Empty;
 }
 
-public class GeminiVocabularySuggestionSchema
+public class AiVocabularySuggestionSchema
 {
     public string OriginalWord { get; set; } = string.Empty;
     public List<string> SuggestedAlternatives { get; set; } = new();
     public string Context { get; set; } = string.Empty;
 }
 
-public class GeminiRestructuringSuggestionSchema
+public class AiRestructuringSuggestionSchema
 {
     public string OriginalSentence { get; set; } = string.Empty;
     public string SuggestedRewrite { get; set; } = string.Empty;

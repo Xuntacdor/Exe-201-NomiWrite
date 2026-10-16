@@ -973,7 +973,7 @@ class _AdminAiConfigState extends State<_AdminAiConfig> {
     setState(() => saving = true);
     try {
       final value = <String, dynamic>{
-        'providerName': 'Gemini',
+        'providerName': 'OpenRouter',
         'modelName': model.text.trim(),
         'fallbackModelName': fallback.text.trim().isEmpty
             ? null
@@ -1028,7 +1028,7 @@ class _AdminAiConfigState extends State<_AdminAiConfig> {
           const _PageHeading(
             title: 'Cấu hình AI',
             subtitle:
-                'Thay đổi model Gemini mà không cần triển khai lại backend.',
+                'Thay đổi model OpenRouter miễn phí mà không cần triển khai lại backend.',
           ),
           const SizedBox(height: 16),
           Card(
@@ -1038,7 +1038,7 @@ class _AdminAiConfigState extends State<_AdminAiConfig> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Text(
-                    'Provider: ${asText(config?['providerName'], 'Gemini')}',
+                    'Provider: ${asText(config?['providerName'], 'OpenRouter')}',
                     style: const TextStyle(fontWeight: FontWeight.w800),
                   ),
                   const SizedBox(height: 6),

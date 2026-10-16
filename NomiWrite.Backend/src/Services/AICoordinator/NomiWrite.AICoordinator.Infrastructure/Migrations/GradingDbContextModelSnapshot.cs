@@ -64,7 +64,7 @@ namespace NomiWrite.AICoordinator.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
-                        .HasDefaultValue("Gemini")
+                        .HasDefaultValue("OpenRouter")
                         .HasColumnName("provider_name");
 
                     b.Property<string>("SystemPromptTemplate")
@@ -88,10 +88,10 @@ namespace NomiWrite.AICoordinator.Infrastructure.Migrations
                         {
                             Id = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaa01"),
                             CreatedAt = new DateTime(2026, 9, 7, 0, 0, 0, 0, DateTimeKind.Utc),
-                            FallbackModelName = "gemini-2.5-flash",
+                            FallbackModelName = "openrouter/free",
                             IsActive = true,
-                            ModelName = "gemini-3.6-flash",
-                            ProviderName = "Gemini"
+                            ModelName = "nvidia/nemotron-3.5-lightning:free",
+                            ProviderName = "OpenRouter"
                         });
                 });
 

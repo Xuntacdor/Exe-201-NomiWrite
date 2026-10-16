@@ -11,12 +11,12 @@ using NomiWrite.Learning.Infrastructure.Options;
 
 namespace NomiWrite.Learning.Infrastructure.Services;
 
-public class GeminiStudyGuideProvider : IStudyGuideAiProvider
+public class OpenRouterStudyGuideProvider : IStudyGuideAiProvider
 {
     private const string AllowedFocusValues = "grammar, vocabulary, coherence, task_response, lexical";
     private const string AllowedActionTypes = "write_essay, review_history, practice_vocabulary, practice_quiz, none";
 
-    private const int MaxAttempts = 5;
+    private const int MaxRateLimitRetriesPerModel = 2;
     private const int BaseBackoffSeconds = 2;
     private const int MaxBackoffSeconds = 16;
 
@@ -100,76 +100,98 @@ public class GeminiStudyGuideProvider : IStudyGuideAiProvider
         """;
 
     private readonly HttpClient _httpClient;
-    private readonly IOptions<GeminiSettings> _geminiOptions;
-    private readonly ILogger<GeminiStudyGuideProvider> _logger;
+    private readonly IOptions<OpenRouterSettings> _openRouterOptions;
+    private readonly ILogger<OpenRouterStudyGuideProvider> _logger;
 
-    public GeminiStudyGuideProvider(
+    public OpenRouterStudyGuideProvider(
         IHttpClientFactory httpClientFactory,
-        IOptions<GeminiSettings> geminiOptions,
-        ILogger<GeminiStudyGuideProvider> logger)
+        IOptions<OpenRouterSettings> openRouterOptions,
+        ILogger<OpenRouterStudyGuideProvider> logger)
     {
-        _httpClient = httpClientFactory.CreateClient("Gemini");
-        _geminiOptions = geminiOptions;
+        _httpClient = httpClientFactory.CreateClient("OpenRouter");
+        _openRouterOptions = openRouterOptions;
         _logger = logger;
 
-        if (!string.IsNullOrWhiteSpace(_geminiOptions.Value.ApiKey) &&
-            !_httpClient.DefaultRequestHeaders.Contains("x-goog-api-key"))
+        if (!string.IsNullOrWhiteSpace(_openRouterOptions.Value.ApiKey) &&
+            !_httpClient.DefaultRequestHeaders.Contains("Authorization"))
         {
-            _httpClient.DefaultRequestHeaders.Add("x-goog-api-key", _geminiOptions.Value.ApiKey);
+            _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {_openRouterOptions.Value.ApiKey}");
+            _httpClient.DefaultRequestHeaders.Add("X-Title", "NomiWrite");
         }
     }
 
     public async Task<StudyGuideResult> GenerateGuideAsync(StudyGuideGenerationRequest request)
     {
         var prompt = BuildPrompt(request);
-
-        var body = new
-        {
-            contents = new[]
-            {
-                new { parts = new[] { new { text = prompt } } }
-            },
-            generationConfig = new
-            {
-                temperature = 0.7,
-                maxOutputTokens = 4096
-            }
-        };
-
         var endpoint = BuildEndpoint();
+        var models = ResolveModels();
 
-        for (var attempt = 1; attempt <= MaxAttempts; attempt++)
+        var failures = new List<string>();
+
+        foreach (var model in models)
         {
-            using var response = await _httpClient.PostAsJsonAsync(endpoint, body);
-
-            if (response.IsSuccessStatusCode)
-                return await ParseGuideAsync(response);
-
-            var errorPayload = await response.Content.ReadAsStringAsync();
-            if (IsTransientGeminiError(response.StatusCode) && attempt < MaxAttempts)
+            var body = new
             {
-                _logger.LogWarning(
-                    "Gemini study guide generation returned transient {StatusCode} on attempt {Attempt}/{MaxAttempts}; retrying.",
-                    response.StatusCode,
-                    attempt,
-                    MaxAttempts);
-                await DelayBackoffAsync(GetBackoff(attempt), CancellationToken.None);
-                continue;
-            }
+                model,
+                messages = new[]
+                {
+                    new { role = "user", content = prompt }
+                },
+                temperature = 0.7,
+                max_tokens = 4096
+            };
 
-            _logger.LogWarning(
-                "Gemini study guide generation returned {StatusCode}: {Error}",
-                response.StatusCode,
-                errorPayload);
-            throw new HttpRequestException($"Gemini returned {(int)response.StatusCode}.");
+            for (var attempt = 1; attempt <= MaxRateLimitRetriesPerModel; attempt++)
+            {
+                using var response = await _httpClient.PostAsJsonAsync(endpoint, body);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    try
+                    {
+                        return await ParseGuideAsync(response);
+                    }
+                    catch (Exception exception) when (exception is InvalidOperationException or JsonException)
+                    {
+                        _logger.LogWarning(
+                            exception,
+                            "OpenRouter model {Model} returned an unusable study guide response; switching to the next free model.",
+                            model);
+                        failures.Add($"{model}: {exception.Message}");
+                        break;
+                    }
+                }
+
+                var errorPayload = await response.Content.ReadAsStringAsync();
+
+                if (IsTransientStatus(response.StatusCode) && attempt < MaxRateLimitRetriesPerModel)
+                {
+                    _logger.LogWarning(
+                        "OpenRouter model {Model} returned transient {StatusCode} (attempt {Attempt}/{MaxAttempts}); retrying.",
+                        model,
+                        (int)response.StatusCode,
+                        attempt,
+                        MaxRateLimitRetriesPerModel);
+                    await DelayBackoffAsync(GetBackoff(attempt), CancellationToken.None);
+                    continue;
+                }
+
+                _logger.LogWarning(
+                    "OpenRouter model {Model} unavailable ({StatusCode}): {Error}. Switching to the next free model.",
+                    model,
+                    (int)response.StatusCode,
+                    errorPayload);
+                failures.Add($"{model}: HTTP {(int)response.StatusCode}");
+                break;
+            }
         }
 
-        throw new InvalidOperationException("Gemini study guide generation failed after all retry attempts.");
+        _logger.LogError("All OpenRouter free models failed for study guide generation. Attempts: {Failures}", string.Join(" | ", failures));
+        throw new HttpRequestException("Study guide generation is temporarily unavailable (no free AI model available).");
     }
 
-    // Transient Gemini overloads (429 / 503) typically clear within seconds, so
-    // back off exponentially (2s, 4s, 8s, 16s) with jitter instead of giving up
-    // after two quick retries.
+    // Rate limits on free models usually clear within seconds, so back off
+    // exponentially (2s, 4s, ...) with jitter before retrying the same model.
     private static TimeSpan GetBackoff(int attempt)
     {
         var exponentialSeconds = Math.Min(
@@ -184,19 +206,46 @@ public class GeminiStudyGuideProvider : IStudyGuideAiProvider
     protected virtual Task DelayBackoffAsync(TimeSpan delay, CancellationToken cancellationToken) =>
         Task.Delay(delay, cancellationToken);
 
+    // 429 and 5xx are worth a short retry on the same model; everything else
+    // (402 payment required, 404 unknown model, 401 auth) switches immediately.
+    private static bool IsTransientStatus(HttpStatusCode statusCode) =>
+        statusCode == HttpStatusCode.TooManyRequests || (int)statusCode >= 500;
+
     private string BuildEndpoint()
     {
-        var options = _geminiOptions.Value;
-        var endpoint = string.IsNullOrWhiteSpace(options.Endpoint)
-            ? "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+        var options = _openRouterOptions.Value;
+        return string.IsNullOrWhiteSpace(options.Endpoint)
+            ? "https://openrouter.ai/api/v1/chat/completions"
             : options.Endpoint;
-        var model = string.IsNullOrWhiteSpace(options.Model) ? "gemini-3.6-flash" : options.Model;
-
-        return endpoint.Replace("{model}", model, StringComparison.OrdinalIgnoreCase);
     }
 
-    private static bool IsTransientGeminiError(HttpStatusCode statusCode) =>
-        statusCode is HttpStatusCode.ServiceUnavailable or HttpStatusCode.TooManyRequests;
+    private List<string> ResolveModels()
+    {
+        var configured = (_openRouterOptions.Value.Models ?? string.Empty)
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Where(IsFreeModel)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        if (configured.Count == 0)
+            configured.Add("openrouter/free");
+
+        return configured;
+    }
+
+    /// <summary>
+    /// Only models OpenRouter serves for free (a ":free" suffix, or the
+    /// "openrouter/free" router) are ever called.
+    /// </summary>
+    private static bool IsFreeModel(string? model)
+    {
+        if (string.IsNullOrWhiteSpace(model))
+            return false;
+
+        var trimmed = model.Trim();
+        return trimmed.EndsWith(":free", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(trimmed, "openrouter/free", StringComparison.OrdinalIgnoreCase);
+    }
 
     private static async Task<StudyGuideResult> ParseGuideAsync(HttpResponseMessage response)
     {
@@ -204,12 +253,12 @@ public class GeminiStudyGuideProvider : IStudyGuideAiProvider
         var text = ExtractText(content);
 
         if (string.IsNullOrWhiteSpace(text))
-            throw new InvalidOperationException("Gemini returned an empty study guide response.");
+            throw new InvalidOperationException("OpenRouter returned an empty study guide response.");
 
         var guide = DeserializePayload(text);
 
         if (guide is null)
-            throw new InvalidOperationException("Gemini returned an unparseable study guide response.");
+            throw new InvalidOperationException("OpenRouter returned an unparseable study guide response.");
 
         return new StudyGuideResult
         {
@@ -303,21 +352,23 @@ public class GeminiStudyGuideProvider : IStudyGuideAiProvider
         using var document = JsonDocument.Parse(content);
         var root = document.RootElement;
 
-        if (!root.TryGetProperty("candidates", out var candidates))
-            throw new InvalidOperationException("Gemini response missing 'candidates'.");
+        if (root.TryGetProperty("error", out var error) &&
+            error.TryGetProperty("message", out var errorMessage))
+        {
+            throw new InvalidOperationException($"OpenRouter error: {errorMessage.GetString()}");
+        }
+
+        if (!root.TryGetProperty("choices", out var choices))
+            throw new InvalidOperationException("OpenRouter response missing 'choices'.");
 
         var textBuilder = new StringBuilder();
 
-        foreach (var candidate in candidates.EnumerateArray())
+        foreach (var choice in choices.EnumerateArray())
         {
-            if (candidate.TryGetProperty("content", out var contentProperty) &&
-                contentProperty.TryGetProperty("parts", out var parts))
+            if (choice.TryGetProperty("message", out var message) &&
+                message.TryGetProperty("content", out var contentProperty))
             {
-                foreach (var part in parts.EnumerateArray())
-                {
-                    if (part.TryGetProperty("text", out var text))
-                        textBuilder.AppendLine(text.GetString());
-                }
+                textBuilder.AppendLine(contentProperty.GetString());
             }
         }
 

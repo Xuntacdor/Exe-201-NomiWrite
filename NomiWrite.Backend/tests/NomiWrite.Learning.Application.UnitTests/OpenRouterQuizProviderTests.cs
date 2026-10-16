@@ -12,35 +12,38 @@ using NomiWrite.Learning.Infrastructure.Services;
 
 namespace NomiWrite.Learning.Application.UnitTests;
 
-public class GeminiQuizProviderTests
+public class OpenRouterQuizProviderTests
 {
-    private static GeminiQuizProvider Build(string body, HttpStatusCode status = HttpStatusCode.OK)
+    private const string PrimaryModel = "nvidia/nemotron-3.5-lightning:free";
+    private const string SecondaryModel = "liquid/lfm-2.5-2.6b:free";
+
+    private static OpenRouterSettings DefaultSettings(string models = PrimaryModel + "," + SecondaryModel) => new()
+    {
+        ApiKey = "test-key",
+        Models = models,
+        Endpoint = "https://openrouter.ai/api/v1/chat/completions"
+    };
+
+    private static OpenRouterQuizProvider Build(string body, HttpStatusCode status = HttpStatusCode.OK)
     {
         var handler = new StubHttpMessageHandler(body, status);
-        var client = new HttpClient(handler);
-        var factory = new StubHttpClientFactory(client);
-        var options = Options.Create(new GeminiSettings
-        {
-            ApiKey = "test-key",
-            Model = "gemini-3.6-flash",
-            Endpoint = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
-        });
-        return new GeminiQuizProvider(factory, options, NullLogger<GeminiQuizProvider>.Instance);
+        var factory = new StubHttpClientFactory(new HttpClient(handler));
+        return new OpenRouterQuizProvider(factory, Options.Create(DefaultSettings()), NullLogger<OpenRouterQuizProvider>.Instance);
     }
 
-    private static string GeminiBody(string text)
+    private static OpenRouterQuizProvider BuildNoBackoff(HttpMessageHandler handler, OpenRouterSettings? settings = null)
+    {
+        var factory = new StubHttpClientFactory(new HttpClient(handler));
+        return new NoBackoffQuizProvider(factory, Options.Create(settings ?? DefaultSettings()), NullLogger<OpenRouterQuizProvider>.Instance);
+    }
+
+    private static string OpenRouterBody(string text)
     {
         return JsonSerializer.Serialize(new
         {
-            candidates = new[]
+            choices = new[]
             {
-                new
-                {
-                    content = new
-                    {
-                        parts = new object[] { new { text } }
-                    }
-                }
+                new { message = new { content = text } }
             }
         });
     }
@@ -63,69 +66,65 @@ public class GeminiQuizProviderTests
         }
     });
 
-    #region U-L10 — Gemini quiz provider JSON hardening
+    #region Quiz provider JSON hardening
 
     [Fact]
     public async Task GenerateQuestionsAsync_MarkdownFencedJson_StripsFences()
     {
         var fenced = $"```json\n{QuestionsJson()}\n```";
-        var sut = Build(GeminiBody(fenced));
+        var sut = Build(OpenRouterBody(fenced));
 
         var result = await sut.GenerateQuestionsAsync(new QuizGenerationRequest(), 5);
 
         result.Should().ContainSingle(q => q.Id == "q1");
-
-        // The QuizService would then run NormalizeQuestions; here we also verify the
-        // provider returns the answer key so the service can persist it safely.
         result.Single().CorrectAnswer.Should().Be("b");
     }
 
     [Fact]
     public async Task GenerateQuestionsAsync_EmptyQuestionsArray_Throws()
     {
-        var sut = Build(GeminiBody("{\"questions\":[]}"));
+        var sut = BuildNoBackoff(new StubHttpMessageHandler(OpenRouterBody("{\"questions\":[]}"), HttpStatusCode.OK));
 
         var act = () => sut.GenerateQuestionsAsync(new QuizGenerationRequest(), 5);
 
-        await act.Should().ThrowAsync<InvalidOperationException>();
+        await act.Should().ThrowAsync<HttpRequestException>();
     }
 
     [Fact]
-    public async Task GenerateQuestionsAsync_MissingCandidates_Throws()
+    public async Task GenerateQuestionsAsync_MissingChoices_Throws()
     {
-        var sut = Build("{}");
+        var sut = BuildNoBackoff(new StubHttpMessageHandler("{}", HttpStatusCode.OK));
 
         var act = () => sut.GenerateQuestionsAsync(new QuizGenerationRequest(), 5);
 
-        await act.Should().ThrowAsync<InvalidOperationException>();
+        await act.Should().ThrowAsync<HttpRequestException>();
     }
 
     [Fact]
     public async Task GenerateQuestionsAsync_EmptyTextPart_Throws()
     {
-        var sut = Build(GeminiBody(string.Empty));
+        var sut = BuildNoBackoff(new StubHttpMessageHandler(OpenRouterBody(string.Empty), HttpStatusCode.OK));
 
         var act = () => sut.GenerateQuestionsAsync(new QuizGenerationRequest(), 5);
 
-        await act.Should().ThrowAsync<InvalidOperationException>()
-            .WithMessage("*empty quiz response*");
+        await act.Should().ThrowAsync<HttpRequestException>();
     }
 
     [Fact]
     public async Task GenerateQuestionsAsync_NonJsonProse_Throws()
     {
-        var sut = Build(GeminiBody("Sorry, here is some prose without JSON."));
+        var sut = BuildNoBackoff(new StubHttpMessageHandler(OpenRouterBody("Sorry, here is some prose without JSON."), HttpStatusCode.OK));
 
         var act = () => sut.GenerateQuestionsAsync(new QuizGenerationRequest(), 5);
 
-        await act.Should().ThrowAsync<JsonException>();
+        await act.Should().ThrowAsync<HttpRequestException>();
     }
 
     [Fact]
     public async Task GenerateQuestionsAsync_NonSuccessStatus_Throws()
     {
         var sut = BuildNoBackoff(new SequenceHttpMessageHandler(
-            (HttpStatusCode.TooManyRequests, "{\"error\":{\"code\":429}}")));
+            (HttpStatusCode.TooManyRequests, "{\"error\":{\"message\":\"rate limited\"}}")));
 
         var act = () => sut.GenerateQuestionsAsync(new QuizGenerationRequest(), 5);
 
@@ -136,40 +135,52 @@ public class GeminiQuizProviderTests
     public async Task GenerateQuestionsAsync_TransientThenSuccess_RetriesAndSucceeds()
     {
         var handler = new SequenceHttpMessageHandler(
-            (HttpStatusCode.ServiceUnavailable, "{\"error\":{\"code\":503}}"),
-            (HttpStatusCode.TooManyRequests, "{\"error\":{\"code\":429}}"),
-            (HttpStatusCode.OK, GeminiBody(QuestionsJson())));
+            (HttpStatusCode.ServiceUnavailable, "{\"error\":{\"message\":\"overloaded\"}}"),
+            (HttpStatusCode.OK, OpenRouterBody(QuestionsJson())));
+        var sut = BuildNoBackoff(handler, DefaultSettings(PrimaryModel));
+
+        var result = await sut.GenerateQuestionsAsync(new QuizGenerationRequest(), 5);
+
+        result.Should().ContainSingle(q => q.Id == "q1");
+        handler.CallCount.Should().Be(2);
+    }
+
+    [Fact]
+    public async Task GenerateQuestionsAsync_UnavailableModel_SwitchesToNextFreeModel()
+    {
+        var requestedModels = new List<string>();
+        var handler = new CallbackHttpMessageHandler(request =>
+        {
+            var model = ExtractModelFromBody(request)!;
+            requestedModels.Add(model);
+            return model == PrimaryModel
+                ? new HttpResponseMessage(HttpStatusCode.PaymentRequired) { Content = new StringContent("paid only") }
+                : new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(OpenRouterBody(QuestionsJson())) };
+        });
         var sut = BuildNoBackoff(handler);
 
         var result = await sut.GenerateQuestionsAsync(new QuizGenerationRequest(), 5);
 
         result.Should().ContainSingle(q => q.Id == "q1");
-        handler.CallCount.Should().Be(3);
+        requestedModels.Should().Equal(PrimaryModel, SecondaryModel);
     }
 
     #endregion
 
-    // Skips the real exponential backoff wait so retry tests stay fast.
-    private static GeminiQuizProvider BuildNoBackoff(HttpMessageHandler handler)
+    private static string? ExtractModelFromBody(HttpRequestMessage request)
     {
-        var client = new HttpClient(handler);
-        var factory = new StubHttpClientFactory(client);
-        var options = Options.Create(new GeminiSettings
-        {
-            ApiKey = "test-key",
-            Model = "gemini-3.6-flash",
-            Endpoint = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
-        });
-        return new NoBackoffQuizProvider(factory, options, NullLogger<GeminiQuizProvider>.Instance);
+        var json = request.Content!.ReadAsStringAsync().GetAwaiter().GetResult();
+        using var document = JsonDocument.Parse(json);
+        return document.RootElement.TryGetProperty("model", out var model) ? model.GetString() : null;
     }
 
-    private sealed class NoBackoffQuizProvider : GeminiQuizProvider
+    private sealed class NoBackoffQuizProvider : OpenRouterQuizProvider
     {
         public NoBackoffQuizProvider(
             IHttpClientFactory httpClientFactory,
-            IOptions<GeminiSettings> geminiOptions,
-            ILogger<GeminiQuizProvider> logger)
-            : base(httpClientFactory, geminiOptions, logger)
+            IOptions<OpenRouterSettings> openRouterOptions,
+            ILogger<OpenRouterQuizProvider> logger)
+            : base(httpClientFactory, openRouterOptions, logger)
         {
         }
 
@@ -222,6 +233,12 @@ public class GeminiQuizProviderTests
                 Content = new StringContent(body, Encoding.UTF8, "application/json")
             });
         }
+    }
+
+    private sealed class CallbackHttpMessageHandler(Func<HttpRequestMessage, HttpResponseMessage> callback) : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
+            Task.FromResult(callback(request));
     }
 
     private sealed class StubHttpClientFactory : IHttpClientFactory

@@ -20,8 +20,8 @@ public class AdminAiConfigServiceTests
 
         var result = await sut.UpdateActiveConfigAsync(new UpdateAiGradingConfigRequestDto
         {
-            ProviderName = "Gemini",
-            ModelName = "gemini-2.5-flash",
+            ProviderName = "OpenRouter",
+            ModelName = "nvidia/nemotron-3.5-lightning:free",
             ApiKey = "plain-api-key-that-must-not-be-stored"
         });
 
@@ -39,8 +39,8 @@ public class AdminAiConfigServiceTests
         await using var context = TestGradingDbContext.Create();
         context.AiGradingConfigs.Add(new AiGradingConfig
         {
-            ProviderName = "Gemini",
-            ModelName = "old-model",
+            ProviderName = "OpenRouter",
+            ModelName = "liquid/lfm-2.5-2.6b:free",
             ApiKeyCiphertext = "protected:existing-secret",
             IsActive = true
         });
@@ -49,8 +49,8 @@ public class AdminAiConfigServiceTests
 
         await sut.UpdateActiveConfigAsync(new UpdateAiGradingConfigRequestDto
         {
-            ProviderName = "Gemini",
-            ModelName = "new-model"
+            ProviderName = "OpenRouter",
+            ModelName = "google/gemma-4-31b-it:free"
         });
 
         context.AiGradingConfigs.Single(c => c.IsActive).ApiKeyCiphertext.Should().Be("protected:existing-secret");
@@ -62,8 +62,8 @@ public class AdminAiConfigServiceTests
         await using var context = TestGradingDbContext.Create();
         context.AiGradingConfigs.Add(new AiGradingConfig
         {
-            ProviderName = "Gemini",
-            ModelName = "old-model",
+            ProviderName = "OpenRouter",
+            ModelName = "liquid/lfm-2.5-2.6b:free",
             ApiKeyCiphertext = "protected:existing-secret",
             IsActive = true
         });
@@ -72,8 +72,8 @@ public class AdminAiConfigServiceTests
 
         var result = await sut.UpdateActiveConfigAsync(new UpdateAiGradingConfigRequestDto
         {
-            ProviderName = "Gemini",
-            ModelName = "new-model",
+            ProviderName = "OpenRouter",
+            ModelName = "google/gemma-4-31b-it:free",
             ClearApiKey = true
         });
 
