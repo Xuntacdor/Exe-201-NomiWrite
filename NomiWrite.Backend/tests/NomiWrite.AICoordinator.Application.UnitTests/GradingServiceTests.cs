@@ -128,7 +128,7 @@ public class GradingServiceTests
         var db = TestGradingDbContext.Create();
         var provider = Substitute.For<IAiGradingProvider>();
         provider.GradeEssayAsync(Arg.Any<string>())
-            .Throws(new InvalidOperationException("OpenRouter API error: 429"));
+            .Throws(new InvalidOperationException("Groq API error: 429"));
         var publish = Substitute.For<IPublishEndpoint>();
 
         var sut = Build(db, provider: provider, publish: publish);

@@ -20,8 +20,8 @@ public class AdminAiConfigServiceTests
 
         var result = await sut.UpdateActiveConfigAsync(new UpdateAiGradingConfigRequestDto
         {
-            ProviderName = "OpenRouter",
-            ModelName = "nvidia/nemotron-3.5-lightning:free",
+            ProviderName = "Groq",
+            ModelName = "openai/gpt-oss-120b",
             ApiKey = "plain-api-key-that-must-not-be-stored"
         });
 
@@ -39,8 +39,8 @@ public class AdminAiConfigServiceTests
         await using var context = TestGradingDbContext.Create();
         context.AiGradingConfigs.Add(new AiGradingConfig
         {
-            ProviderName = "OpenRouter",
-            ModelName = "liquid/lfm-2.5-2.6b:free",
+            ProviderName = "Groq",
+            ModelName = "qwen/qwen3.8-27b",
             ApiKeyCiphertext = "protected:existing-secret",
             IsActive = true
         });
@@ -49,8 +49,8 @@ public class AdminAiConfigServiceTests
 
         await sut.UpdateActiveConfigAsync(new UpdateAiGradingConfigRequestDto
         {
-            ProviderName = "OpenRouter",
-            ModelName = "google/gemma-4-31b-it:free"
+            ProviderName = "Groq",
+            ModelName = "openai/gpt-oss-120b"
         });
 
         context.AiGradingConfigs.Single(c => c.IsActive).ApiKeyCiphertext.Should().Be("protected:existing-secret");
@@ -62,8 +62,8 @@ public class AdminAiConfigServiceTests
         await using var context = TestGradingDbContext.Create();
         context.AiGradingConfigs.Add(new AiGradingConfig
         {
-            ProviderName = "OpenRouter",
-            ModelName = "liquid/lfm-2.5-2.6b:free",
+            ProviderName = "Groq",
+            ModelName = "qwen/qwen3.8-27b",
             ApiKeyCiphertext = "protected:existing-secret",
             IsActive = true
         });
@@ -72,8 +72,8 @@ public class AdminAiConfigServiceTests
 
         var result = await sut.UpdateActiveConfigAsync(new UpdateAiGradingConfigRequestDto
         {
-            ProviderName = "OpenRouter",
-            ModelName = "google/gemma-4-31b-it:free",
+            ProviderName = "Groq",
+            ModelName = "openai/gpt-oss-120b",
             ClearApiKey = true
         });
 

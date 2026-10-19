@@ -15,12 +15,12 @@ using NomiWrite.AICoordinator.Infrastructure.Services;
 
 namespace NomiWrite.AICoordinator.Application.UnitTests;
 
-public class OpenRouterGradingProviderTests
+public class GroqGradingProviderTests
 {
     private const string ApiKey = "test-key";
-    private const string Endpoint = "https://openrouter.ai/api/v1/chat/completions";
-    private const string PrimaryModel = "nvidia/nemotron-3.5-lightning:free";
-    private const string SecondaryModel = "liquid/lfm-2.5-2.6b:free";
+    private const string Endpoint = "https://api.groq.com/openai/v1/chat/completions";
+    private const string PrimaryModel = "openai/gpt-oss-120b";
+    private const string SecondaryModel = "qwen/qwen3.8-27b";
 
     private static readonly string ValidGradingJson = JsonSerializer.Serialize(new
     {
@@ -35,28 +35,28 @@ public class OpenRouterGradingProviderTests
         restructuringSuggestions = new object[] { }
     });
 
-    private static OpenRouterSettings DefaultSettings(string models = PrimaryModel + "," + SecondaryModel) => new()
+    private static GroqSettings DefaultSettings(string models = PrimaryModel + "," + SecondaryModel) => new()
     {
         ApiKey = ApiKey,
         Models = models,
-        FallbackModels = "openrouter/free",
+        FallbackModels = "qwen/qwen3.8-27b",
         Endpoint = Endpoint
     };
 
-    private static OpenRouterGradingProvider Build(string body)
+    private static GroqGradingProvider Build(string body)
     {
         var handler = new StubHttpMessageHandler(body);
-        return new OpenRouterGradingProvider(
+        return new GroqGradingProvider(
             new HttpClient(handler),
             Options.Create(DefaultSettings()),
             TestGradingDbContext.Create(),
             new TestSecretProtector(),
             new MemoryCache(new MemoryCacheOptions()),
-            NullLogger<OpenRouterGradingProvider>.Instance);
+            NullLogger<GroqGradingProvider>.Instance);
     }
 
     // Skips the real exponential backoff wait so retry-exhaustion tests stay fast.
-    private static OpenRouterGradingProvider BuildNoBackoff(HttpMessageHandler handler, OpenRouterSettings? settings = null)
+    private static GroqGradingProvider BuildNoBackoff(HttpMessageHandler handler, GroqSettings? settings = null)
     {
         return new NoBackoffGradingProvider(
             new HttpClient(handler),
@@ -64,10 +64,10 @@ public class OpenRouterGradingProviderTests
             TestGradingDbContext.Create(),
             new TestSecretProtector(),
             new MemoryCache(new MemoryCacheOptions()),
-            NullLogger<OpenRouterGradingProvider>.Instance);
+            NullLogger<GroqGradingProvider>.Instance);
     }
 
-    private static string OpenRouterBody(string text)
+    private static string GroqBody(string text)
     {
         return JsonSerializer.Serialize(new
         {
@@ -81,12 +81,12 @@ public class OpenRouterGradingProviderTests
         });
     }
 
-    #region OpenRouter response parsing robustness
+    #region Groq response parsing robustness
 
     [Fact]
     public async Task GradeEssayAsync_ValidJson_Parses()
     {
-        var sut = Build(OpenRouterBody(ValidGradingJson));
+        var sut = Build(GroqBody(ValidGradingJson));
 
         var result = await sut.GradeEssayAsync("essay");
 
@@ -98,7 +98,7 @@ public class OpenRouterGradingProviderTests
     public async Task GradeEssayAsync_MarkdownFencedJson_Parses()
     {
         var fenced = $"```json\n{ValidGradingJson}\n```";
-        var sut = Build(OpenRouterBody(fenced));
+        var sut = Build(GroqBody(fenced));
 
         var result = await sut.GradeEssayAsync("essay");
 
@@ -110,7 +110,7 @@ public class OpenRouterGradingProviderTests
     public async Task GradeEssayAsync_ProseAroundJson_Parses()
     {
         var prose = $"Here is your band: {ValidGradingJson}";
-        var sut = Build(OpenRouterBody(prose));
+        var sut = Build(GroqBody(prose));
 
         var result = await sut.GradeEssayAsync("essay");
 
@@ -144,7 +144,7 @@ public class OpenRouterGradingProviderTests
     }
 
     [Fact]
-    public async Task GradeEssayAsync_SendsBearerTokenAndFreeModel()
+    public async Task GradeEssayAsync_SendsBearerTokenAndModel()
     {
         string? authorization = null;
         string? requestedModel = null;
@@ -154,7 +154,7 @@ public class OpenRouterGradingProviderTests
             requestedModel = ExtractModelFromBody(request);
             return new HttpResponseMessage(HttpStatusCode.OK)
             {
-                Content = new StringContent(OpenRouterBody(ValidGradingJson))
+                Content = new StringContent(GroqBody(ValidGradingJson))
             };
         });
         var sut = BuildNoBackoff(handler);
@@ -170,7 +170,7 @@ public class OpenRouterGradingProviderTests
     #region Model switching
 
     [Fact]
-    public async Task GradeEssayAsync_PaidOrUnavailableModel_SwitchesToNextFreeModel()
+    public async Task GradeEssayAsync_UnavailableModel_SwitchesToNextModel()
     {
         var requestedModels = new List<string>();
         var handler = new CallbackHttpMessageHandler(request =>
@@ -178,8 +178,8 @@ public class OpenRouterGradingProviderTests
             var model = ExtractModelFromBody(request)!;
             requestedModels.Add(model);
             return model == PrimaryModel
-                ? new HttpResponseMessage(HttpStatusCode.PaymentRequired) { Content = new StringContent("paid only") }
-                : new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(OpenRouterBody(ValidGradingJson)) };
+                ? new HttpResponseMessage(HttpStatusCode.PaymentRequired) { Content = new StringContent("unavailable") }
+                : new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(GroqBody(ValidGradingJson)) };
         });
         var sut = BuildNoBackoff(handler);
 
@@ -194,7 +194,7 @@ public class OpenRouterGradingProviderTests
     {
         var handler = new SequenceHttpMessageHandler(
             (HttpStatusCode.TooManyRequests, "{\"error\":{\"message\":\"rate limited\"}}"),
-            (HttpStatusCode.OK, OpenRouterBody(ValidGradingJson)));
+            (HttpStatusCode.OK, GroqBody(ValidGradingJson)));
         var sut = BuildNoBackoff(handler, DefaultSettings(PrimaryModel));
 
         var result = await sut.GradeEssayAsync("essay");
@@ -218,42 +218,40 @@ public class OpenRouterGradingProviderTests
     }
 
     [Fact]
-    public async Task GradeEssayAsync_OnlyCallsFreeModels()
+    public async Task GradeEssayAsync_UsesConfiguredEnvironmentModelsInOrder()
     {
         var requestedModels = new List<string>();
         var handler = new CallbackHttpMessageHandler(request =>
         {
             requestedModels.Add(ExtractModelFromBody(request)!);
-            return new HttpResponseMessage(HttpStatusCode.OK)
+            return new HttpResponseMessage(HttpStatusCode.PaymentRequired)
             {
-                Content = new StringContent(OpenRouterBody(ValidGradingJson))
+                Content = new StringContent("unavailable")
             };
         });
 
-        // A paid model configured in the environment must be ignored entirely.
-        var sut = BuildNoBackoff(handler, new OpenRouterSettings
+        var sut = BuildNoBackoff(handler, new GroqSettings
         {
             ApiKey = ApiKey,
-            Models = "openai/gpt-4o,nvidia/nemotron-3.5-lightning:free",
-            FallbackModels = "openrouter/free",
+            Models = "openai/gpt-oss-120b,qwen/qwen3.8-27b",
+            FallbackModels = "",
             Endpoint = Endpoint
         });
 
-        await sut.GradeEssayAsync("essay");
+        var act = () => sut.GradeEssayAsync("essay");
+        await act.Should().ThrowAsync<HttpRequestException>();
 
-        requestedModels.Should().OnlyContain(model =>
-            model == "openrouter/free" || model.EndsWith(":free", StringComparison.OrdinalIgnoreCase));
-        requestedModels.Should().NotContain("openai/gpt-4o");
+        requestedModels.Should().Equal("openai/gpt-oss-120b", "qwen/qwen3.8-27b");
     }
 
     [Fact]
-    public async Task GradeEssayAsync_RuntimeConfig_FreeModelOverridesEnvironmentAndUsesStoredKey()
+    public async Task GradeEssayAsync_RuntimeConfig_ModelOverridesEnvironmentAndUsesStoredKey()
     {
         var context = TestGradingDbContext.Create();
         context.AiGradingConfigs.Add(new AiGradingConfig
         {
-            ProviderName = "OpenRouter",
-            ModelName = "google/gemma-4-31b-it:free",
+            ProviderName = "Groq",
+            ModelName = "openai/gpt-oss-120b",
             ApiKeyCiphertext = "protected:runtime-secret-key",
             IsActive = true
         });
@@ -267,36 +265,36 @@ public class OpenRouterGradingProviderTests
             requestedAuth = request.Headers.Authorization?.ToString();
             return new HttpResponseMessage(HttpStatusCode.OK)
             {
-                Content = new StringContent(OpenRouterBody(ValidGradingJson))
+                Content = new StringContent(GroqBody(ValidGradingJson))
             };
         });
-        var sut = new OpenRouterGradingProvider(
+        var sut = new GroqGradingProvider(
             new HttpClient(handler),
-            Options.Create(new OpenRouterSettings
+            Options.Create(new GroqSettings
             {
                 ApiKey = "environment-key",
-                Models = "nvidia/nemotron-3.5-lightning:free",
+                Models = "qwen/qwen3.8-27b",
                 Endpoint = Endpoint
             }),
             context,
             new TestSecretProtector(),
             new MemoryCache(new MemoryCacheOptions()),
-            NullLogger<OpenRouterGradingProvider>.Instance);
+            NullLogger<GroqGradingProvider>.Instance);
 
         await sut.GradeEssayAsync("essay");
 
-        requestedModel.Should().Be("google/gemma-4-31b-it:free");
+        requestedModel.Should().Be("openai/gpt-oss-120b");
         requestedAuth.Should().Be("Bearer runtime-secret-key");
     }
 
     [Fact]
-    public async Task GradeEssayAsync_RuntimeConfig_PaidModelIsIgnored()
+    public async Task GradeEssayAsync_RuntimeConfig_UsesRuntimeModelOverEnvironment()
     {
         var context = TestGradingDbContext.Create();
         context.AiGradingConfigs.Add(new AiGradingConfig
         {
-            ProviderName = "OpenRouter",
-            ModelName = "openai/gpt-4o",
+            ProviderName = "Groq",
+            ModelName = "openai/gpt-oss-120b",
             IsActive = true
         });
         await context.SaveChangesAsync();
@@ -307,20 +305,20 @@ public class OpenRouterGradingProviderTests
             requestedModel = ExtractModelFromBody(request);
             return new HttpResponseMessage(HttpStatusCode.OK)
             {
-                Content = new StringContent(OpenRouterBody(ValidGradingJson))
+                Content = new StringContent(GroqBody(ValidGradingJson))
             };
         });
-        var sut = new OpenRouterGradingProvider(
+        var sut = new GroqGradingProvider(
             new HttpClient(handler),
             Options.Create(DefaultSettings(PrimaryModel)),
             context,
             new TestSecretProtector(),
             new MemoryCache(new MemoryCacheOptions()),
-            NullLogger<OpenRouterGradingProvider>.Instance);
+            NullLogger<GroqGradingProvider>.Instance);
 
         await sut.GradeEssayAsync("essay");
 
-        requestedModel.Should().Be(PrimaryModel);
+        requestedModel.Should().Be("openai/gpt-oss-120b");
     }
 
     #endregion
@@ -334,15 +332,15 @@ public class OpenRouterGradingProviderTests
             : null;
     }
 
-    private sealed class NoBackoffGradingProvider : OpenRouterGradingProvider
+    private sealed class NoBackoffGradingProvider : GroqGradingProvider
     {
         public NoBackoffGradingProvider(
             HttpClient httpClient,
-            IOptions<OpenRouterSettings> settings,
+            IOptions<GroqSettings> settings,
             IGradingDbContext dbContext,
             IAiSecretProtector secretProtector,
             IMemoryCache cache,
-            ILogger<OpenRouterGradingProvider> logger)
+            ILogger<GroqGradingProvider> logger)
             : base(httpClient, settings, dbContext, secretProtector, cache, logger)
         {
         }

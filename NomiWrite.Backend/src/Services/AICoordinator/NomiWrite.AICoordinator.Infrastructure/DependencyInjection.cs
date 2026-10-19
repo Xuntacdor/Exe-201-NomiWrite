@@ -42,7 +42,7 @@ public static class DependencyInjection
 
         services.AddScoped<IGradingDbContext>(sp => sp.GetRequiredService<GradingDbContext>());
 
-        services.Configure<OpenRouterSettings>(configuration.GetSection(OpenRouterSettings.SectionName));
+        services.Configure<GroqSettings>(configuration.GetSection(GroqSettings.SectionName));
         services.Configure<AiSecretProtectionSettings>(configuration.GetSection(AiSecretProtectionSettings.SectionName));
         services.Configure<JwtSettings>(configuration.GetSection(JwtSettings.SectionName));
         services.AddSingleton<IAiSecretProtector, AesAiSecretProtector>();
@@ -60,7 +60,7 @@ public static class DependencyInjection
 
         services.AddMemoryCache();
 
-        services.AddHttpClient<IAiGradingProvider, OpenRouterGradingProvider>();
+        services.AddHttpClient<IAiGradingProvider, GroqGradingProvider>();
 
         services.AddScoped<IGradingService, GradingService>();
 

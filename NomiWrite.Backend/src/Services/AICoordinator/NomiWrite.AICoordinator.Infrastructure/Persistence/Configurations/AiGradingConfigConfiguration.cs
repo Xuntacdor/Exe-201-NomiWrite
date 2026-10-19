@@ -21,7 +21,7 @@ public class AiGradingConfigConfiguration : IEntityTypeConfiguration<AiGradingCo
             .HasColumnName("provider_name")
             .IsRequired()
             .HasMaxLength(50)
-            .HasDefaultValue("OpenRouter");
+            .HasDefaultValue("Groq");
 
         builder.Property(c => c.ModelName)
             .HasColumnName("model_name")
@@ -57,15 +57,15 @@ public class AiGradingConfigConfiguration : IEntityTypeConfiguration<AiGradingCo
         builder.Property(c => c.UpdatedAt)
             .HasColumnName("updated_at");
 
-        // Seed one row using free OpenRouter models. The provider only ever calls
-        // ":free" models, so a paid subscription can never be triggered.
+        // Seed one row using the default Groq models so a fresh database can
+        // grade essays without an admin having to configure anything first.
         builder.HasData(
             new AiGradingConfig
             {
                 Id = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaa01"),
-                ProviderName = "OpenRouter",
-                ModelName = "nvidia/nemotron-3.5-lightning:free",
-                FallbackModelName = "openrouter/free",
+                ProviderName = "Groq",
+                ModelName = "openai/gpt-oss-120b",
+                FallbackModelName = "qwen/qwen3.8-27b",
                 Temperature = null,
                 SystemPromptTemplate = null,
                 MaxOutputTokens = null,

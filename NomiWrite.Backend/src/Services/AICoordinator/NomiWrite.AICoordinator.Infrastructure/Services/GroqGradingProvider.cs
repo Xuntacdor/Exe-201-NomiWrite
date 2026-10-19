@@ -13,20 +13,20 @@ using NomiWrite.AICoordinator.Infrastructure.Options;
 
 namespace NomiWrite.AICoordinator.Infrastructure.Services;
 
-public class OpenRouterGradingProvider : IAiGradingProvider
+public class GroqGradingProvider : IAiGradingProvider
 {
     private readonly HttpClient _httpClient;
-    private readonly OpenRouterSettings _settings;
+    private readonly GroqSettings _settings;
     private readonly IGradingDbContext _dbContext;
     private readonly IAiSecretProtector _secretProtector;
     private readonly IMemoryCache _cache;
-    private readonly ILogger<OpenRouterGradingProvider> _logger;
+    private readonly ILogger<GroqGradingProvider> _logger;
 
     private const string ActiveConfigCacheKey = "ai_grading_active_config";
     private static readonly TimeSpan ActiveConfigCacheDuration = TimeSpan.FromSeconds(60);
 
-    // Per-model retry only for rate limiting; a different free model is tried
-    // when a model is unavailable, paid-only, or returns unusable output.
+    // Per-model retry only for rate limiting; a different model is tried
+    // when a model is unavailable or returns unusable output.
     private const int MaxRateLimitRetriesPerModel = 2;
     private const int BaseBackoffSeconds = 2;
     private const int MaxBackoffSeconds = 16;
@@ -66,13 +66,13 @@ public class OpenRouterGradingProvider : IAiGradingProvider
         }
         """;
 
-    public OpenRouterGradingProvider(
+    public GroqGradingProvider(
         HttpClient httpClient,
-        IOptions<OpenRouterSettings> settings,
+        IOptions<GroqSettings> settings,
         IGradingDbContext dbContext,
         IAiSecretProtector secretProtector,
         IMemoryCache cache,
-        ILogger<OpenRouterGradingProvider> logger)
+        ILogger<GroqGradingProvider> logger)
     {
         _httpClient = httpClient;
         _settings = settings.Value;
@@ -92,7 +92,7 @@ public class OpenRouterGradingProvider : IAiGradingProvider
             ? config!.SystemPromptTemplate!
             : DefaultGradingPrompt;
         var endpoint = string.IsNullOrWhiteSpace(_settings.Endpoint)
-            ? "https://openrouter.ai/api/v1/chat/completions"
+            ? "https://api.groq.com/openai/v1/chat/completions"
             : _settings.Endpoint;
         var temperature = config?.Temperature ?? 0.2m;
         var maxTokens = config?.MaxOutputTokens ?? 4096;
@@ -121,13 +121,13 @@ public class OpenRouterGradingProvider : IAiGradingProvider
                 {
                     try
                     {
-                        return await ParseOpenRouterResponseAsync(response);
+                        return await ParseGroqResponseAsync(response);
                     }
                     catch (Exception exception) when (exception is InvalidOperationException or JsonException)
                     {
                         _logger.LogWarning(
                             exception,
-                            "OpenRouter model {Model} returned an unusable grading response; switching to the next free model.",
+                            "Groq model {Model} returned an unusable grading response; switching to the next model.",
                             model);
                         failures.Add($"{model}: {exception.Message}");
                         break;
@@ -139,7 +139,7 @@ public class OpenRouterGradingProvider : IAiGradingProvider
                 if (IsTransientStatus(response.StatusCode) && attempt < MaxRateLimitRetriesPerModel)
                 {
                     _logger.LogWarning(
-                        "OpenRouter model {Model} returned transient {StatusCode} (attempt {Attempt}/{MaxAttempts}); retrying.",
+                        "Groq model {Model} returned transient {StatusCode} (attempt {Attempt}/{MaxAttempts}); retrying.",
                         model,
                         (int)response.StatusCode,
                         attempt,
@@ -149,7 +149,7 @@ public class OpenRouterGradingProvider : IAiGradingProvider
                 }
 
                 _logger.LogWarning(
-                    "OpenRouter model {Model} unavailable ({StatusCode}): {ErrorBody}. Switching to the next free model.",
+                    "Groq model {Model} unavailable ({StatusCode}): {ErrorBody}. Switching to the next model.",
                     model,
                     (int)response.StatusCode,
                     errorBody);
@@ -158,13 +158,13 @@ public class OpenRouterGradingProvider : IAiGradingProvider
             }
         }
 
-        _logger.LogError("All OpenRouter free models failed. Attempts: {Failures}", string.Join(" | ", failures));
+        _logger.LogError("All Groq models failed. Attempts: {Failures}", string.Join(" | ", failures));
         throw new HttpRequestException(
-            "AI grading is temporarily unavailable because no free AI model could complete the request. Please try again shortly.");
+            "AI grading is temporarily unavailable because no AI model could complete the request. Please try again shortly.");
     }
 
-    // Rate limits on free models usually clear within seconds, so back off
-    // exponentially (2s, 4s, ...) with jitter before retrying the same model.
+    // Rate limits usually clear within seconds, so back off exponentially
+    // (2s, 4s, ...) with jitter before retrying the same model.
     private static TimeSpan GetBackoff(int attempt)
     {
         var exponentialSeconds = Math.Min(
@@ -180,7 +180,7 @@ public class OpenRouterGradingProvider : IAiGradingProvider
         Task.Delay(delay, cancellationToken);
 
     // 429 and 5xx are worth a short retry on the same model; everything else
-    // (402 payment required, 404 unknown model, 401 auth) switches immediately.
+    // (404 unknown model, 401 auth, 400 bad request) switches immediately.
     private static bool IsTransientStatus(HttpStatusCode statusCode) =>
         statusCode == HttpStatusCode.TooManyRequests || (int)statusCode >= 500;
 
@@ -188,11 +188,13 @@ public class OpenRouterGradingProvider : IAiGradingProvider
     {
         var models = new List<string>();
 
-        if (IsFreeModel(config?.ModelName))
-            models.Add(config!.ModelName.Trim());
+        var runtimeModel = config?.ModelName?.Trim();
+        if (!string.IsNullOrWhiteSpace(runtimeModel))
+            models.Add(runtimeModel);
 
-        if (IsFreeModel(config?.FallbackModelName))
-            models.Add(config!.FallbackModelName!.Trim());
+        var runtimeFallback = config?.FallbackModelName?.Trim();
+        if (!string.IsNullOrWhiteSpace(runtimeFallback))
+            models.Add(runtimeFallback);
 
         models.AddRange(SplitModels(_settings.Models));
         models.AddRange(SplitModels(_settings.FallbackModels));
@@ -200,12 +202,11 @@ public class OpenRouterGradingProvider : IAiGradingProvider
         var resolved = models
             .Where(m => !string.IsNullOrWhiteSpace(m))
             .Select(m => m.Trim())
-            .Where(IsFreeModel)
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
 
         if (resolved.Count == 0)
-            resolved.Add("openrouter/free");
+            resolved.Add("openai/gpt-oss-120b");
 
         return resolved;
     }
@@ -215,21 +216,6 @@ public class OpenRouterGradingProvider : IAiGradingProvider
             ? Array.Empty<string>()
             : value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
-    /// <summary>
-    /// Only models that OpenRouter serves for free (a ":free" suffix, or the
-    /// "openrouter/free" router) are ever called, so a paid subscription can
-    /// never be triggered accidentally.
-    /// </summary>
-    private static bool IsFreeModel(string? model)
-    {
-        if (string.IsNullOrWhiteSpace(model))
-            return false;
-
-        var trimmed = model.Trim();
-        return trimmed.EndsWith(":free", StringComparison.OrdinalIgnoreCase)
-            || string.Equals(trimmed, "openrouter/free", StringComparison.OrdinalIgnoreCase);
-    }
-
     private string ResolveApiKey(AiGradingConfig? config)
     {
         if (!string.IsNullOrWhiteSpace(config?.ApiKeyCiphertext))
@@ -238,7 +224,7 @@ public class OpenRouterGradingProvider : IAiGradingProvider
         if (!string.IsNullOrWhiteSpace(_settings.ApiKey))
             return _settings.ApiKey;
 
-        throw new InvalidOperationException("No OpenRouter API key is configured.");
+        throw new InvalidOperationException("No Groq API key is configured.");
     }
 
     private async Task<HttpResponseMessage> SendRequestAsync(string endpoint, object requestBody, string apiKey)
@@ -248,24 +234,23 @@ public class OpenRouterGradingProvider : IAiGradingProvider
             Content = JsonContent.Create(requestBody)
         };
         request.Headers.Add("Authorization", $"Bearer {apiKey}");
-        request.Headers.Add("X-Title", "NomiWrite");
         return await _httpClient.SendAsync(request);
     }
 
-    private static async Task<AiGradingResponseSchema> ParseOpenRouterResponseAsync(HttpResponseMessage response)
+    private static async Task<AiGradingResponseSchema> ParseGroqResponseAsync(HttpResponseMessage response)
     {
-        var payload = await response.Content.ReadFromJsonAsync<OpenRouterApiResponse>();
+        var payload = await response.Content.ReadFromJsonAsync<GroqApiResponse>();
 
         if (payload?.Error is not null && !string.IsNullOrWhiteSpace(payload.Error.Message))
-            throw new InvalidOperationException($"OpenRouter error: {payload.Error.Message}");
+            throw new InvalidOperationException($"Groq error: {payload.Error.Message}");
 
         var text = payload?.Choices?.FirstOrDefault()?.Message?.Content
-            ?? throw new InvalidOperationException("OpenRouter response did not contain any text content.");
+            ?? throw new InvalidOperationException("Groq response did not contain any text content.");
 
         var json = ExtractJsonPayload(text);
         var gradingResponse = JsonSerializer.Deserialize<AiGradingResponseSchema>(json,
             new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
-            ?? throw new InvalidOperationException("Failed to deserialize OpenRouter grading response.");
+            ?? throw new InvalidOperationException("Failed to deserialize Groq grading response.");
 
         return gradingResponse;
     }
@@ -361,23 +346,23 @@ public class OpenRouterGradingProvider : IAiGradingProvider
         _cache.Remove(ActiveConfigCacheKey);
     }
 
-    private sealed class OpenRouterApiResponse
+    private sealed class GroqApiResponse
     {
-        public List<OpenRouterChoice>? Choices { get; set; }
-        public OpenRouterError? Error { get; set; }
+        public List<GroqChoice>? Choices { get; set; }
+        public GroqError? Error { get; set; }
     }
 
-    private sealed class OpenRouterChoice
+    private sealed class GroqChoice
     {
-        public OpenRouterMessage? Message { get; set; }
+        public GroqMessage? Message { get; set; }
     }
 
-    private sealed class OpenRouterMessage
+    private sealed class GroqMessage
     {
         public string? Content { get; set; }
     }
 
-    private sealed class OpenRouterError
+    private sealed class GroqError
     {
         public string? Message { get; set; }
     }
