@@ -2,6 +2,7 @@ import type {
   ApiClient,
   AuthResult,
   AuthResponse,
+  AutocompleteRequest,
   CheckoutRequest,
   CheckoutResponse,
 DashboardSummary,
@@ -578,6 +579,16 @@ export const realClient: ApiClient = {
   getPromptSampleAnswer(id: string) {
     return request<{ sampleAnswer?: string | null }>(apiRoutes.writing.sampleAnswer(id), { method: "GET" }, true)
       .then(result => result.sampleAnswer ?? null);
+  },
+
+  getAutocomplete(requestBody: AutocompleteRequest) {
+    return request<{ suggestion?: string | null }>(apiRoutes.writing.autocomplete, {
+      method: "POST",
+      body: JSON.stringify({
+        promptId: requestBody.promptId,
+        prefix: requestBody.prefix,
+      }),
+    }, true).then(result => result.suggestion ?? null);
   },
 
   async submitSubmission(requestBody: SubmitSubmissionRequest) {

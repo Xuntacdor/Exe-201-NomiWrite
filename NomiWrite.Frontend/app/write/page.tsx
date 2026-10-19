@@ -3,7 +3,8 @@
 import { useLocale } from "@/lib/i18n/locale";
 
 
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import type { ChangeEvent, KeyboardEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import AppShell from "../components/AppShell";
 import {
@@ -28,6 +29,9 @@ const fallbackType: WritingType = {
   badge: "Practice",
   minWords: 120,
 };
+
+const AUTOCOMPLETE_DEBOUNCE_MS = 500;
+const AUTOCOMPLETE_MIN_CHARS = 40;
 
 function countWords(content: string) {
   return content.trim() ? content.trim().split(/\s+/).length : 0;
@@ -74,6 +78,10 @@ function WriteContent() {
   const [content, setContent] = useState("");
   const [loadedDraftKey, setLoadedDraftKey] = useState<string | null>(null);
   const [sampleAnswer, setSampleAnswer] = useState<string | null>(null);
+  const [suggestion, setSuggestion] = useState<{ text: string; key: string; length: number } | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const autocompleteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const autocompleteAbortRef = useRef<AbortController | null>(null);
   const [timerOn, setTimerOn] = useState(false);
   const [loadingTypes, setLoadingTypes] = useState(true);
   const [loadingPrompts, setLoadingPrompts] = useState(false);
@@ -225,6 +233,100 @@ function WriteContent() {
       localStorage.setItem(draftKey, content);
     } catch {}
   }, [content, draftKey, loadedDraftKey]);
+
+  // Cancel pending work when leaving the page.
+  useEffect(() => {
+    return () => {
+      if (autocompleteTimerRef.current) clearTimeout(autocompleteTimerRef.current);
+      autocompleteAbortRef.current?.abort();
+    };
+  }, []);
+
+  // Only surface a suggestion that was produced for the current draft and the
+  // exact text on screen, so switching prompts (or editing) can never show a
+  // stale continuation.
+  const activeSuggestion = suggestion && suggestion.key === draftKey && suggestion.length === content.length
+    ? suggestion.text
+    : "";
+
+  function cancelAutocomplete() {
+    if (autocompleteTimerRef.current) {
+      clearTimeout(autocompleteTimerRef.current);
+      autocompleteTimerRef.current = null;
+    }
+    autocompleteAbortRef.current?.abort();
+    autocompleteAbortRef.current = null;
+    setSuggestion(null);
+  }
+
+  function scheduleAutocomplete(value: string) {
+    cancelAutocomplete();
+
+    if (apiMode !== "real" || !selectedPromptId) return;
+    if (loadedDraftKey !== draftKey) return;
+    if (value.trimEnd().length < AUTOCOMPLETE_MIN_CHARS) return;
+
+    const expectedLength = value.trimEnd().length;
+
+    autocompleteTimerRef.current = setTimeout(() => {
+      const textarea = textareaRef.current;
+      if (!textarea) return;
+      if (textarea.selectionStart !== textarea.value.length) return;
+      if (textarea.value.trimEnd().length !== expectedLength) return;
+
+      const controller = new AbortController();
+      autocompleteAbortRef.current = controller;
+      const requestedValue = textarea.value;
+
+      apiClient.getAutocomplete({ promptId: selectedPromptId, prefix: requestedValue })
+        .then(result => {
+          if (!controller.signal.aborted) {
+            setSuggestion(result
+              ? { text: result, key: draftKey, length: requestedValue.length }
+              : null);
+          }
+        })
+        .catch(() => {
+          // Autocomplete is best-effort: VIP/quota gating and transient
+          // failures must never interrupt the writer.
+          if (!controller.signal.aborted) setSuggestion(null);
+        });
+    }, AUTOCOMPLETE_DEBOUNCE_MS);
+  }
+
+  function handleContentChange(event: ChangeEvent<HTMLTextAreaElement>) {
+    const next = event.target.value;
+    setContent(next);
+    scheduleAutocomplete(next);
+  }
+
+  function handleEditorKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
+    if (event.key === "Escape" && activeSuggestion) {
+      event.preventDefault();
+      cancelAutocomplete();
+      return;
+    }
+
+    if (event.key !== "Tab" || !activeSuggestion) return;
+
+    event.preventDefault();
+    const textarea = event.currentTarget;
+    const value = textarea.value;
+    const start = textarea.selectionStart ?? value.length;
+    const end = textarea.selectionEnd ?? value.length;
+    const needsSpace = start > 0 && !/\s$/.test(value.slice(0, start));
+    const insertion = (needsSpace ? " " : "") + activeSuggestion;
+    const next = value.slice(0, start) + insertion + value.slice(end);
+    const caret = start + insertion.length;
+
+    setContent(next);
+    cancelAutocomplete();
+
+    requestAnimationFrame(() => {
+      textarea.selectionStart = caret;
+      textarea.selectionEnd = caret;
+    });
+  }
 
   async function handleSubmit() {
     if (!currentPrompt || !content.trim()) return;
@@ -436,17 +538,38 @@ function WriteContent() {
         {/* Right Column: Writing Area */}
         <div className="write-editor">
           <label htmlFor="writing-content" className="write-editor-label">{translateUi("Bài viết của bạn")}</label>
-          <div className="write-editor-body">
+          <div className="write-editor-body relative">
             <textarea
               lang="en"
               id="writing-content"
+              ref={textareaRef}
               readOnly={loadedDraftKey !== draftKey}
               value={content}
-              onChange={event => setContent(event.target.value)}
+              onChange={handleContentChange}
+              onKeyDown={handleEditorKeyDown}
               placeholder={"Type your essay here...\n\nRemember to:\n- Read the prompt carefully\n- Plan your paragraphs\n- Check for grammar and vocabulary\n- Reach the minimum word count"}
               className="h-full w-full resize-none text-[16px] leading-loose text-ink placeholder:text-muted outline-none focus:ring-0"
               spellCheck="false"
             />
+            {activeSuggestion && (
+              <div
+                role="status"
+                aria-live="polite"
+                className="pointer-events-none absolute bottom-3 right-3 left-3 z-10 flex items-start gap-2 rounded-lg border border-line bg-surface px-3 py-2 text-xs text-muted shadow-lg sm:left-auto sm:max-w-md"
+              >
+                <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-accent-ink" />
+                <div className="min-w-0">
+                  <p className="truncate font-semibold text-ink">{activeSuggestion}</p>
+                  <p className="mt-1 flex flex-wrap items-center gap-1.5">
+                    <kbd className="rounded border border-line bg-surface-muted px-1.5 py-0.5 font-sans text-[11px] font-semibold text-ink">Tab</kbd>
+                    <span>{translateUi("Accept suggestion")}</span>
+                    <span aria-hidden="true">·</span>
+                    <kbd className="rounded border border-line bg-surface-muted px-1.5 py-0.5 font-sans text-[11px] font-semibold text-ink">Esc</kbd>
+                    <span>{translateUi("Dismiss")}</span>
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
 
           {error && (

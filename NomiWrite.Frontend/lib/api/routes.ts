@@ -23,6 +23,7 @@ export const apiRoutes = {
     prompts: "/api/writing/prompts",
     promptDetail: (id: string) => `/api/writing/prompts/${id}`,
     sampleAnswer: (id: string) => `/api/writing/prompts/${id}/sample-answer`,
+    autocomplete: "/api/writing/autocomplete",
   },
   submissions: {
     list: "/api/writing/submissions",

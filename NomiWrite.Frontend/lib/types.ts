@@ -95,6 +95,11 @@ export interface SubmitSubmissionRequest {
   content: string;
 }
 
+export interface AutocompleteRequest {
+  promptId?: string;
+  prefix: string;
+}
+
 export interface Submission {
   id: string;
   userId: string;
@@ -379,6 +384,7 @@ export interface ApiClient {
   listWritingPrompts(writingType?: string, topic?: string): Promise<WritingPrompt[]>;
   getWritingPrompt(id: string): Promise<WritingPrompt>;
   getPromptSampleAnswer(id: string): Promise<string | null>;
+  getAutocomplete(request: AutocompleteRequest): Promise<string | null>;
   submitSubmission(request: SubmitSubmissionRequest): Promise<Submission>;
   listSubmissions(): Promise<Submission[]>;
   getSubmission(id: string): Promise<Submission>;

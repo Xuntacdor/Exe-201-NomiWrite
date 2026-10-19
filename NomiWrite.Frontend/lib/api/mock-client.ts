@@ -1,6 +1,7 @@
 import type {
   ApiClient,
   AuthResponse,
+  AutocompleteRequest,
   CheckoutRequest,
   CheckoutResponse,
   GoogleLoginRequest,
@@ -181,6 +182,12 @@ export const mockClient: ApiClient = {
     const prompt = mockWritingPrompts.find(item => item.id === id);
     if (!prompt) return null;
     return "A clear response should state a position, develop two main ideas, and close with a concise conclusion.";
+  },
+
+  async getAutocomplete(requestBody: AutocompleteRequest) {
+    await delay(150);
+    if (!requestBody.prefix.trim()) return null;
+    return "group work offers valuable skills when tasks and responsibilities are shared fairly.";
   },
 
   async submitSubmission(request: SubmitSubmissionRequest) {
