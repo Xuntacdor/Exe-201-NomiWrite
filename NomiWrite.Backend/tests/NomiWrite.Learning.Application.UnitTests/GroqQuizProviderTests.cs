@@ -12,32 +12,32 @@ using NomiWrite.Learning.Infrastructure.Services;
 
 namespace NomiWrite.Learning.Application.UnitTests;
 
-public class OpenRouterQuizProviderTests
+public class GroqQuizProviderTests
 {
-    private const string PrimaryModel = "nvidia/nemotron-3.5-lightning:free";
-    private const string SecondaryModel = "liquid/lfm-2.5-2.6b:free";
+    private const string PrimaryModel = "openai/gpt-oss-120b";
+    private const string SecondaryModel = "qwen/qwen3.8-27b";
 
-    private static OpenRouterSettings DefaultSettings(string models = PrimaryModel + "," + SecondaryModel) => new()
+    private static GroqSettings DefaultSettings(string models = PrimaryModel + "," + SecondaryModel) => new()
     {
         ApiKey = "test-key",
         Models = models,
-        Endpoint = "https://openrouter.ai/api/v1/chat/completions"
+        Endpoint = "https://api.groq.com/openai/v1/chat/completions"
     };
 
-    private static OpenRouterQuizProvider Build(string body, HttpStatusCode status = HttpStatusCode.OK)
+    private static GroqQuizProvider Build(string body, HttpStatusCode status = HttpStatusCode.OK)
     {
         var handler = new StubHttpMessageHandler(body, status);
         var factory = new StubHttpClientFactory(new HttpClient(handler));
-        return new OpenRouterQuizProvider(factory, Options.Create(DefaultSettings()), NullLogger<OpenRouterQuizProvider>.Instance);
+        return new GroqQuizProvider(factory, Options.Create(DefaultSettings()), NullLogger<GroqQuizProvider>.Instance);
     }
 
-    private static OpenRouterQuizProvider BuildNoBackoff(HttpMessageHandler handler, OpenRouterSettings? settings = null)
+    private static GroqQuizProvider BuildNoBackoff(HttpMessageHandler handler, GroqSettings? settings = null)
     {
         var factory = new StubHttpClientFactory(new HttpClient(handler));
-        return new NoBackoffQuizProvider(factory, Options.Create(settings ?? DefaultSettings()), NullLogger<OpenRouterQuizProvider>.Instance);
+        return new NoBackoffQuizProvider(factory, Options.Create(settings ?? DefaultSettings()), NullLogger<GroqQuizProvider>.Instance);
     }
 
-    private static string OpenRouterBody(string text)
+    private static string GroqBody(string text)
     {
         return JsonSerializer.Serialize(new
         {
@@ -72,7 +72,7 @@ public class OpenRouterQuizProviderTests
     public async Task GenerateQuestionsAsync_MarkdownFencedJson_StripsFences()
     {
         var fenced = $"```json\n{QuestionsJson()}\n```";
-        var sut = Build(OpenRouterBody(fenced));
+        var sut = Build(GroqBody(fenced));
 
         var result = await sut.GenerateQuestionsAsync(new QuizGenerationRequest(), 5);
 
@@ -83,7 +83,7 @@ public class OpenRouterQuizProviderTests
     [Fact]
     public async Task GenerateQuestionsAsync_EmptyQuestionsArray_Throws()
     {
-        var sut = BuildNoBackoff(new StubHttpMessageHandler(OpenRouterBody("{\"questions\":[]}"), HttpStatusCode.OK));
+        var sut = BuildNoBackoff(new StubHttpMessageHandler(GroqBody("{\"questions\":[]}"), HttpStatusCode.OK));
 
         var act = () => sut.GenerateQuestionsAsync(new QuizGenerationRequest(), 5);
 
@@ -103,7 +103,7 @@ public class OpenRouterQuizProviderTests
     [Fact]
     public async Task GenerateQuestionsAsync_EmptyTextPart_Throws()
     {
-        var sut = BuildNoBackoff(new StubHttpMessageHandler(OpenRouterBody(string.Empty), HttpStatusCode.OK));
+        var sut = BuildNoBackoff(new StubHttpMessageHandler(GroqBody(string.Empty), HttpStatusCode.OK));
 
         var act = () => sut.GenerateQuestionsAsync(new QuizGenerationRequest(), 5);
 
@@ -113,7 +113,7 @@ public class OpenRouterQuizProviderTests
     [Fact]
     public async Task GenerateQuestionsAsync_NonJsonProse_Throws()
     {
-        var sut = BuildNoBackoff(new StubHttpMessageHandler(OpenRouterBody("Sorry, here is some prose without JSON."), HttpStatusCode.OK));
+        var sut = BuildNoBackoff(new StubHttpMessageHandler(GroqBody("Sorry, here is some prose without JSON."), HttpStatusCode.OK));
 
         var act = () => sut.GenerateQuestionsAsync(new QuizGenerationRequest(), 5);
 
@@ -136,7 +136,7 @@ public class OpenRouterQuizProviderTests
     {
         var handler = new SequenceHttpMessageHandler(
             (HttpStatusCode.ServiceUnavailable, "{\"error\":{\"message\":\"overloaded\"}}"),
-            (HttpStatusCode.OK, OpenRouterBody(QuestionsJson())));
+            (HttpStatusCode.OK, GroqBody(QuestionsJson())));
         var sut = BuildNoBackoff(handler, DefaultSettings(PrimaryModel));
 
         var result = await sut.GenerateQuestionsAsync(new QuizGenerationRequest(), 5);
@@ -146,7 +146,7 @@ public class OpenRouterQuizProviderTests
     }
 
     [Fact]
-    public async Task GenerateQuestionsAsync_UnavailableModel_SwitchesToNextFreeModel()
+    public async Task GenerateQuestionsAsync_UnavailableModel_SwitchesToNextModel()
     {
         var requestedModels = new List<string>();
         var handler = new CallbackHttpMessageHandler(request =>
@@ -154,8 +154,8 @@ public class OpenRouterQuizProviderTests
             var model = ExtractModelFromBody(request)!;
             requestedModels.Add(model);
             return model == PrimaryModel
-                ? new HttpResponseMessage(HttpStatusCode.PaymentRequired) { Content = new StringContent("paid only") }
-                : new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(OpenRouterBody(QuestionsJson())) };
+                ? new HttpResponseMessage(HttpStatusCode.PaymentRequired) { Content = new StringContent("unavailable") }
+                : new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(GroqBody(QuestionsJson())) };
         });
         var sut = BuildNoBackoff(handler);
 
@@ -174,13 +174,13 @@ public class OpenRouterQuizProviderTests
         return document.RootElement.TryGetProperty("model", out var model) ? model.GetString() : null;
     }
 
-    private sealed class NoBackoffQuizProvider : OpenRouterQuizProvider
+    private sealed class NoBackoffQuizProvider : GroqQuizProvider
     {
         public NoBackoffQuizProvider(
             IHttpClientFactory httpClientFactory,
-            IOptions<OpenRouterSettings> openRouterOptions,
-            ILogger<OpenRouterQuizProvider> logger)
-            : base(httpClientFactory, openRouterOptions, logger)
+            IOptions<GroqSettings> groqOptions,
+            ILogger<GroqQuizProvider> logger)
+            : base(httpClientFactory, groqOptions, logger)
         {
         }
 

@@ -18,7 +18,7 @@ public static class DependencyInjection
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        services.Configure<OpenRouterSettings>(configuration.GetSection(OpenRouterSettings.SectionName));
+        services.Configure<GroqSettings>(configuration.GetSection(GroqSettings.SectionName));
 
         var serviceUrls = configuration.GetSection(ServiceUrls.SectionName).Get<ServiceUrls>() ?? new ServiceUrls();
 
@@ -33,9 +33,9 @@ public static class DependencyInjection
         services.AddScoped<IQuizService, QuizService>();
         services.AddScoped<IStudyGuideService, StudyGuideService>();
 
-        services.AddScoped<IAiQuizProvider, OpenRouterQuizProvider>();
+        services.AddScoped<IAiQuizProvider, GroqQuizProvider>();
         services.AddScoped<IFallbackQuizProvider, DeterministicQuizProvider>();
-        services.AddScoped<IStudyGuideAiProvider, OpenRouterStudyGuideProvider>();
+        services.AddScoped<IStudyGuideAiProvider, GroqStudyGuideProvider>();
         services.AddScoped<IFallbackStudyGuideProvider, DeterministicStudyGuideProvider>();
 
         services.AddScoped<IEssayHistoryClient, EssayHistoryClient>();
@@ -50,7 +50,7 @@ public static class DependencyInjection
             client.Timeout = TimeSpan.FromSeconds(15);
         });
 
-        services.AddHttpClient("OpenRouter", client =>
+        services.AddHttpClient("Groq", client =>
         {
             client.Timeout = TimeSpan.FromSeconds(60);
         });

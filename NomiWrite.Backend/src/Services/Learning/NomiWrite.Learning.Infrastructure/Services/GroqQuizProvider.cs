@@ -11,7 +11,7 @@ using NomiWrite.Learning.Infrastructure.Options;
 
 namespace NomiWrite.Learning.Infrastructure.Services;
 
-public class OpenRouterQuizProvider : IAiQuizProvider
+public class GroqQuizProvider : IAiQuizProvider
 {
     private const string FixedCategoryList =
         "Mạo từ; Hòa hợp chủ ngữ - động từ; Chia thì động từ; Số ít / số nhiều của danh từ; " +
@@ -27,23 +27,22 @@ public class OpenRouterQuizProvider : IAiQuizProvider
     private const int MaxBackoffSeconds = 16;
 
     private readonly HttpClient _httpClient;
-    private readonly IOptions<OpenRouterSettings> _openRouterOptions;
-    private readonly ILogger<OpenRouterQuizProvider> _logger;
+    private readonly IOptions<GroqSettings> _groqOptions;
+    private readonly ILogger<GroqQuizProvider> _logger;
 
-    public OpenRouterQuizProvider(
+    public GroqQuizProvider(
         IHttpClientFactory httpClientFactory,
-        IOptions<OpenRouterSettings> openRouterOptions,
-        ILogger<OpenRouterQuizProvider> logger)
+        IOptions<GroqSettings> groqOptions,
+        ILogger<GroqQuizProvider> logger)
     {
-        _httpClient = httpClientFactory.CreateClient("OpenRouter");
-        _openRouterOptions = openRouterOptions;
+        _httpClient = httpClientFactory.CreateClient("Groq");
+        _groqOptions = groqOptions;
         _logger = logger;
 
-        if (!string.IsNullOrWhiteSpace(_openRouterOptions.Value.ApiKey) &&
+        if (!string.IsNullOrWhiteSpace(_groqOptions.Value.ApiKey) &&
             !_httpClient.DefaultRequestHeaders.Contains("Authorization"))
         {
-            _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {_openRouterOptions.Value.ApiKey}");
-            _httpClient.DefaultRequestHeaders.Add("X-Title", "NomiWrite");
+            _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {_groqOptions.Value.ApiKey}");
         }
     }
 
@@ -84,7 +83,7 @@ public class OpenRouterQuizProvider : IAiQuizProvider
                     {
                         _logger.LogWarning(
                             exception,
-                            "OpenRouter model {Model} returned an unusable quiz response; switching to the next free model.",
+                            "Groq model {Model} returned an unusable quiz response; switching to the next model.",
                             model);
                         failures.Add($"{model}: {exception.Message}");
                         break;
@@ -96,7 +95,7 @@ public class OpenRouterQuizProvider : IAiQuizProvider
                 if (IsTransientStatus(response.StatusCode) && attempt < MaxRateLimitRetriesPerModel)
                 {
                     _logger.LogWarning(
-                        "OpenRouter model {Model} returned transient {StatusCode} (attempt {Attempt}/{MaxAttempts}); retrying.",
+                        "Groq model {Model} returned transient {StatusCode} (attempt {Attempt}/{MaxAttempts}); retrying.",
                         model,
                         (int)response.StatusCode,
                         attempt,
@@ -106,7 +105,7 @@ public class OpenRouterQuizProvider : IAiQuizProvider
                 }
 
                 _logger.LogWarning(
-                    "OpenRouter model {Model} unavailable ({StatusCode}): {Error}. Switching to the next free model.",
+                    "Groq model {Model} unavailable ({StatusCode}): {Error}. Switching to the next model.",
                     model,
                     (int)response.StatusCode,
                     errorPayload);
@@ -115,12 +114,12 @@ public class OpenRouterQuizProvider : IAiQuizProvider
             }
         }
 
-        _logger.LogError("All OpenRouter free models failed for quiz generation. Attempts: {Failures}", string.Join(" | ", failures));
-        throw new HttpRequestException("Quiz generation is temporarily unavailable (no free AI model available).");
+        _logger.LogError("All Groq models failed for quiz generation. Attempts: {Failures}", string.Join(" | ", failures));
+        throw new HttpRequestException("Quiz generation is temporarily unavailable (no AI model available).");
     }
 
-    // Rate limits on free models usually clear within seconds, so back off
-    // exponentially (2s, 4s, ...) with jitter before retrying the same model.
+    // Rate limits usually clear within seconds, so back off exponentially
+    // (2s, 4s, ...) with jitter before retrying the same model.
     private static TimeSpan GetBackoff(int attempt)
     {
         var exponentialSeconds = Math.Min(
@@ -136,44 +135,30 @@ public class OpenRouterQuizProvider : IAiQuizProvider
         Task.Delay(delay, cancellationToken);
 
     // 429 and 5xx are worth a short retry on the same model; everything else
-    // (402 payment required, 404 unknown model, 401 auth) switches immediately.
+    // (404 unknown model, 401 auth, 400 bad request) switches immediately.
     private static bool IsTransientStatus(HttpStatusCode statusCode) =>
         statusCode == HttpStatusCode.TooManyRequests || (int)statusCode >= 500;
 
     private string BuildEndpoint()
     {
-        var options = _openRouterOptions.Value;
+        var options = _groqOptions.Value;
         return string.IsNullOrWhiteSpace(options.Endpoint)
-            ? "https://openrouter.ai/api/v1/chat/completions"
+            ? "https://api.groq.com/openai/v1/chat/completions"
             : options.Endpoint;
     }
 
     private List<string> ResolveModels()
     {
-        var configured = (_openRouterOptions.Value.Models ?? string.Empty)
+        var configured = (_groqOptions.Value.Models ?? string.Empty)
             .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-            .Where(IsFreeModel)
+            .Where(model => !string.IsNullOrWhiteSpace(model))
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
 
         if (configured.Count == 0)
-            configured.Add("openrouter/free");
+            configured.Add("openai/gpt-oss-120b");
 
         return configured;
-    }
-
-    /// <summary>
-    /// Only models OpenRouter serves for free (a ":free" suffix, or the
-    /// "openrouter/free" router) are ever called.
-    /// </summary>
-    private static bool IsFreeModel(string? model)
-    {
-        if (string.IsNullOrWhiteSpace(model))
-            return false;
-
-        var trimmed = model.Trim();
-        return trimmed.EndsWith(":free", StringComparison.OrdinalIgnoreCase)
-            || string.Equals(trimmed, "openrouter/free", StringComparison.OrdinalIgnoreCase);
     }
 
     private async Task<List<QuizQuestionItem>> ParseQuestionsAsync(HttpResponseMessage response)
@@ -182,12 +167,12 @@ public class OpenRouterQuizProvider : IAiQuizProvider
         var text = ExtractText(content);
 
         if (string.IsNullOrWhiteSpace(text))
-            throw new InvalidOperationException("OpenRouter returned an empty quiz response.");
+            throw new InvalidOperationException("Groq returned an empty quiz response.");
 
         var questions = DeserializePayload(text);
 
         if (questions?.Count == 0)
-            throw new InvalidOperationException("OpenRouter returned no quiz questions.");
+            throw new InvalidOperationException("Groq returned no quiz questions.");
 
         return questions ?? new List<QuizQuestionItem>();
     }
@@ -257,11 +242,11 @@ public class OpenRouterQuizProvider : IAiQuizProvider
         if (root.TryGetProperty("error", out var error) &&
             error.TryGetProperty("message", out var errorMessage))
         {
-            throw new InvalidOperationException($"OpenRouter error: {errorMessage.GetString()}");
+            throw new InvalidOperationException($"Groq error: {errorMessage.GetString()}");
         }
 
         if (!root.TryGetProperty("choices", out var choices))
-            throw new InvalidOperationException("OpenRouter response missing 'choices'.");
+            throw new InvalidOperationException("Groq response missing 'choices'.");
 
         var textBuilder = new StringBuilder();
 

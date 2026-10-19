@@ -4,7 +4,7 @@ namespace NomiWrite.Learning.Application.Interfaces;
 
 /// <summary>
 /// Produces a personalized study guide from the user's writing history using a
-/// structured JSON prompt to an LLM provider (OpenRouter free models).
+/// structured JSON prompt to an LLM provider (Groq).
 /// </summary>
 public interface IStudyGuideAiProvider
 {
