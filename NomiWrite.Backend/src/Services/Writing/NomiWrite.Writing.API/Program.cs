@@ -1,6 +1,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -73,6 +74,19 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 builder.Services.AddAuthorization();
 
+// Secondary defense behind the per-user daily quota: caps burst traffic on the
+// autocomplete endpoint (the quota tracker enforces the long-term budget).
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddFixedWindowLimiter("autocomplete", limiter =>
+    {
+        limiter.Window = TimeSpan.FromMinutes(1);
+        limiter.PermitLimit = 30;
+        limiter.QueueLimit = 0;
+    });
+});
+
 builder.Services.AddHealthChecks()
     .AddDbContextCheck<WritingDbContext>("writing_db");
 builder.Services.AddControllers()
@@ -93,6 +107,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseRateLimiter();
 
 app.MapControllers();
 app.MapHealthChecks("/health");

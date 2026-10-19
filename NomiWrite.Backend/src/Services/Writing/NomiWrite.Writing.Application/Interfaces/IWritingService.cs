@@ -34,4 +34,10 @@ public interface IWritingService
     Task<SubmissionTimeRemainingDto> GetSubmissionTimeRemainingAsync(Guid userId, Guid submissionId);
 
     Task<SampleAnswerDto> GetSampleAnswerAsync(Guid userId, Guid promptId, string? accessToken);
+
+    Task<AutocompleteResponseDto> GetAutocompleteAsync(
+        Guid userId,
+        AutocompleteRequestDto dto,
+        string? accessToken = null,
+        CancellationToken cancellationToken = default);
 }

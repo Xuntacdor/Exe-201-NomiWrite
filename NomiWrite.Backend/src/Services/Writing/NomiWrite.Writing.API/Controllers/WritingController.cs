@@ -2,6 +2,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using NomiWrite.Writing.Application.DTOs;
 using NomiWrite.Writing.Application.Interfaces;
 using NomiWrite.Writing.Domain.Enums;
@@ -137,6 +138,26 @@ public class WritingController : ControllerBase
             return Unauthorized();
 
         var result = await _writingService.GetSampleAnswerAsync(userId.Value, id, GetBearerToken());
+        return Ok(result);
+    }
+
+    [HttpPost("autocomplete")]
+    [Authorize]
+    [EnableRateLimiting("autocomplete")]
+    public async Task<ActionResult<AutocompleteResponseDto>> GetAutocomplete(
+        [FromBody] AutocompleteRequestDto request,
+        CancellationToken cancellationToken)
+    {
+        var userId = GetUserId();
+        if (userId is null)
+            return Unauthorized();
+
+        var result = await _writingService.GetAutocompleteAsync(
+            userId.Value,
+            request,
+            GetBearerToken(),
+            cancellationToken);
+
         return Ok(result);
     }
 

@@ -16,11 +16,17 @@ namespace NomiWrite.Writing.Application.Services;
 public class WritingService : IWritingService
 {
     private const int FreeMonthlyGradingLimit = 5;
+    private const int DailyAutocompleteLimit = 200;
+    private const int MaxAutocompletePrefixCharacters = 4000;
+    private const int MaxAutocompletePromptCharacters = 2000;
+
     private readonly IWritingDbContext _dbContext;
     private readonly IValidator<CreateSubmissionRequestDto> _createSubmissionValidator;
     private readonly IValidator<UpdateSubmissionRequestDto> _updateSubmissionValidator;
     private readonly ISubscriptionStatusClient _subscriptionStatusClient;
     private readonly IPublishEndpoint _publishEndpoint;
+    private readonly IAutocompleteProvider _autocompleteProvider;
+    private readonly IAutocompleteQuotaTracker _autocompleteQuotaTracker;
     private readonly ILogger<WritingService> _logger;
 
     public WritingService(
@@ -29,6 +35,8 @@ public class WritingService : IWritingService
         IValidator<UpdateSubmissionRequestDto> updateSubmissionValidator,
         ISubscriptionStatusClient subscriptionStatusClient,
         IPublishEndpoint publishEndpoint,
+        IAutocompleteProvider autocompleteProvider,
+        IAutocompleteQuotaTracker autocompleteQuotaTracker,
         ILogger<WritingService> logger)
     {
         _dbContext = dbContext;
@@ -36,6 +44,8 @@ public class WritingService : IWritingService
         _updateSubmissionValidator = updateSubmissionValidator;
         _subscriptionStatusClient = subscriptionStatusClient;
         _publishEndpoint = publishEndpoint;
+        _autocompleteProvider = autocompleteProvider;
+        _autocompleteQuotaTracker = autocompleteQuotaTracker;
         _logger = logger;
     }
 
@@ -386,6 +396,51 @@ public class WritingService : IWritingService
             throw new SubscriptionRequiredException();
 
         return new SampleAnswerDto { SampleAnswer = prompt.SampleAnswer };
+    }
+
+    public async Task<AutocompleteResponseDto> GetAutocompleteAsync(
+        Guid userId,
+        AutocompleteRequestDto dto,
+        string? accessToken = null,
+        CancellationToken cancellationToken = default)
+    {
+        var prefix = (dto?.Prefix ?? string.Empty).Trim();
+
+        // Nothing typed yet — nothing to continue. Return an empty suggestion
+        // without spending an LLM call or any of the user's quota.
+        if (prefix.Length == 0)
+            return new AutocompleteResponseDto();
+
+        // Autocomplete is VIP-gated, like sample answers.
+        var subscription = await GetSubscriptionStatusOrDefaultAsync(userId, accessToken);
+        if (!subscription.HasActiveSubscription)
+            throw new SubscriptionRequiredException(
+                "Autocomplete is a VIP feature. Subscribe to unlock inline writing suggestions.");
+
+        if (!_autocompleteQuotaTracker.TryConsume(userId, DailyAutocompleteLimit))
+            throw new AutocompleteQuotaExceededException();
+
+        if (prefix.Length > MaxAutocompletePrefixCharacters)
+            prefix = prefix[^MaxAutocompletePrefixCharacters..];
+
+        var writingPrompt = string.Empty;
+        if (dto?.PromptId is { } promptId && promptId != Guid.Empty)
+        {
+            writingPrompt = await _dbContext.WritingPrompts
+                .AsNoTracking()
+                .Where(p => p.Id == promptId)
+                .Select(p => p.Instructions)
+                .FirstOrDefaultAsync(cancellationToken) ?? string.Empty;
+
+            if (writingPrompt.Length > MaxAutocompletePromptCharacters)
+                writingPrompt = writingPrompt[..MaxAutocompletePromptCharacters];
+        }
+
+        var suggestion = await _autocompleteProvider.CompleteAsync(
+            new AutocompleteContext(writingPrompt, prefix),
+            cancellationToken);
+
+        return new AutocompleteResponseDto { Suggestion = suggestion ?? string.Empty };
     }
 
     private async Task<SubscriptionStatusResult> GetSubscriptionStatusOrDefaultAsync(Guid userId, string? accessToken)

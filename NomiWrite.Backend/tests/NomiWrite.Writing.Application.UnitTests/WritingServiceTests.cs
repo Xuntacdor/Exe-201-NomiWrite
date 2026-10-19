@@ -61,17 +61,46 @@ public class WritingServiceTests
 
     private static WritingService Build(TestWritingDbContext db,
         IPublishEndpoint? publish = null,
-        ISubscriptionStatusClient? subClient = null)
+        ISubscriptionStatusClient? subClient = null,
+        IAutocompleteProvider? autocompleteProvider = null,
+        IAutocompleteQuotaTracker? quotaTracker = null)
     {
         publish ??= Substitute.For<IPublishEndpoint>();
         subClient ??= DefaultInactiveSub();
+        autocompleteProvider ??= DefaultAutocompleteProvider();
+        quotaTracker ??= DefaultQuotaTracker();
         return new WritingService(
             db,
             new CreateSubmissionRequestValidator(),
             new UpdateSubmissionRequestValidator(),
             subClient!,
             publish,
+            autocompleteProvider!,
+            quotaTracker!,
             NullLogger<WritingService>.Instance);
+    }
+
+    private static IAutocompleteProvider DefaultAutocompleteProvider()
+    {
+        var provider = Substitute.For<IAutocompleteProvider>();
+        provider.CompleteAsync(Arg.Any<AutocompleteContext>(), Arg.Any<CancellationToken>())
+            .Returns("a natural continuation");
+        return provider;
+    }
+
+    private static IAutocompleteQuotaTracker DefaultQuotaTracker()
+    {
+        var tracker = Substitute.For<IAutocompleteQuotaTracker>();
+        tracker.TryConsume(Arg.Any<Guid>(), Arg.Any<int>()).Returns(true);
+        return tracker;
+    }
+
+    private static ISubscriptionStatusClient ActiveSub()
+    {
+        var sub = Substitute.For<ISubscriptionStatusClient>();
+        sub.GetCurrentSubscriptionAsync(Arg.Any<Guid>(), Arg.Any<string?>())
+            .Returns(new SubscriptionStatusResult(true, "premium", DateTime.UtcNow.AddDays(30)));
+        return sub;
     }
 
     private static ISubscriptionStatusClient DefaultInactiveSub()
@@ -790,6 +819,94 @@ public class WritingServiceTests
 
         var item = prompts.Should().ContainSingle().Subject;
         item.Instructions.Should().Be("Write a formal essay about the topic.");
+    }
+
+    #endregion
+
+    #region U-W5 — VIP autocomplete
+
+    [Fact]
+    public async Task GetAutocompleteAsync_FreeUser_ThrowsSubscriptionRequired()
+    {
+        var db = TestWritingDbContext.Create();
+        var sut = Build(db);
+
+        var act = () => sut.GetAutocompleteAsync(UserA,
+            new AutocompleteRequestDto { Prefix = "In my view, " }, null);
+
+        await act.Should().ThrowAsync<SubscriptionRequiredException>();
+    }
+
+    [Fact]
+    public async Task GetAutocompleteAsync_ActiveSubscription_ReturnsSuggestion()
+    {
+        var db = TestWritingDbContext.Create();
+        var provider = Substitute.For<IAutocompleteProvider>();
+        provider.CompleteAsync(Arg.Any<AutocompleteContext>(), Arg.Any<CancellationToken>())
+            .Returns("group work offers valuable skills");
+        var sut = Build(db, subClient: ActiveSub(), autocompleteProvider: provider);
+
+        var result = await sut.GetAutocompleteAsync(UserA,
+            new AutocompleteRequestDto { Prefix = "In my view, " }, "token");
+
+        result.Suggestion.Should().Be("group work offers valuable skills");
+    }
+
+    [Fact]
+    public async Task GetAutocompleteAsync_QuotaExceeded_ThrowsAndDoesNotCallProvider()
+    {
+        var db = TestWritingDbContext.Create();
+        var provider = Substitute.For<IAutocompleteProvider>();
+        var quota = Substitute.For<IAutocompleteQuotaTracker>();
+        quota.TryConsume(Arg.Any<Guid>(), Arg.Any<int>()).Returns(false);
+        var sut = Build(db, subClient: ActiveSub(),
+            autocompleteProvider: provider, quotaTracker: quota);
+
+        var act = () => sut.GetAutocompleteAsync(UserA,
+            new AutocompleteRequestDto { Prefix = "In my view, " }, "token");
+
+        await act.Should().ThrowAsync<AutocompleteQuotaExceededException>();
+        await provider.DidNotReceiveWithAnyArgs().CompleteAsync(default!, default);
+    }
+
+    [Fact]
+    public async Task GetAutocompleteAsync_EmptyPrefix_ReturnsEmptyWithoutUsingQuota()
+    {
+        var db = TestWritingDbContext.Create();
+        var provider = Substitute.For<IAutocompleteProvider>();
+        var quota = Substitute.For<IAutocompleteQuotaTracker>();
+        var sut = Build(db, autocompleteProvider: provider, quotaTracker: quota);
+
+        var result = await sut.GetAutocompleteAsync(UserA,
+            new AutocompleteRequestDto { Prefix = "   " }, null);
+
+        result.Suggestion.Should().BeEmpty();
+        quota.DidNotReceiveWithAnyArgs().TryConsume(default, default);
+        await provider.DidNotReceiveWithAnyArgs().CompleteAsync(default!, default);
+    }
+
+    [Fact]
+    public async Task GetAutocompleteAsync_UsesPromptInstructionsAsContext()
+    {
+        var db = TestWritingDbContext.Create();
+        var type = SeedType(db);
+        var prompt = SeedPrompt(db, type);
+        prompt.Instructions = "Discuss both views.";
+        db.SaveChanges();
+
+        AutocompleteContext? captured = null;
+        var provider = Substitute.For<IAutocompleteProvider>();
+        provider.CompleteAsync(Arg.Do<AutocompleteContext>(context => captured = context),
+                Arg.Any<CancellationToken>())
+            .Returns("continuation");
+        var sut = Build(db, subClient: ActiveSub(), autocompleteProvider: provider);
+
+        await sut.GetAutocompleteAsync(UserA,
+            new AutocompleteRequestDto { PromptId = prompt.Id, Prefix = "In my view, " }, "token");
+
+        captured.Should().NotBeNull();
+        captured!.WritingPrompt.Should().Be("Discuss both views.");
+        captured.Prefix.Should().Be("In my view,");
     }
 
     #endregion

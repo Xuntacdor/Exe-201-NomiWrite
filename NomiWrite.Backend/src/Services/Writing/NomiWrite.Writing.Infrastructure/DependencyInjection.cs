@@ -11,6 +11,7 @@ using NomiWrite.Writing.Infrastructure.Clients;
 using NomiWrite.Writing.Infrastructure.Consumers;
 using NomiWrite.Writing.Infrastructure.Options;
 using NomiWrite.Writing.Infrastructure.Persistence;
+using NomiWrite.Writing.Infrastructure.Services;
 
 namespace NomiWrite.Writing.Infrastructure;
 
@@ -47,6 +48,18 @@ public static class DependencyInjection
             client.BaseAddress = new Uri(serviceUrls.SubscriptionService);
             client.Timeout = TimeSpan.FromSeconds(3);
         });
+
+        // Autocomplete (VIP-only) — synchronous, latency-sensitive LLM calls.
+        // A short timeout keeps the client from hanging when a model stalls.
+        services.Configure<GroqSettings>(configuration.GetSection(GroqSettings.SectionName));
+        services.AddHttpClient("GroqAutocomplete", client =>
+        {
+            // Benchmarked latency is ~300ms; keep a tight per-attempt ceiling so
+            // a stalled model hands off to the fallback quickly.
+            client.Timeout = TimeSpan.FromSeconds(3);
+        });
+        services.AddScoped<IAutocompleteProvider, GroqAutocompleteProvider>();
+        services.AddSingleton<IAutocompleteQuotaTracker, InMemoryAutocompleteQuotaTracker>();
 
         services.AddScoped<IValidator<CreateSubmissionRequestDto>, CreateSubmissionRequestValidator>();
         services.AddScoped<IValidator<UpdateSubmissionRequestDto>, UpdateSubmissionRequestValidator>();

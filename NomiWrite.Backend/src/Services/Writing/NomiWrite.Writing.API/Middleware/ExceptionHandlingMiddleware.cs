@@ -61,6 +61,7 @@ public class ExceptionHandlingMiddleware
                 break;
 
             case MonthlyGradingLimitExceededException:
+            case AutocompleteQuotaExceededException:
                 statusCode = StatusCodes.Status429TooManyRequests;
                 message = exception.Message;
                 errors = Array.Empty<string>();

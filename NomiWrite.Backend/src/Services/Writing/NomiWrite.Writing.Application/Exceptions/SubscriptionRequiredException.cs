@@ -6,4 +6,9 @@ public class SubscriptionRequiredException : Exception
         : base("Sample answers are a VIP feature. Subscribe to unlock this content.")
     {
     }
+
+    public SubscriptionRequiredException(string message)
+        : base(message)
+    {
+    }
 }
