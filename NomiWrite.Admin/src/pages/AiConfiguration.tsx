@@ -4,18 +4,11 @@ import { Bot, CheckCircle2, Eye, EyeOff, KeyRound, Loader2, RefreshCw, Save, Shi
 import { adminService } from "../services/adminService";
 import type { AiGradingConfigDto, UpdateAiGradingConfigRequest } from "../services/adminService";
 
-const openRouterFreeModels = [
-  { id: "nvidia/nemotron-3.5-lightning:free", label: "NVIDIA: Nemotron 3.5 Lightning (free)" },
-  { id: "nvidia/nemotron-3-super-120b-a12b:free", label: "NVIDIA: Nemotron 3 Super (free)" },
-  { id: "nvidia/nemotron-3-ultra-550b-a55b:free", label: "NVIDIA: Nemotron 3 Ultra (free)" },
-  { id: "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free", label: "NVIDIA: Nemotron 3 Nano Omni (free)" },
-  { id: "liquid/lfm-2.5-2.6b:free", label: "LiquidAI: LFM2.5-2.6B (free)" },
-  { id: "google/gemma-4-31b-it:free", label: "Google: Gemma 4 31B (free)" },
-  { id: "google/gemma-4-26b-a4b-it:free", label: "Google: Gemma 4 26B A4B (free)" },
-  { id: "cohere/north-mini-code:free", label: "Cohere: North Mini Code (free)" },
-  { id: "poolside/laguna-s-2.1:free", label: "Poolside: Laguna S 2.1 (free)" },
-  { id: "thinkingmachines/inkling:free", label: "Thinking Machines: Inkling (free)" },
-  { id: "openrouter/free", label: "Free Models Router (auto-picks a free model)" },
+const groqModels = [
+  { id: "openai/gpt-oss-120b", label: "OpenAI: GPT OSS 120B" },
+  { id: "qwen/qwen3.8-27b", label: "Qwen: Qwen3.8 27B" },
+  { id: "openai/gpt-oss-20b", label: "OpenAI: GPT OSS 20B" },
+  { id: "allam-2-7b", label: "ALLaM 2 7B" },
 ] as const;
 
 const customModelValue = "__custom__";
@@ -32,9 +25,9 @@ type FormState = {
 };
 
 const emptyForm: FormState = {
-  providerName: "OpenRouter",
-  modelName: "nvidia/nemotron-3.5-lightning:free",
-  fallbackModelName: "openrouter/free",
+  providerName: "Groq",
+  modelName: "openai/gpt-oss-120b",
+  fallbackModelName: "qwen/qwen3.8-27b",
   apiKey: "",
   clearApiKey: false,
   temperature: "",
@@ -144,7 +137,7 @@ export default function AiConfiguration() {
         <div>
           <div className="mb-2 flex items-center gap-2 text-xs font-extrabold uppercase tracking-[0.18em] text-rose-700"><Bot className="h-4 w-4" /> Runtime controls</div>
           <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">AI Configuration</h1>
-          <p className="mt-1.5 max-w-2xl text-sm font-medium text-slate-500">Switch OpenRouter credentials and free models without rebuilding or redeploying the service.</p>
+          <p className="mt-1.5 max-w-2xl text-sm font-medium text-slate-500">Switch Groq credentials and models without rebuilding or redeploying the service.</p>
         </div>
         <button type="button" onClick={() => void load()} disabled={loading || saving} className="flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-50">
           <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} /> Reload
@@ -164,9 +157,9 @@ export default function AiConfiguration() {
         {loading && <div className="flex min-h-80 items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-rose-700" /></div>}
         {!loading && <>
           <section className="space-y-5 border-b border-slate-100 p-6">
-            <div><h2 className="text-lg font-extrabold text-slate-900">Provider and models</h2><p className="mt-1 text-sm text-slate-500">Only free OpenRouter models are allowed; the id must end with ":free" or be "openrouter/free".</p></div>
+            <div><h2 className="text-lg font-extrabold text-slate-900">Provider and models</h2><p className="mt-1 text-sm text-slate-500">Choose any model available on Groq; see https://console.groq.com/docs/models for the current list.</p></div>
             <div className="grid gap-5 md:grid-cols-2">
-              <Field label="Provider"><select value={form.providerName} onChange={(e) => update("providerName", e.target.value)} className="admin-input w-full rounded-xl border px-3 py-2.5 text-sm" disabled><option>OpenRouter</option></select></Field>
+              <Field label="Provider"><select value={form.providerName} onChange={(e) => update("providerName", e.target.value)} className="admin-input w-full rounded-xl border px-3 py-2.5 text-sm" disabled><option>Groq</option></select></Field>
               <ModelPicker label="Primary model" required value={form.modelName} onChange={(value) => update("modelName", value)} />
               <ModelPicker label="Fallback model" allowEmpty value={form.fallbackModelName} onChange={(value) => update("fallbackModelName", value)} />
               <div className="grid grid-cols-2 gap-3">
@@ -181,7 +174,7 @@ export default function AiConfiguration() {
             <Field label={config?.hasStoredApiKey ? `Replace key (${config.apiKeyHint || "configured"})` : "Set admin-managed API key"}>
               <div className="relative"><input type={showKey ? "text" : "password"} autoComplete="new-password" value={form.apiKey} disabled={form.clearApiKey} onChange={(e) => update("apiKey", e.target.value)} className="admin-input w-full rounded-xl border px-3 py-2.5 pr-11 text-sm disabled:opacity-50" placeholder={config?.hasStoredApiKey ? "Leave blank to keep the current key" : "Leave blank to use the environment key"} /><button type="button" onClick={() => setShowKey((value) => !value)} className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700" aria-label={showKey ? "Hide API key" : "Show API key"}>{showKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}</button></div>
             </Field>
-            {config?.hasStoredApiKey && <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900"><input type="checkbox" checked={form.clearApiKey} onChange={(e) => { update("clearApiKey", e.target.checked); if (e.target.checked) update("apiKey", ""); }} className="mt-0.5 h-4 w-4" /><span><strong>Remove the stored key</strong><br /><span className="text-xs text-amber-700">The service will fall back to `OpenRouterSettings__ApiKey` from its environment.</span></span></label>}
+            {config?.hasStoredApiKey && <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900"><input type="checkbox" checked={form.clearApiKey} onChange={(e) => { update("clearApiKey", e.target.checked); if (e.target.checked) update("apiKey", ""); }} className="mt-0.5 h-4 w-4" /><span><strong>Remove the stored key</strong><br /><span className="text-xs text-amber-700">The service will fall back to `GroqSettings__ApiKey` from its environment.</span></span></label>}
           </section>
 
           <section className="space-y-3 p-6"><Field label="System prompt override"><textarea rows={8} value={form.systemPromptTemplate} onChange={(e) => update("systemPromptTemplate", e.target.value)} className="admin-input w-full resize-y rounded-xl border px-3 py-2.5 font-mono text-xs leading-5" placeholder="Leave blank to use the built-in IELTS grading prompt." /></Field></section>
@@ -209,7 +202,7 @@ function ModelPicker({
   required?: boolean;
   allowEmpty?: boolean;
 }) {
-  const isKnownModel = openRouterFreeModels.some((model) => model.id === value);
+  const isKnownModel = groqModels.some((model) => model.id === value);
   const selectedValue = value === "" && allowEmpty
     ? ""
     : isKnownModel
@@ -234,7 +227,7 @@ function ModelPicker({
           required={required && selectedValue !== customModelValue}
         >
           {allowEmpty && <option value="">No fallback</option>}
-          {openRouterFreeModels.map((model) => (
+          {groqModels.map((model) => (
             <option key={model.id} value={model.id}>{model.label} — {model.id}</option>
           ))}
           <option value={customModelValue}>Custom model ID…</option>
@@ -245,7 +238,7 @@ function ModelPicker({
             value={value}
             onChange={(event) => onChange(event.target.value)}
             className="admin-input w-full rounded-xl border px-3 py-2.5 font-mono text-sm"
-            placeholder="vendor/model-id:free"
+            placeholder="model-id"
             aria-label={`${label} custom model ID`}
           />
         )}

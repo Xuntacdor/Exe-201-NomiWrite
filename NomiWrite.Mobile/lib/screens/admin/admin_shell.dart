@@ -973,7 +973,7 @@ class _AdminAiConfigState extends State<_AdminAiConfig> {
     setState(() => saving = true);
     try {
       final value = <String, dynamic>{
-        'providerName': 'OpenRouter',
+        'providerName': 'Groq',
         'modelName': model.text.trim(),
         'fallbackModelName': fallback.text.trim().isEmpty
             ? null
@@ -1028,7 +1028,7 @@ class _AdminAiConfigState extends State<_AdminAiConfig> {
           const _PageHeading(
             title: 'Cấu hình AI',
             subtitle:
-                'Thay đổi model OpenRouter miễn phí mà không cần triển khai lại backend.',
+                'Thay đổi model Groq mà không cần triển khai lại backend.',
           ),
           const SizedBox(height: 16),
           Card(
@@ -1038,7 +1038,7 @@ class _AdminAiConfigState extends State<_AdminAiConfig> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Text(
-                    'Provider: ${asText(config?['providerName'], 'OpenRouter')}',
+                    'Provider: ${asText(config?['providerName'], 'Groq')}',
                     style: const TextStyle(fontWeight: FontWeight.w800),
                   ),
                   const SizedBox(height: 6),
