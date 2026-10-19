@@ -347,6 +347,9 @@ services:
       ASPNETCORE_URLS: "http://+:8080"
       ASPNETCORE_ENVIRONMENT: Production
       ServiceUrls__SubscriptionService: http://subscription-service:8080
+      # Autocomplete uses a dedicated (non-reasoning) model chain; override the
+      # grading/quiz chain that env_file injects for the other services.
+      GroqSettings__Models: "${GroqSettings__AutocompleteModels:-qwen/qwen3.8-27b,allam-2-7b}"
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -387,7 +390,7 @@ services:
   # ────────────────────────────────────────────────────────────────────────────
   # AI Coordinator API (port 5150 local) — DB: nomiwrite_grading
   # Consumes WritingSubmittedEvent -> publishes GradingCompletedEvent; calls
-  # Subscription and the OpenRouter API.
+  # Subscription and the Groq API.
   # ────────────────────────────────────────────────────────────────────────────
   aicoordinator-service:
     build:
@@ -607,7 +610,7 @@ services:
 
   # ────────────────────────────────────────────────────────────────────────────
   # Learning API (port 5181 local) — DB: nomiwrite_learning
-  # Consumes GradingCompletedEvent (vocabulary/grammar feedback); calls OpenRouter.
+  # Consumes GradingCompletedEvent (vocabulary/grammar feedback); calls Groq.
   # ────────────────────────────────────────────────────────────────────────────
   learning-service:
     build:
